@@ -1,5 +1,5 @@
 {
   "version": "2026.07.16-260",
-  "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta build 2026.07.16-260 — thanks for testing! This copy updates separately from the released app. Anything odd, confusing or brilliant: use the ✉ feedback link in the top-left."
+  "url": "https://teecee1313.github.io/insight-updates/",
+  "notes": "v260 — Add shares to a watchlist one at a time, straight from a report. The Top 20 to Watch panel and the Simple-mode report popups (Recovery Watch, Who's being quietly bought, Top picks) now show a ☆ star button on every row — tap it to add that single share, tap again to remove, without closing the report. A little 'Tap ☆ to add to: [list ▾]' picker at the top lets you choose which watchlist the stars go into, or spin up a new list on the spot. The bulk '★ Add to watchlist' button on Top 20 stays for when you want all of them. (In Advanced mode, Recovery Watch and Top 20 also fill the main table, where every row already has its star.)"
 }
