@@ -2,6 +2,31 @@
 <!-- © 2026 Insight Trading™. All rights reserved. · ABN 49 691 811 293 · The Insight Trading name and logo are trademarks. Unauthorised copying, modification or distribution is prohibited. -->
 <html lang="en">
 <head>
+<script>/* beta build: isolate this test copy's saved data (watchlists, portfolio,
+   licence, settings) from the customer/master copies that can share this browser
+   origin. Runs before any app code so nothing leaks in or out. */
+(function(){try{
+  var R=window.localStorage; if(!R)return; var P='asxbeta::';
+  function keys(){var a=[];for(var i=0;i<R.length;i++){var k=R.key(i);if(k&&k.indexOf(P)===0)a.push(k);}return a;}
+  var S={
+    getItem:function(k){return R.getItem(P+k);},
+    setItem:function(k,v){try{R.setItem(P+k,v);}catch(e){}},
+    removeItem:function(k){R.removeItem(P+k);},
+    clear:function(){keys().forEach(function(k){R.removeItem(k);});},
+    key:function(i){var a=keys();return a[i]?a[i].slice(P.length):null;},
+    get length(){return keys().length;}
+  };
+  try{Object.defineProperty(window,'localStorage',{configurable:true,get:function(){return S;}});}catch(e){}
+}catch(e){}})();
+/* also isolate IndexedDB (the on-device backup + saved-market cache) so the
+   startup auto-restore can't pull the master/customer copy's data back in. */
+(function(){try{
+  var F=window.indexedDB; if(!F)return; var P='asxbeta_';
+  var _open=F.open.bind(F);
+  F.open=function(name,ver){ return (arguments.length>1)?_open(P+String(name),ver):_open(P+String(name)); };
+  if(F.deleteDatabase){ var _del=F.deleteDatabase.bind(F); F.deleteDatabase=function(name){ return _del(P+String(name)); }; }
+}catch(e){}})();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Insight Trading — Multi-Exchange Share Screener</title>
@@ -576,6 +601,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
     <span>Insight<span style="color:var(--gold)"> Trading</span></span>
     <span style="font-size:9px;font-weight:600;letter-spacing:2px;color:var(--muted);">MARKET ANALYSER</span>
     <span id="appVer" style="font-size:8px;color:var(--dim);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;"></span>
+    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.07.16-260" style="color:#ff9142;">✉ feedback</a></span>
   </div>
   <div class="hbadge" id="exchBadge">🌐 Multi-Exchange Screener</div>
   <div class="notice" id="notice" style="display:none">—</div>
@@ -1425,7 +1451,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
 // source into IndexedDB (first run of each version), keeping the last 8, so any
 // previous version can be re-downloaded as a working .html file ("versions"
 // link in Setup). Captured here, before scripts modify the page.
-const APP_VERSION='2026.07.16-260-open';
+const APP_VERSION='2026.07.16-260-beta';
 // ── Make the app installable (PWA) without needing a separate manifest file ──
 // We build the manifest in-memory and attach it as a Blob URL, so the whole app
 // stays a single HTML file you can upload as-is. Phones/desktops then offer
@@ -2432,7 +2458,7 @@ const LICENCE_ENABLED=true;   // master switch in code (leave true; use dev togg
 // When a customer's copy is older than "version", they see a dismissible
 // "Update available" notice with your download link. To announce an update you
 // edit ONE hosted file — no emailing every customer. Blank = checks off.
-const UPDATE_CHECK_URL='https://teecee1313.github.io/insight-updates/update.json'; // teecee1313's GitHub Pages
+const UPDATE_CHECK_URL='https://teecee1313.github.io/insight-beta/update.json'; // teecee1313's GitHub Pages
 function _verNum(v){const m=String(v||'').match(/(\d{4})\.(\d{2})\.(\d{2})-(\d+)/);return m?((+m[1])*1e8+(+m[2])*1e6+(+m[3])*1e4+(+m[4])):0;}
 function _updEsc(s){return String(s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));}
 function showUpdateToast(info){
