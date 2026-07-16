@@ -1,5 +1,5 @@
 {
-  "version": "2026.07.16-264",
-  "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta build 2026.07.16-264 — thanks for testing! This copy updates separately from the released app. Anything odd, confusing or brilliant: use the ✉ feedback link in the top-left."
+  "version": "2026.07.16-265",
+  "url": "https://teecee1313.github.io/insight-updates/",
+  "notes": "v265 — 'Clear all filters' now really clears everything. Before, if you were in your watchlist or had quick stat chips active, clearing filters left you stuck in that view. Now the ↺ Clear all filters button also steps out of the watchlist view and switches off the quick chips (Gainers, Vol ≥200%, Accum?, etc.), returning you to the full share list in one tap. It still changes no data and fetches nothing — instant."
 }
