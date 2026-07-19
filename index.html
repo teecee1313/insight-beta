@@ -602,7 +602,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
     <span>Insight<span style="color:var(--gold)"> Trading</span></span>
     <span style="font-size:9px;font-weight:600;letter-spacing:2px;color:var(--muted);">MARKET ANALYSER</span>
     <span id="appVer" style="font-size:8px;color:var(--dim);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;"></span>
-    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.07.16-295" style="color:#ff9142;">✉ feedback</a></span>
+    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.07.16-301" style="color:#ff9142;">✉ feedback</a></span>
   </div>
   <div class="hbadge" id="exchBadge">🌐 Multi-Exchange Screener</div>
   <div class="notice" id="notice" style="display:none">—</div>
@@ -1474,7 +1474,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
 // source into IndexedDB (first run of each version), keeping the last 8, so any
 // previous version can be re-downloaded as a working .html file ("versions"
 // link in Setup). Captured here, before scripts modify the page.
-const APP_VERSION='2026.07.16-295-beta';
+const APP_VERSION='2026.07.16-301-beta';
 // ── Make the app installable (PWA) without needing a separate manifest file ──
 // We build the manifest in-memory and attach it as a Blob URL, so the whole app
 // stays a single HTML file you can upload as-is. Phones/desktops then offer
@@ -4515,11 +4515,21 @@ function _rules(){
   const num=(v,d)=>{ const n=parseFloat(v); return (isFinite(n)&&n>=0)?n:d; };
   return { enabled:(r.enabled!==false), targetPct:num(r.targetPct,20), stopPct:num(r.stopPct,8), maxPosPct:num(r.maxPosPct,10),
     maxPositions:Math.round(num(r.maxPositions,8)), minLiq:num(r.minLiq,0),
+    apOn:(r.apOn===true), apSource:(r.apSource==='top20'?'top20':'smart'),
+    apMinScore:num(r.apMinScore,0), apQuietOnly:(r.apQuietOnly===true),
+    apMaxBuys:Math.max(1,Math.min(3,Math.round(num(r.apMaxBuys,1)))),
+    apAmt:num(r.apAmt,0),
+    apSignals:(Array.isArray(r.apSignals)?r.apSignals.filter(k=>['bo','inf','inst','cx','dir','vr'].indexOf(k)>=0):[]),
     plan:(typeof _sanText==='function'?_sanText(r.plan,600):String(r.plan||'')) };
 }
 function _rulesSave(r){
   const clean={ enabled:(r.enabled!==false), targetPct:+r.targetPct||0, stopPct:+r.stopPct||0, maxPosPct:+r.maxPosPct||0,
     maxPositions:Math.max(0,Math.round(+r.maxPositions||0)), minLiq:+r.minLiq||0,
+    apOn:(r.apOn===true), apSource:(r.apSource==='top20'?'top20':'smart'),
+    apMinScore:+r.apMinScore||0, apQuietOnly:(r.apQuietOnly===true),
+    apMaxBuys:Math.max(1,Math.min(3,Math.round(+r.apMaxBuys||1))),
+    apAmt:+r.apAmt||0,
+    apSignals:(Array.isArray(r.apSignals)?r.apSignals.filter(k=>['bo','inf','inst','cx','dir','vr'].indexOf(k)>=0):[]),
     plan:(typeof _sanText==='function'?_sanText(r.plan,600):String(r.plan||'')) };
   try{ localStorage.setItem(RULES_KEY,JSON.stringify(clean)); }catch(e){}
   return clean;
@@ -4545,20 +4555,275 @@ function showRules(){
     <textarea id="rPlan" maxlength="600" placeholder="e.g. Wait for a green day to confirm. Never average down. Only buy above the 200-day line. Review every Sunday." style="width:100%;height:88px;padding:9px;border-radius:7px;background:var(--bg3);border:1px solid var(--border);color:var(--text);font:12px var(--sans);box-sizing:border-box;resize:vertical;">${esc(r.plan)}</textarea>
     <button onclick="saveRulesFromForm()" style="width:100%;margin-top:12px;padding:10px;border-radius:7px;border:1px solid var(--gold);background:rgba(255,210,0,.14);color:var(--gold);font:700 13px var(--sans);cursor:pointer;">Save my rules</button>
     <div id="rulesMsg" style="font-size:10.5px;color:var(--green);margin-top:8px;min-height:13px;text-align:center;"></div>
+    <div style="margin-top:16px;padding:10px 11px;border:1px solid ${r.apOn?'var(--gold)':'var(--border)'};border-radius:9px;background:${r.apOn?'rgba(255,210,0,.06)':'var(--bg3)'};">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <span style="font:700 11.5px var(--sans);color:var(--text);">🤖 Auto-pilot <span style="font-weight:400;color:var(--dim);font-size:9px;">practice buys by your rules</span></span>
+        <button onclick="toggleAutoPilot()" title="Auto-pilot makes PRACTICE buys only, by the entry rules below. Off by default." style="padding:5px 14px;border-radius:16px;border:1px solid ${r.apOn?'var(--gold)':'var(--border2)'};background:${r.apOn?'rgba(255,210,0,.16)':'var(--bg4)'};color:${r.apOn?'var(--gold)':'var(--muted)'};font:800 11px var(--sans);cursor:pointer;min-width:56px;">${r.apOn?'ON':'OFF'}</button>
+      </div>
+      <div style="font-size:9.5px;color:var(--muted);margin:6px 0 8px;line-height:1.5;">Once per fresh data day it applies these entry rules and queues <b>practice</b> buys — same realistic fills as a manual buy (next day's open, brokerage charged). It sets your 🎯/🛑 from above, respects 📦 🔢 and the 💧 liquidity floor, skips parcels under $500, and logs every decision. <b>Practice money only — it cannot touch a real broker.</b></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <label style="font-size:10px;color:var(--muted);">Buy from<select id="rApSrc" style="width:100%;margin-top:3px;padding:7px;border-radius:6px;background:var(--bg3);border:1px solid var(--border);color:var(--text);box-sizing:border-box;"><option value="smart" ${r.apSource!=='top20'?'selected':''}>🎯 Smart Money (up 2+ days · vol 50%+)</option><option value="top20" ${r.apSource==='top20'?'selected':''}>🏆 Top 20 by Watch Score</option></select></label>
+        <label style="font-size:10px;color:var(--muted);">Buys per day (max)<select id="rApMax" style="width:100%;margin-top:3px;padding:7px;border-radius:6px;background:var(--bg3);border:1px solid var(--border);color:var(--text);box-sizing:border-box;"><option ${r.apMaxBuys===1?'selected':''}>1</option><option ${r.apMaxBuys===2?'selected':''}>2</option><option ${r.apMaxBuys===3?'selected':''}>3</option></select></label>
+        <label style="font-size:10px;color:var(--muted);">Min Watch Score<input type="number" id="rApScore" min="0" max="10" step="1" value="${r.apMinScore||''}" placeholder="0 = off" style="width:100%;margin-top:3px;padding:7px;border-radius:6px;background:var(--bg3);border:1px solid var(--border);color:var(--text);box-sizing:border-box;"></label>
+        <label style="font-size:10px;color:var(--muted);display:flex;align-items:flex-end;gap:6px;padding-bottom:8px;"><input type="checkbox" id="rApQuiet" ${r.apQuietOnly?'checked':''} style="width:15px;height:15px;">🔇 quiet only (no news 5d)</label>
+        <label style="font-size:10px;color:var(--muted);">💵 $ per buy<input type="number" id="rApAmt" min="0" step="any" value="${r.apAmt||''}" placeholder="blank = 📦 % rule" style="width:100%;margin-top:3px;padding:7px;border-radius:6px;background:var(--bg3);border:1px solid var(--border);color:var(--text);box-sizing:border-box;"><span style="font-size:8.5px;color:var(--dim)">min $500 · capped by 📦</span></label>
+      </div>
+      <div style="margin-top:8px;">
+        <div style="font-size:9.5px;color:var(--muted);margin-bottom:4px;">Only buy when showing <b>at least one</b> ticked signal <span style="color:var(--dim)">(scanner lane · none ticked = off)</span>:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px 10px;font-size:9.5px;color:var(--muted);">
+          <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="rApSig_bo" ${r.apSignals.indexOf('bo')>=0?'checked':''} style="width:13px;height:13px;">🚀 Breakout</label>
+          <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="rApSig_inf" ${r.apSignals.indexOf('inf')>=0?'checked':''} style="width:13px;height:13px;">🕵️ Informed?</label>
+          <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="rApSig_inst" ${r.apSignals.indexOf('inst')>=0?'checked':''} style="width:13px;height:13px;">🏦 Inst?</label>
+          <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="rApSig_cx" ${r.apSignals.indexOf('cx')>=0?'checked':''} style="width:13px;height:13px;">⤴ MA cross</label>
+          <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="rApSig_dir" ${r.apSignals.indexOf('dir')>=0?'checked':''} style="width:13px;height:13px;">🧑‍💼 Director ✓</label>
+          <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="rApSig_vr" ${r.apSignals.indexOf('vr')>=0?'checked':''} style="width:13px;height:13px;">🥇 Vol record</label>
+        </div>
+      </div>
+      <div style="margin-top:12px;padding-top:9px;border-top:1px dashed var(--border);">
+        <div style="font:700 10.5px var(--sans);color:var(--text);">🎯 My picks — your shares, your prices <span style="font-weight:400;color:var(--dim);font-size:9px;">practice limit orders</span></div>
+        <div style="font-size:9px;color:var(--dim);margin:3px 0 7px;line-height:1.5;">Auto-pilot places a practice <b>limit buy</b> at your buy point (sized by your 📦 rule) with your sell point as 🎯 and your stop as 🛑 — leave sell/stop blank to use the % rules above. A pick <b>disarms itself once it fills</b> so it can't re-buy in a loop — or tick 🔁 to <b>repeat</b>: after it sells at your 🎯 it buys again at your buy point, cycling until you remove it; if a cycle ends on the 🛑 (a loss) the repeat <b>pauses</b> rather than churning. Adding a pick for a share you already hold applies the sell/stop to that holding instead.</div>
+        <div style="display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr 1fr auto auto;gap:4px;align-items:end;">
+          <label style="font-size:9px;color:var(--muted);">Code<input id="apPkT" maxlength="6" placeholder="e.g. BHP" style="width:100%;margin-top:2px;padding:6px;border-radius:6px;background:var(--bg3);border:1px solid var(--border);color:var(--text);box-sizing:border-box;text-transform:uppercase;"></label>
+          <label style="font-size:9px;color:var(--muted);">Buy at $<input id="apPkB" type="number" min="0" step="any" style="width:100%;margin-top:2px;padding:6px;border-radius:6px;background:var(--bg3);border:1px solid var(--gold);color:var(--text);box-sizing:border-box;"></label>
+          <label style="font-size:9px;color:var(--muted);">Sell at $<input id="apPkS" type="number" min="0" step="any" placeholder="% rule" style="width:100%;margin-top:2px;padding:6px;border-radius:6px;background:var(--bg3);border:1px solid var(--border);color:var(--text);box-sizing:border-box;"></label>
+          <label style="font-size:9px;color:var(--muted);">Stop $<input id="apPkX" type="number" min="0" step="any" placeholder="% rule" style="width:100%;margin-top:2px;padding:6px;border-radius:6px;background:var(--bg3);border:1px solid var(--border);color:var(--text);box-sizing:border-box;"></label>
+          <label style="font-size:9px;color:var(--muted);">Invest $<input id="apPkA" type="number" min="0" step="any" placeholder="default" style="width:100%;margin-top:2px;padding:6px;border-radius:6px;background:var(--bg3);border:1px solid var(--border);color:var(--text);box-sizing:border-box;"></label>
+          <label title="Repeat: after it sells at your 🎯 (a win), buy again at your buy point — cycles until you remove it. If a cycle ends on the 🛑 stop, the repeat pauses instead of churning." style="font-size:9px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;padding-bottom:2px;">🔁<input type="checkbox" id="apPkR" style="width:14px;height:14px;"></label>
+          <button onclick="addApPickFromForm()" style="padding:7px 10px;border-radius:6px;border:1px solid var(--green);background:rgba(63,185,80,.12);color:var(--green);font:700 10px var(--sans);cursor:pointer;">+ Add</button>
+        </div>
+        <div id="apPicksBox" style="margin-top:6px;">${_apPicksHtml()}</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+        <button onclick="runAutoPilotNow()" ${r.apOn&&r.enabled?'':'disabled'} style="flex:1;padding:8px;border-radius:7px;border:1px solid ${r.apOn&&r.enabled?'var(--gold)':'var(--border2)'};background:${r.apOn&&r.enabled?'rgba(255,210,0,.12)':'var(--bg4)'};color:${r.apOn&&r.enabled?'var(--gold)':'var(--dim)'};font:700 11px var(--sans);cursor:${r.apOn&&r.enabled?'pointer':'default'};">▶ Run auto-pilot now (practice)</button>
+      </div>
+      <div id="apLogBox" style="margin-top:8px;">${_apLogHtml()}</div>
+    </div>
     <div style="font-size:9px;color:var(--dim);margin-top:6px;">Practice-first: rules apply to your paper trading — a discipline aid, not financial advice.</div>
   `,'📋 My trading rules');
 }
-function saveRulesFromForm(){
+function _rulesFromForm(){
   const g=id=>(document.getElementById(id)||{}).value;
-  _rulesSave({ targetPct:g('rTgt'), stopPct:g('rStop'), maxPosPct:g('rMaxPos'), maxPositions:g('rMaxN'), minLiq:0, plan:g('rPlan'), enabled:_rules().enabled });
+  const chk=id=>((document.getElementById(id)||{}).checked===true);
+  return { targetPct:g('rTgt'), stopPct:g('rStop'), maxPosPct:g('rMaxPos'), maxPositions:g('rMaxN'), minLiq:0, plan:g('rPlan'),
+    apSource:g('rApSrc')||_rules().apSource, apMinScore:g('rApScore'), apQuietOnly:chk('rApQuiet'), apMaxBuys:g('rApMax'), apAmt:g('rApAmt'),
+    apSignals:(document.getElementById('rApSig_bo')?['bo','inf','inst','cx','dir','vr'].filter(k=>chk('rApSig_'+k)):_rules().apSignals) };
+}
+function saveRulesFromForm(){
+  const cur=_rules();
+  _rulesSave(Object.assign(_rulesFromForm(),{enabled:cur.enabled,apOn:cur.apOn}));
   const m=document.getElementById('rulesMsg'); if(m)m.textContent='✓ Saved — your rules are set.';
 }
 function toggleRulesEnabled(){
-  // save whatever's in the form, flipping the master switch, then re-render
-  const g=id=>(document.getElementById(id)||{}).value;
-  _rulesSave({ targetPct:g('rTgt'), stopPct:g('rStop'), maxPosPct:g('rMaxPos'), maxPositions:g('rMaxN'), minLiq:0, plan:g('rPlan'), enabled:!_rules().enabled });
+  const cur=_rules();
+  _rulesSave(Object.assign(_rulesFromForm(),{enabled:!cur.enabled,apOn:cur.apOn}));
   try{ showRules(); }catch(e){}
 }
+function toggleAutoPilot(){
+  const cur=_rules();
+  if(!cur.apOn&&!cur.enabled){ alert('Turn "Use my trading rules" ON first — auto-pilot runs by those rules.'); return; }
+  _rulesSave(Object.assign(_rulesFromForm(),{enabled:cur.enabled,apOn:!cur.apOn}));
+  try{ showRules(); }catch(e){}
+}
+
+// ═══ v297 — 🤖 Auto-pilot (PRACTICE): rule-based paper entries ═══
+const AP_LOG_KEY='BETA_asxScreener.autoPilot.log.v1', AP_RUN_KEY='BETA_asxScreener.autoPilot.lastRun.v1';
+function _apLog(){ try{ return JSON.parse(localStorage.getItem(AP_LOG_KEY)||'[]')||[]; }catch(e){ return []; } }
+function _apLogAdd(e){ const l=_apLog(); l.unshift(e); while(l.length>120)l.pop(); try{ localStorage.setItem(AP_LOG_KEY,JSON.stringify(l)); }catch(_){}}
+function _apLogHtml(){
+  const l=_apLog().slice(0,6);
+  if(!l.length)return '<div style="font-size:9px;color:var(--dim);">No auto-pilot decisions yet — its diary will appear here.</div>';
+  return '<div style="font:700 9px var(--sans);color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px;">Decision diary</div>'+l.map(e=>{
+    const b=(e.buys||[]).map(x=>'🤖 '+(x.limit?('pick: limit buy '+x.tk+' — '+x.qty+' @ $'+(+x.px).toFixed(3)):('bought '+x.tk+' — '+x.qty+' @ ~$'+(+x.px).toFixed(3)))+(x.cycle>1?' · 🔁 cycle '+x.cycle:'')+(x.trim?' · trimmed by 📦':'')+(x.score!=null?' · score '+x.score+'/10':'')).join('<br>');
+    const s=(e.skips||[]).slice(0,4).map(x=>'· '+String(x).replace(/</g,'&lt;')).join('<br>');
+    return '<div style="font-size:9.5px;color:var(--muted);padding:4px 0;border-top:1px solid var(--border2);line-height:1.5;"><b style="color:var(--text)">'+e.d+'</b>'+(e.err?' <span style="color:#ff9caa">error: '+e.err+'</span>':'')+(b?'<br>'+b:'')+(s?'<br><span style="color:var(--dim)">'+s+'</span>':'')+((!b&&!s&&!e.err)?' — nothing to do':'')+'</div>';
+  }).join('');
+}
+function _apLiqOk(s){
+  if(typeof F==='undefined'||!F||!F.cap||F.cap==='any')return true;
+  const liq=((s.avgVol>0?s.avgVol:(s.volume||0))*(s.price||0));
+  const need=F.cap==='l50'?50e3:F.cap==='l250'?250e3:F.cap==='l1m'?1e6:0;
+  return liq>=need;
+}
+function _apCandidates(r){
+  const p=_paper(); const held=new Set();
+  (p.holdings||[]).forEach(h=>held.add(h.ticker)); (p.orders||[]).forEach(o=>held.add(o.ticker));
+  let pool=(allData||[]).filter(s=>s&&s.price>0&&!held.has(s.ticker)&&_apLiqOk(s));
+  if(r.apSource==='top20'){ pool=pool.filter(s=>s.watchScore!=null).sort((a,b)=>(b.watchScore||0)-(a.watchScore||0)).slice(0,20); }
+  else{ pool=pool.filter(s=>s.streakCalced&&s.daysUp>=2&&s.volCalced&&s.volPct>=50); }
+  if(r.apMinScore>0)pool=pool.filter(s=>(s.watchScore||0)>=r.apMinScore);
+  if(r.apQuietOnly)pool=pool.filter(s=>{try{return _noNews5d(s);}catch(e){return false;}});
+  if(Array.isArray(r.apSignals)&&r.apSignals.length){ const M={bo:'sigBreakout',inf:'dirBuy',inst:'instBuy',cx:'sigCross',dir:'annDir5d',vr:'sigVolRecord'};
+    pool=pool.filter(s=>r.apSignals.some(k=>!!s[M[k]])); }
+  pool.sort((a,b)=>((b.watchScore||0)-(a.watchScore||0))||((b.daysUp||0)-(a.daysUp||0))||((b.volPct||0)-(a.volPct||0)));
+  return pool;
+}
+function _apBuy(s,r){
+  // queue a PRACTICE buy through the exact same path shape as a manual buy
+  const p=_paper(); const fee=brokerageFee(); const today=_todayLocal();
+  const acct=_acctValue(p); const sizePct=(r.maxPosPct>0?r.maxPosPct:10);
+  const _cap=acct*sizePct/100;
+  let _want=(r.apAmt>0?r.apAmt:_cap), _trim=false;
+  if(_want>_cap){ _want=_cap; _trim=true; }   // 📦 rule is a guardrail — your $ never breaches it
+  const amt=Math.min(_want,(p.cash||0)-fee);
+  if(!(amt>0))return {ok:false,why:'no practice cash left'};
+  const px=s.price; const qty=Math.floor(amt/px);
+  const cost=+(qty*px).toFixed(2);
+  if(qty<1||cost<500)return {ok:false,why:'size under the $500 minimum parcel'};
+  if(cost+fee>p.cash+0.005)return {ok:false,why:'not enough practice cash'};
+  const tgt=r.targetPct>0?+(px*(1+r.targetPct/100)).toFixed(4):0;
+  const stop=r.stopPct>0?+(px*(1-r.stopPct/100)).toFixed(4):0;
+  const note='🤖 Auto-pilot (practice)';
+  p.cash=+(p.cash-cost).toFixed(2); _chargeFee(p);
+  const _id='o'+Date.now()+'a'+Math.floor(Math.random()*1000);
+  if(typeof realFillsOn==='function'&&realFillsOn()){
+    p.orders=p.orders||[];
+    p.orders.push({id:_id,ticker:s.ticker,exchange:s.exchange,name:s.name||'',currency:s.currency,
+      market:true,limit:0,qty:0,amount:cost,reserved:cost,placedDate:today,checkedDate:today,expiry:_orderExpiry(today),
+      target:tgt>0?tgt:null,stop:stop>0?stop:null,note:note,fee:fee||0,
+      tgtLog:tgt>0?[{d:_pfMktDate(s.exchange),ts:_pfStamp(),from:null,to:tgt}]:[],stopLog:stop>0?[{d:_pfMktDate(s.exchange),ts:_pfStamp(),from:null,to:stop}]:[]});
+  }else{
+    p.holdings=p.holdings||[];
+    p.holdings.push({id:'t'+Date.now()+'a'+Math.floor(Math.random()*1000),ticker:s.ticker,exchange:s.exchange,name:s.name||'',currency:s.currency,
+      buyDate:today,buyPrice:px,qty,invested:+(qty*px).toFixed(2),buyFee:fee||0,
+      lastPrice:s.price,lastDate:(s._q&&s._q.d)||today,target:tgt>0?tgt:null,stop:stop>0?stop:null,note:note,
+      tgtLog:tgt>0?[{d:_pfMktDate(s.exchange),ts:_pfStamp(),from:null,to:tgt}]:[],stopLog:stop>0?[{d:_pfMktDate(s.exchange),ts:_pfStamp(),from:null,to:stop}]:[]});
+  }
+  _paperSave(p);
+  return {ok:true,qty,cost,px,tgt,stop,trim:_trim};
+}
+const AP_PICKS_KEY='BETA_asxScreener.autoPilot.picks.v1';
+function _apPicksLoad(){ try{ return (JSON.parse(localStorage.getItem(AP_PICKS_KEY)||'[]')||[]).slice(0,20); }catch(e){ return []; } }
+function _apPicksSave(l){ try{ localStorage.setItem(AP_PICKS_KEY,JSON.stringify((l||[]).slice(0,20))); }catch(e){} }
+function _apPicksHtml(){
+  const l=_apPicksLoad();
+  if(!l.length)return '<div style="font-size:9px;color:var(--dim);">No picks yet.</div>';
+  return l.map(k=>'<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:9.5px;color:var(--muted);padding:3px 0;border-top:1px solid var(--border2);">'
+    +'<span><b style="color:var(--text)">'+String(k.tk).replace(/[<>]/g,'')+'</b> buy $'+(+k.buyAt).toFixed(3)
+    +(k.sellAt>0?' · sell $'+(+k.sellAt).toFixed(3):' · sell: % rule')+(k.stopAt>0?' · stop $'+(+k.stopAt).toFixed(3):'')+(k.amt>0?' · invest $'+Math.round(k.amt):'')+(k.repeat?' · 🔁 repeat'+((k.cycles||0)>1?' ×'+k.cycles:''):'')
+    +(k.armed===false?(k.pausedWhy?' <span style="color:#f0b849">⏸ '+k.pausedWhy+' — repeat paused</span>':' <span style="color:var(--green)">✓ filled — disarmed</span>'):'')+'</span>'
+    +'<button onclick="removeApPick(\''+String(k.tk).replace(/[^A-Z0-9.]/gi,'')+'\')" style="border:none;background:none;color:var(--red);cursor:pointer;font-size:11px;">✕</button></div>').join('');
+}
+function addApPickFromForm(){
+  const g=id=>((document.getElementById(id)||{}).value||'').trim();
+  const tk=g('apPkT').toUpperCase(); const buyAt=parseFloat(g('apPkB'))||0;
+  const sellAt=parseFloat(g('apPkS'))||0; const stopAt=parseFloat(g('apPkX'))||0;
+  const amt=parseFloat(g('apPkA'))||0;
+  const rpt=((document.getElementById('apPkR')||{}).checked===true);
+  const m=document.getElementById('rulesMsg');
+  if(!tk||!(buyAt>0)){ if(m)m.textContent='Enter a share code and a buy price.'; return; }
+  if(!Array.isArray(allData)||!allData.length){ if(m)m.textContent='Load your market data first, then add picks.'; return; }
+  const s=allData.find(x=>x.ticker===tk);
+  if(!s){ if(m)m.textContent=tk+' isn\u2019t in your loaded data \u2014 check the code.'; return; }
+  if(sellAt>0&&sellAt<=buyAt){ if(m)m.textContent='Sell point must be above the buy point.'; return; }
+  if(stopAt>0&&stopAt>=buyAt){ if(m)m.textContent='Stop must be below the buy point.'; return; }
+  if(amt>0&&amt<500){ if(m)m.textContent='Invest amount must be at least $500 (the ASX minimum parcel).'; return; }
+  // already held? apply sell/stop to the holding instead of arming a buy
+  const p=_paper(); const h=(p.holdings||[]).find(x=>x.ticker===tk);
+  if(h&&(sellAt>0||stopAt>0)){
+    if(sellAt>0){ (h.tgtLog=h.tgtLog||[]).push({d:_pfMktDate(h.exchange),ts:_pfStamp(),from:(h.target!=null?h.target:null),to:sellAt}); h.target=sellAt; }
+    if(stopAt>0){ (h.stopLog=h.stopLog||[]).push({d:_pfMktDate(h.exchange),ts:_pfStamp(),from:(h.stop!=null?h.stop:null),to:stopAt}); h.stop=stopAt; }
+    _paperSave(p);
+    if(m)m.textContent='\u2713 '+tk+' is already held \u2014 sell/stop applied to that holding.';
+  }else{
+    const l=_apPicksLoad().filter(k=>k.tk!==tk);
+    if(l.length>=20){ if(m)m.textContent='Pick list is full (20) \u2014 remove one first.'; return; }
+    l.unshift({tk:tk,buyAt:buyAt,sellAt:sellAt||0,stopAt:stopAt||0,amt:amt||0,repeat:rpt===true,cycles:0,armed:true,added:_todayLocal()});
+    _apPicksSave(l);
+    if(m)m.textContent='\u2713 Pick added \u2014 auto-pilot will place the practice limit order on its next run.';
+  }
+  const box=document.getElementById('apPicksBox'); if(box)box.innerHTML=_apPicksHtml();
+  ['apPkT','apPkB','apPkS','apPkX','apPkA'].forEach(id=>{const el=document.getElementById(id); if(el)el.value='';});
+  try{ const rc=document.getElementById('apPkR'); if(rc)rc.checked=false; }catch(e){}
+}
+function removeApPick(tk){ _apPicksSave(_apPicksLoad().filter(k=>k.tk!==tk)); const box=document.getElementById('apPicksBox'); if(box)box.innerHTML=_apPicksHtml(); }
+function _apPlacePick(s,r,k){
+  const p=_paper(); const fee=brokerageFee(); const today=_todayLocal();
+  const acct=_acctValue(p); const sizePct=(r.maxPosPct>0?r.maxPosPct:10);
+  const _cap=acct*sizePct/100;
+  let _want=(k&&k.amt>0)?k.amt:(r.apAmt>0?r.apAmt:_cap), _trim=false;
+  if(_want>_cap){ _want=_cap; _trim=true; }   // 📦 guardrail
+  const amt=Math.min(_want,(p.cash||0)-fee);
+  if(!(amt>0))return {ok:false,why:'no practice cash left'};
+  const lim=+k.buyAt; const qty=Math.floor(amt/lim);
+  const cost=+(qty*lim).toFixed(2);
+  if(qty<1||cost<500)return {ok:false,why:'size under the $500 minimum parcel'};
+  if(cost+fee>p.cash+0.005)return {ok:false,why:'not enough practice cash'};
+  const tgt=k.sellAt>0?+k.sellAt:(r.targetPct>0?+(lim*(1+r.targetPct/100)).toFixed(4):0);
+  const stop=k.stopAt>0?+k.stopAt:(r.stopPct>0?+(lim*(1-r.stopPct/100)).toFixed(4):0);
+  p.cash=+(p.cash-cost).toFixed(2); _chargeFee(p); p.orders=p.orders||[];
+  p.orders.push({id:'o'+Date.now()+'p'+Math.floor(Math.random()*1000),ticker:s.ticker,exchange:s.exchange,name:s.name||'',currency:s.currency,
+    limit:lim,qty:qty,reserved:cost,placedDate:today,checkedDate:today,expiry:_orderExpiry(today),
+    target:tgt>0?tgt:null,stop:stop>0?stop:null,note:'\ud83e\udd16 Auto-pilot pick (practice)',fee:fee||0,
+    tgtLog:tgt>0?[{d:_pfMktDate(s.exchange),ts:_pfStamp(),from:null,to:tgt}]:[],stopLog:stop>0?[{d:_pfMktDate(s.exchange),ts:_pfStamp(),from:null,to:stop}]:[]});
+  _paperSave(p);
+  return {ok:true,qty:qty,cost:cost,trim:_trim};
+}
+function _apRunPicks(r,ent,maxN){
+  const picks=_apPicksLoad(); if(!picks.length)return; let changed=false;
+  for(const k of picks){
+    if(k.armed===false)continue;
+    const p=_paper();
+    if((p.holdings||[]).some(h=>h.ticker===k.tk)){
+      if(k.repeat!==true){ k.armed=false; changed=true; ent.skips.push(k.tk+': pick filled \u2014 disarmed (re-add to buy again)'); }
+      continue; }   // 🔁 repeat picks WAIT while held — the holding's 🎯/🛑 will exit it, then we cycle
+    if((p.orders||[]).some(o=>o.ticker===k.tk))continue;
+    if(k.repeat===true){
+      const hist=(p.history||[]).filter(h=>h.ticker===k.tk&&h.sellDate&&(!k.added||h.sellDate>=k.added));
+      const last=hist.length?hist[hist.length-1]:null;
+      if(last&&last.trigger==='stop'){ k.armed=false; k.pausedWhy='stopped out'; changed=true;
+        ent.skips.push(k.tk+': last cycle STOPPED OUT \u2014 repeat paused (re-add to try again)'); continue; }
+    }
+    if(((p.holdings||[]).length+(p.orders||[]).length)>=maxN){ ent.skips.push(k.tk+': at your max open positions'); continue; }
+    const s=(allData||[]).find(x=>x.ticker===k.tk);
+    if(!s||!(s.price>0)){ ent.skips.push(k.tk+': not in loaded data'); continue; }
+    const res=_apPlacePick(s,r,k);
+    if(res.ok){ if(k.repeat===true){ k.cycles=(k.cycles||0)+1; changed=true; }
+      ent.buys.push({tk:k.tk,qty:res.qty,cost:res.cost,px:+k.buyAt,limit:true,trim:res.trim===true,cycle:(k.repeat===true?k.cycles:0),score:(s.watchScore!=null?s.watchScore:null)}); }
+    else if(ent.skips.length<6)ent.skips.push(k.tk+': '+res.why);
+  }
+  if(changed)_apPicksSave(picks);
+}
+function _autoPilotRun(manual){
+  try{
+    const r=_rules();
+    if(!(r.enabled&&r.apOn))return {ran:false,why:'off'};
+    if(!Array.isArray(allData)||!allData.length)return {ran:false,why:'no data'};
+    let dd=null; try{ dd=_pfMktDate(currentExch||'ASX'); }catch(e){}
+    if(!dd)return {ran:false,why:'no date'};
+    if(!manual&&localStorage.getItem(AP_RUN_KEY)===dd)return {ran:false,why:'already ran today'};
+    try{ localStorage.setItem(AP_RUN_KEY,dd); }catch(e){}
+    const maxN=r.maxPositions>0?r.maxPositions:8;
+    const ent={d:dd,ts:Date.now(),src:r.apSource,buys:[],skips:[]};
+    // Lane 1 — 🎯 My picks (your prices come first)
+    _apRunPicks(r,ent,maxN);
+    // Lane 2 — the scanner
+    const p=_paper(); const openN=(p.holdings||[]).length+(p.orders||[]).length;
+    if(openN>=maxN){ ent.skips.push('at your max of '+maxN+' open positions — scanner made no buys'); }
+    else{
+      const want=Math.min(r.apMaxBuys,maxN-openN);
+      const cands=_apCandidates(r);
+      if(!cands.length)ent.skips.push('no shares matched your entry rules today');
+      let made=0;
+      for(const s of cands){
+        if(made>=want)break;
+        const res=_apBuy(s,r);
+        if(res.ok){ made++; ent.buys.push({tk:s.ticker,qty:res.qty,cost:res.cost,px:res.px,trim:res.trim===true,score:(s.watchScore!=null?s.watchScore:null)}); }
+        else if(ent.skips.length<5)ent.skips.push(s.ticker+': '+res.why);
+        if(!res.ok&&/cash|parcel/.test(res.why))break; // cash exhausted — stop trying
+      }
+    }
+    _apLogAdd(ent);
+    return {ran:true,entry:ent};
+  }catch(e){ try{ _apLogAdd({d:'?',ts:Date.now(),err:String(e).slice(0,80)}); }catch(_){ } return {ran:false,why:'error'}; }
+}
+function runAutoPilotNow(){
+  const res=_autoPilotRun(true);
+  const m=document.getElementById('rulesMsg');
+  if(m)m.textContent=res.ran?((res.entry.buys.length?('🤖 Queued '+res.entry.buys.length+' practice buy'+(res.entry.buys.length>1?'s':'')+' — fills at the next open.'):'🤖 Ran — nothing qualified to buy. See the diary.')):'Auto-pilot is off or no data loaded.';
+  const box=document.getElementById('apLogBox'); if(box)box.innerHTML=_apLogHtml();
+}
+// auto-run: once per fresh data day, only while opted in (same gentle pattern as the briefing)
+(function _apAuto(){ setInterval(function(){ try{ _autoPilotRun(false); }catch(e){} },11000); })();
 function _ensureCash(p){
   // Migration for accounts created before the cash balance existed: rebuild the
   // balance as if the $10k account had been there from the first trade.
@@ -6276,6 +6541,7 @@ function showModal(html,label){
     <div style="text-align:right;margin-top:12px;flex:none;display:flex;align-items:center;justify-content:space-between;">
       <span class="mb-resizehint" style="font-size:8px;color:var(--dim);">↘ drag corner to resize</span>
       <span>
+        <button onclick="toggleModalFullscreen()" title="Fill the whole screen with this window (Esc to come back)" style="padding:6px 10px;border-radius:5px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font:600 11px var(--sans);cursor:pointer;margin-right:6px;">🖥 Full screen</button>
         <button onclick="toggleModalMax()" title="Maximise / restore" style="padding:6px 10px;border-radius:5px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font:600 11px var(--sans);cursor:pointer;margin-right:6px;">⛶ Max</button>
         <button onclick="closeModal()" style="padding:6px 14px;border-radius:5px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font:600 11px var(--sans);cursor:pointer;">Close</button>
       </span>
@@ -6303,6 +6569,8 @@ function closeModal(){
   const m=document.getElementById('appModal');if(m){m.style.display='none';try{m.innerHTML='';}catch(_){}}
   window._detailTicker=null;
   window._simpleModalBase=null;window._simpleModalLabel=null;window._top20Shown=null;
+  try{ if(window._modalEnteredFs){ window._modalEnteredFs=false;
+    if(document.fullscreenElement||document.webkitFullscreenElement)(document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document); } }catch(_){}
   window._modalType=null; // NB: keep _statBaseValid — clearing it here made a chip
   // un-toggle after closing a report restore only the narrowed set (stuck filter).
   try{document.body.classList.remove('stat-over-modal');document.documentElement.style.removeProperty('--soModalTop');}catch(_){}
@@ -6315,6 +6583,29 @@ window.addEventListener('beforeprint',function(){
   }catch(_){}
 });
 window.addEventListener('afterprint',function(){ try{document.body.classList.remove('sheet-printing');}catch(_){} });
+// 🖥 v301 — take the current panel over the ENTIRE screen (and back).
+function toggleModalFullscreen(){
+  const box=document.getElementById('modalBox'); if(!box)return;
+  if(box.dataset.fs==='1'){
+    box.dataset.fs='0'; box.style.cssText=box.dataset.prevCss||'';
+    try{ if(box.dataset.soFs==='1'){ box.dataset.soFs='0'; document.body.classList.add('stat-over-modal'); } }catch(e){}
+    try{ if(window._modalEnteredFs){ window._modalEnteredFs=false;
+      if(document.fullscreenElement||document.webkitFullscreenElement)(document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document); } }catch(e){}
+  }else{
+    box.dataset.prevCss=box.style.cssText; box.dataset.fs='1';
+    try{ if(document.body.classList.contains('stat-over-modal')){ box.dataset.soFs='1'; document.body.classList.remove('stat-over-modal'); } }catch(e){}
+    box.style.position='fixed'; box.style.inset='0'; box.style.width='100vw'; box.style.height='100vh';
+    box.style.maxWidth='100vw'; box.style.maxHeight='100vh'; box.style.borderRadius='0'; box.style.margin='0';
+    try{ if(!(document.fullscreenElement||document.webkitFullscreenElement)){ window._modalEnteredFs=true;
+      (document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen||function(){}).call(document.documentElement); } }catch(e){}
+  }
+}
+// Esc (or any exit from browser fullscreen) restores a fullscreened panel to its previous size.
+try{ ['fullscreenchange','webkitfullscreenchange'].forEach(function(ev){ document.addEventListener(ev,function(){ try{
+  const box=document.getElementById('modalBox');
+  const on=!!(document.fullscreenElement||document.webkitFullscreenElement);
+  if(!on&&box&&box.dataset.fs==='1'){ box.dataset.fs='0'; box.style.cssText=box.dataset.prevCss||''; window._modalEnteredFs=false; try{ if(box.dataset.soFs==='1'){ box.dataset.soFs='0'; document.body.classList.add('stat-over-modal'); } }catch(e){} }
+}catch(e){} }); }); }catch(e){}
 // ⛶ Maximise / restore the current panel (one click to go near-fullscreen).
 function toggleModalMax(){
   const box=document.getElementById('modalBox');
@@ -12010,6 +12301,10 @@ function myChangesData(){
     out.lists.push(sec);
   }
   out.items=holdItems.concat(...out.lists.map(x=>x.items));
+  // v297: report what auto-pilot queued today (practice) — AFTER items are assembled
+  try{ const _apbuys=((JSON.parse(localStorage.getItem('BETA_asxScreener.autoPilot.log.v1')||'[]')||[]).filter(x=>x.d===out.dataDate)).flatMap(x=>x.buys||[]);
+    _apbuys.forEach(b=>{ const it={tk:b.tk,icon:'\ud83e\udd16',txt:(b.limit?('Auto-pilot placed your PRACTICE limit buy at $'+(+b.px).toFixed(3)+' — '+b.qty+' shares. Fills if the price touches it; \ud83c\udfaf/\ud83d\uded1 from your pick.'):('Auto-pilot queued a PRACTICE buy — '+b.qty+' shares (~$'+Math.round(b.cost)+'). Fills at the next open; \ud83c\udfaf/\ud83d\uded1 set from your rules.'))};
+      out.items.unshift(it); out.holdItems.unshift(it); }); }catch(e){}
   return out;
 }
 function showMyChanges(auto){
@@ -12531,11 +12826,48 @@ function makeDraggable(zoneId, storeKey){
     row.addEventListener('drop',e=>{ e.preventDefault(); row.classList.remove('drag-over'); persist(); });
   });
 }
+// ═══ v296 PREVIEW — Instant Reports grouped: pinned daily trio + collapsible families ═══
+function _groupScans(){
+  try{
+    if(window.__scansGrouped)return;
+    const zone=document.getElementById('scanDragZone'); if(!zone)return;
+    const GROUPS=[
+      {id:'sgStart',title:'⭐ Start your day',hint:'the three-tap routine',ids:['scan-pulse','scan-top20','scan-smart'],pinned:true},
+      {id:'sgAct',title:'🔎 Today’s action',hint:'what stood out this session',ids:['scan-sharp','scan-unusual','scan-surge','scan-gap']},
+      {id:'sgBuild',title:'🌱 Building quietly',hint:'patient setups',ids:['scan-quiet','scan-pullback','scan-trend','scan-recovery']},
+      {id:'sgComp',title:'🧩 Composite',hint:'every signal at once',ids:['scan-allsig']}
+    ];
+    let st={}; try{st=JSON.parse(localStorage.getItem('BETA_asxScreener.scanGroups.v1'))||{};}catch(e){}
+    const wrap=document.createElement('div'); wrap.id='scanGroups';
+    let lastBody=null;
+    GROUPS.forEach(g=>{
+      const sec=document.createElement('div'); sec.className='scan-group'+(g.pinned?' sg-pinned':'');
+      const open=g.pinned||st[g.id]!==0;
+      const h=document.createElement('div'); h.className='sg-h';
+      h.innerHTML='<span>'+g.title+'<span class="sg-hint">'+g.hint+'</span></span>'+(g.pinned?'':'<span class="sg-ch">'+(open?'▾':'▸')+'</span>');
+      const body=document.createElement('div'); body.className='sg-b'+(g.pinned?' sg-trio':''); if(!open)body.style.display='none';
+      if(!g.pinned){ h.style.cursor='pointer'; h.title='Tap to show or hide this group';
+        h.onclick=function(){ const now=body.style.display==='none'; body.style.display=now?'grid':'none';
+          const c=h.querySelector('.sg-ch'); if(c)c.textContent=now?'▾':'▸';
+          st[g.id]=now?1:0; try{localStorage.setItem('BETA_asxScreener.scanGroups.v1',JSON.stringify(st));}catch(e){} }; }
+      g.ids.forEach(id=>{ const row=zone.querySelector('[data-dragid="'+id+'"]');
+        if(row){ row.draggable=false; body.appendChild(row); } });
+      sec.appendChild(h); sec.appendChild(body); wrap.appendChild(sec); lastBody=body;
+    });
+    // safety net: any report this map doesn't know still shows (lands in the last group)
+    zone.querySelectorAll('[data-dragid]').forEach(r=>{ r.draggable=false; lastBody.appendChild(r); });
+    zone.parentNode.insertBefore(wrap,zone); zone.style.display='none';
+    // the “drag ⠿ to reorder” hint no longer applies in the grouped view
+    try{ document.querySelectorAll('.step-sub').forEach(x=>{ if(/reorder/i.test(x.textContent||''))x.style.display='none'; }); }catch(e){}
+    window.__scansGrouped=true;
+  }catch(e){}
+}
 // Wire up the draggable zones once the DOM is ready.
 (function initDrag(){
   makeDraggable('scanDragZone','BETA_asxScreener.order.scans.v1');
   makeDraggable('filterDragZone','BETA_asxScreener.order.filters.v1');
 })();
+_groupScans();
 syncP();syncV();
 </script>
 
@@ -13231,6 +13563,24 @@ button:active{transform:scale(.985);}
 .sc-emoji .ic{width:24px;height:24px;color:#8fb0e8;}
 .simple-card:hover .sc-emoji .ic{color:var(--gold);}
 #scanDragZone .drag-row>button .ic{width:14px;height:14px;color:#9db4da;}
+/* ═══ v296 PREVIEW — grouped Instant Reports ═══ */
+#scanGroups{display:flex;flex-direction:column;gap:8px;}
+body.simple-mode #scanGroups{display:none;}
+#scanGroups .sg-h{display:flex;justify-content:space-between;align-items:center;font:700 9.5px var(--sans);color:var(--muted);text-transform:uppercase;letter-spacing:.6px;padding:1px 2px;}
+#scanGroups .sg-h .sg-hint{font-weight:400;text-transform:none;letter-spacing:0;color:var(--dim);font-size:9px;margin-left:4px;}
+#scanGroups .sg-ch{color:var(--dim);font-size:10px;padding:0 3px;}
+#scanGroups .sg-b{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+#scanGroups .sg-trio{grid-template-columns:1fr 1fr 1fr;gap:5px;}
+#scanGroups .sg-pinned .sg-h>span:first-child{color:var(--gold);}
+#scanGroups .drag-row{display:block;position:relative;margin-top:0;}
+#scanGroups .drag-row>button{width:100%;height:100%;min-height:66px;margin:0!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:8px 6px 7px;text-align:center;box-sizing:border-box;font-size:12px!important;background:var(--bg2)!important;border:1px solid var(--border)!important;border-left-width:3px!important;border-radius:10px!important;color:var(--text)!important;box-shadow:0 1px 4px rgba(0,0,0,.22);}
+#scanGroups .drag-row>button:hover{border-color:var(--border2)!important;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.32);}
+#scanGroups .drag-row>button>span:first-child{font-size:12px;line-height:1.2;font-weight:700;color:var(--text)!important;}
+#scanGroups .scan-tag{font-size:7.5px;line-height:1.25;color:#7d95bd!important;opacity:1!important;}
+#scanGroups .sg-trio .drag-row>button{min-height:60px;font-size:11px!important;padding:7px 4px 6px;border-color:rgba(255,210,0,.5)!important;}
+#scanGroups .sg-trio .drag-row>button>span:first-child{font-size:10.5px;}
+#scanGroups .sg-trio .scan-tag{font-size:7px;}
+#scanGroups .drag-h{display:none;}
 .mode-seg-btn .ic{width:13px;height:13px;}
 .mode-seg-btn.on .ic{color:#0a1428;}
 .step-sub2 .ic{width:12px;height:12px;color:#7d95bd;}
