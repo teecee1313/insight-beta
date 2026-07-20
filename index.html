@@ -612,7 +612,7 @@ body.theme-light .tblwrap th:nth-child(3),body.theme-light .tblwrap td:nth-child
     <span>Insight<span style="color:var(--gold)"> Trading</span></span>
     <span style="font-size:9px;font-weight:600;letter-spacing:2px;color:var(--muted);">MARKET ANALYSER</span>
     <span id="appVer" style="font-size:8px;color:var(--dim);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;"></span>
-    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.07.16-317" style="color:#ff9142;">✉ feedback</a></span>
+    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.07.16-318" style="color:#ff9142;">✉ feedback</a></span>
   </div>
   <div class="hbadge" id="exchBadge">🌐 Multi-Exchange Screener</div>
   <div class="notice" id="notice" style="display:none">—</div>
@@ -1484,7 +1484,7 @@ body.theme-light .tblwrap th:nth-child(3),body.theme-light .tblwrap td:nth-child
 // source into IndexedDB (first run of each version), keeping the last 8, so any
 // previous version can be re-downloaded as a working .html file ("versions"
 // link in Setup). Captured here, before scripts modify the page.
-const APP_VERSION='2026.07.16-317-beta';
+const APP_VERSION='2026.07.16-318-beta';
 // ── Make the app installable (PWA) without needing a separate manifest file ──
 // We build the manifest in-memory and attach it as a Blob URL, so the whole app
 // stays a single HTML file you can upload as-is. Phones/desktops then offer
@@ -4861,6 +4861,8 @@ function _auditCached(){
     const A=_signalAudit(); window._auditCache={d:dd,A:A}; return A;
   }catch(e){ return null; }
 }
+// v318 — short display name for each combo mode (funnel + diary).
+function _comboShort(m){ return ({'bo+inst':'🚀+🏦','bo+blk':'🚀+🔷','bo+vr':'🚀+🥇','inf+inst':'🕵️+🏦','inst>bo':'🏦→🚀 chain','inf>bo':'🕵️→🚀 chain','card-solid':'📋 strict','card-good':'📋 adaptive'})[m]||'combo'; }
 function _apComboOk(s,mode){
   const f=_liveFired(s);
   if(mode==='bo+inst')return f.bo&&f.inst;
@@ -4971,7 +4973,7 @@ function _apCandidates(r){
   if(r.apMaxChasePct>0)pool=_T('day-jump',pool.filter(s=>!(s.chgPct!=null&&s.chgPct>r.apMaxChasePct)));
   if(r.apGreenOnly)pool=_T('🟢green',pool.filter(s=>{const o=(s._q&&s._q.o>0)?s._q.o:0; return o>0?(s.price>o):(s.chgPct>0);}));
   window._apCardFallback=false; // v317: set true by _apComboOk when the young-card starter pairs were used
-  if(r.apCombo){ pool=_T('🧩combo',pool.filter(s=>{try{return _apComboOk(s,r.apCombo);}catch(e){return false;}})); } // v313 🧩
+  if(r.apCombo){ pool=_T('🧩'+_comboShort(r.apCombo),pool.filter(s=>{try{return _apComboOk(s,r.apCombo);}catch(e){return false;}})); } // v313 🧩
   window._apLastDiag=_D;
   pool.sort((a,b)=>((b.watchScore||0)-(a.watchScore||0))||((b.daysUp||0)-(a.daysUp||0))||((b.volPct||0)-(a.volPct||0)));
   return pool;
@@ -5194,11 +5196,15 @@ function _autoPilotRun(manual){
         try{ const _dg=window._apLastDiag;
           if(Array.isArray(_dg)&&_dg.length){
             _msg+=' — where they dropped: '+_dg.map(x=>x[0]+' '+x[1].toLocaleString()).join(' → ');
-            const _last=_dg[_dg.length-1];
-            if(_last&&_last[1]===0&&_last[0]==='🧩combo'&&/^card-/.test(r.apCombo||''))
+            const _last=_dg[_dg.length-1]; const _isCombo=_last&&String(_last[0]).indexOf('🧩')===0;
+            if(_isCombo&&_last[1]===0&&/^card-/.test(r.apCombo||''))
               _msg+=window._apCardFallback
                 ?'. Your 📋 card has no graded pairs yet, so the bot checked the proven starter pairs (🚀+🏦 · 🚀+🔷 · 🚀+🥇 · 🕵️+🏦) instead — none fired today. That is discipline, not a fault; it re-checks every day.'
                 :'. Your 📋 strict gate found no SOLID pairs on the card yet — tiers firm up as fires build. Switch to 📋 adaptive (trades from day one), a curated pair, or gate off.';
+            else if(_isCombo&&_last[1]===0&&r.apCombo){
+              const _b4=_dg.length>1?_dg[_dg.length-2][1]:0;
+              _msg+='. None of the '+_b4+' share'+(_b4===1?'':'s')+' that reached the gate fired '+_comboShort(r.apCombo)+' together today — tight pairs fire in clusters, so zero-days are normal and prove the gate is selective. For more daily action: set ⚙ source to the Smart Money list (a far bigger pond than the Top-20), or set the 🧩 combo gate off and let your signal ticks do the filtering.';
+            }
             else if(_last&&_last[1]===0&&_last[0]==='smart list')
               _msg+='. The Smart Money list itself was empty — either a quiet market day, or signals had not finished preparing when this ran.';
           } }catch(e){}
