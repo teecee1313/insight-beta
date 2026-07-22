@@ -1,5 +1,5 @@
 {
-  "version": "2026.07.16-365",
+  "version": "2026.07.16-366",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta build 2026.07.16-365 — thanks for testing! This copy updates separately from the released app. Anything odd, confusing or brilliant: use the ✉ feedback link in the top-left."
+  "notes": "Beta build 2026.07.16-366 — thanks for testing! FIXED: ↩ Undo saying 'Could not find that trade' on beta. It now finds the trade even while the auto-pilot is running AND even if the trade's recorded sell-date shifted since you closed it. Also new: 🧮 fix fees button (💼 Portfolio, next to ➕ add cash) resets an account's Fees Paid to what its trades actually add up to, and 💾 Backup now saves BOTH accounts in one file. Please re-test Undo and let me know via the ✉ feedback link. Hard-refresh (Ctrl+F5) to load it."
 }
