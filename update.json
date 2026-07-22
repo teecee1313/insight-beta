@@ -1,5 +1,5 @@
 {
-  "version": "2026.07.16-367",
+  "version": "2026.07.16-368",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta build 2026.07.16-367 — thanks for testing! CHANGED (you asked): the per-trade ↩ Undo button is now removed from beta (💼 Portfolio ▸ History). It stays on the customer app — this is a beta-only change. Everything else matches 366-beta (lenient Undo internals, 🧮 fix fees, backup saves both accounts). Hard-refresh (Ctrl+F5) to load it. Anything odd: use the ✉ feedback link top-left."
+  "notes": "Beta build 2026.07.16-368 — FASTER LOADING: beta now reuses your main app's price data instead of re-downloading the whole ASX market from scratch every visit — so once your customer app has loaded, beta loads much quicker. Your beta portfolio stays completely separate from your real account, exactly as before — ONLY prices are shared, never your holdings or trades. The first load after this update syncs once, then it's fast. Also in v368: the auto-pilot now waits for signals to fully prepare before it runs (fixes 'autobuy finds nothing'), plus a smoother sticky-column scroll. Hard-refresh (Ctrl+F5) to load it."
 }
