@@ -353,6 +353,7 @@ body.stat-over-modal #modalBox{margin-top:var(--soModalTop,150px)!important;max-
 .sl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;}
 .sdiv{width:1px;height:24px;background:var(--border);}
 .notice{padding:3px 9px;background:#162016;border:1px solid #2a3e2a;border-radius:4px;font-size:10px;color:#4a9a4a;white-space:nowrap;}
+body.pf-hideprofit .pf-pl{filter:blur(8px)!important;-webkit-filter:blur(8px)!important;cursor:pointer;user-select:none;transition:filter .12s;}
 .toolbar{padding:7px 14px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0;flex-wrap:wrap;}
 #searchBox{background:var(--bg2);border:1px solid var(--border2);border-radius:5px;padding:6px 11px;color:var(--text);font:13px var(--sans);width:220px;outline:none;}
 #searchBox:focus{border-color:var(--gold);}
@@ -421,11 +422,12 @@ thead{position:sticky;top:0;background:var(--bg2);z-index:10;}
 th{padding:8px 6px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;}
 th:hover{color:var(--gold);}
 td{padding:7px 6px;border-bottom:1px solid var(--border);white-space:nowrap;vertical-align:middle;}
-tr:hover td{background:rgba(255,255,255,.02);}
+.tblwrap table{background:var(--bg2);} /* v342: define the table backdrop so the transparent data cells match the sticky ticker column (no dark/light seam down the middle) */
+tr:hover td{background:var(--bg3);}
 /* v305: the results table can be wider than the window (many columns, zoomed
    displays). Freeze the Ticker/Name column so sideways scrolling never hides
    WHICH share a row is — same pattern as the portfolio tables on phones. */
-.tblwrap th:nth-child(3),.tblwrap td:nth-child(3){position:sticky;left:0;z-index:3;background:var(--bg);box-shadow:2px 0 6px rgba(0,0,0,.35);}
+.tblwrap th:nth-child(3),.tblwrap td:nth-child(3){position:sticky;left:0;z-index:3;background:var(--bg2);box-shadow:2px 0 6px rgba(0,0,0,.35);}
 .tblwrap thead th:nth-child(3){z-index:11;background:var(--bg2);}
 .tblwrap tbody tr:hover td:nth-child(3){background:var(--bg3);}
 body.theme-light .tblwrap th:nth-child(3),body.theme-light .tblwrap td:nth-child(3){box-shadow:2px 0 6px rgba(0,0,0,.12);}
@@ -516,14 +518,15 @@ body.theme-light .tblwrap th:nth-child(3),body.theme-light .tblwrap td:nth-child
   .right{min-height:60vh;}
   .stats{flex-wrap:wrap;}
   /* Table: keep the essentials, hide the dense columns.
-     Cols: 1 chk · 2 star · 3 ticker · 4 price · 5 change · 6 volSurge · 7 volume · 8 priceStreak · 9 volStreak · 10 accum · 11 score · 12 news · 13 signals */
+     v340 — Cols (14): 1 chk · 2 star · 3 ticker · 4 price · 5 change · 6 RANGE · 7 volSurge · 8 volume · 9 priceStreak · 10 volStreak · 11 accum · 12 score · 13 news · 14 signals.
+     Keep on phones: star, ticker, price, change, 📊 Range, score, news. (Indices were stale from before the Range column existed — they hid Range and the wrong columns.) */
   table:not(.hist) th:nth-child(1), table:not(.hist) td:nth-child(1),   /* checkbox */
-  table:not(.hist) th:nth-child(6), table:not(.hist) td:nth-child(6),   /* vol surge */
-  table:not(.hist) th:nth-child(7), table:not(.hist) td:nth-child(7),   /* volume detail */
-  table:not(.hist) th:nth-child(8), table:not(.hist) td:nth-child(8),   /* price streak */
-  table:not(.hist) th:nth-child(9), table:not(.hist) td:nth-child(9),   /* vol streak */
-  table:not(.hist) th:nth-child(10), table:not(.hist) td:nth-child(10), /* accumulation */
-  table:not(.hist) th:nth-child(13), table:not(.hist) td:nth-child(13){ /* signals */
+  table:not(.hist) th:nth-child(7), table:not(.hist) td:nth-child(7),   /* vol surge */
+  table:not(.hist) th:nth-child(8), table:not(.hist) td:nth-child(8),   /* volume detail */
+  table:not(.hist) th:nth-child(9), table:not(.hist) td:nth-child(9),   /* price streak */
+  table:not(.hist) th:nth-child(10), table:not(.hist) td:nth-child(10), /* vol streak */
+  table:not(.hist) th:nth-child(11), table:not(.hist) td:nth-child(11), /* accumulation */
+  table:not(.hist) th:nth-child(14), table:not(.hist) td:nth-child(14){ /* signals */
     display:none;
   }
   table th,table td{padding:9px 6px;font-size:13px;}
@@ -612,7 +615,7 @@ body.theme-light .tblwrap th:nth-child(3),body.theme-light .tblwrap td:nth-child
     <span>Insight<span style="color:var(--gold)"> Trading</span></span>
     <span style="font-size:9px;font-weight:600;letter-spacing:2px;color:var(--muted);">MARKET ANALYSER</span>
     <span id="appVer" style="font-size:8px;color:var(--dim);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;"></span>
-    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.07.16-337" style="color:#ff9142;">✉ feedback</a></span>
+    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.07.16-355" style="color:#ff9142;">✉ feedback</a></span>
   </div>
   <div class="hbadge" id="exchBadge">🌐 Multi-Exchange Screener</div>
   <div class="notice" id="notice" style="display:none">—</div>
@@ -682,7 +685,7 @@ body.theme-light .tblwrap th:nth-child(3),body.theme-light .tblwrap td:nth-child
       </select>
     </div>
     <div style="font-size:10.5px;color:var(--muted);background:rgba(88,166,255,.07);border:1px solid rgba(88,166,255,.25);border-radius:7px;padding:7px 9px;margin:8px 0 2px;line-height:1.5;">💡 <strong>Normal day = just press ⚡.</strong> Today's prices come from the internet, history comes instantly from this device, and anything missing is fetched once and saved automatically. ⬇ Download all is only for the FIRST setup (or a full rebuild). 📂 is for when you have no internet.</div>
-    <div class="step-sub2" style="margin-top:10px;">🌐 FROM THE INTERNET — today's live prices <span style="text-transform:none;font-weight:500;">(needs your API key)</span></div>
+    <div class="step-sub2" style="margin-top:10px;">🌐 FROM THE INTERNET — the latest end-of-day prices <span style="text-transform:none;font-weight:500;">(needs your API key)</span></div>
     <button id="loadBtn" onclick="loadData(true)">
       <div class="sp" id="sp"></div>
       <span id="loadLbl" data-i18n="loadData">⚡ Get today's prices (internet)</span>
@@ -1260,6 +1263,7 @@ body.theme-light .tblwrap th:nth-child(3),body.theme-light .tblwrap td:nth-child
     </div>
     <div id="simpleDataDate"></div>
     <div id="simpleStatus" class="simple-status"></div>
+    <button class="simple-fresh-btn" style="margin-top:10px;" onclick="exportOfflineData()" title="Export or back up this device's saved market data to a file — for safekeeping, to move to another device, or to send for analysis. On a computer it saves to your Downloads.">⬆ Export / back up my data</button>
     <button class="simple-more" onclick="setAppMode('advanced')">⚙ More tools &amp; settings →</button>
   </div>
 
@@ -1398,6 +1402,7 @@ body.theme-light .tblwrap th:nth-child(3),body.theme-light .tblwrap td:nth-child
     <button id="verifySelBtn" onclick="verifySelected()" title="Open the official announcements page for every share you've ticked — confirm the real filings" style="padding:7px 12px;border-radius:6px;border:1px solid var(--purple);background:rgba(188,140,255,.12);color:var(--purple);font:600 11px var(--sans);cursor:pointer;white-space:nowrap;">📄 Verify selected (0)</button>
     <button id="printSelBtn" onclick="printPDF('selected')" style="padding:7px 12px;border-radius:6px;border:1px solid var(--blue);background:rgba(56,139,253,.12);color:var(--blue);font:600 11px var(--sans);cursor:pointer;white-space:nowrap;">🖨 Print selected (0)</button>
     <button onclick="printPDF('all')" style="padding:7px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font:600 11px var(--sans);cursor:pointer;white-space:nowrap;">🖨 Print all shown</button>
+    <button onclick="exportOfflineData()" title="Export this device's saved market data to a file — a quick backup, to move it to another device, or to send for analysis. On desktop it saves straight to your Downloads." style="padding:7px 12px;border-radius:6px;border:1px solid var(--gold);background:rgba(255,210,0,.12);color:var(--gold);font:600 11px var(--sans);cursor:pointer;white-space:nowrap;">⬆ Export data</button>
     <div style="position:relative;display:inline-block;">
       <button onclick="toggleShareMenu(event)" style="padding:7px 12px;border-radius:6px;border:1px solid var(--green);background:rgba(63,185,80,.12);color:var(--green);font:600 11px var(--sans);cursor:pointer;white-space:nowrap;">📤 Share ▾</button>
       <div id="shareMenu" style="display:none;position:absolute;top:calc(100% + 4px);right:0;background:var(--bg2);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:50;min-width:190px;overflow:hidden;">
@@ -1485,7 +1490,7 @@ body.theme-light .tblwrap th:nth-child(3),body.theme-light .tblwrap td:nth-child
 // source into IndexedDB (first run of each version), keeping the last 8, so any
 // previous version can be re-downloaded as a working .html file ("versions"
 // link in Setup). Captured here, before scripts modify the page.
-const APP_VERSION='2026.07.16-337-beta';
+const APP_VERSION='2026.07.16-355-beta';
 // ── Make the app installable (PWA) without needing a separate manifest file ──
 // We build the manifest in-memory and attach it as a Blob URL, so the whole app
 // stays a single HTML file you can upload as-is. Phones/desktops then offer
@@ -3780,7 +3785,7 @@ function applyF(){
     window._statBase=filtered.slice();window._statBaseValid=true;
     filtered=filtered.filter(_statPass);
   }
-  render();statsBar();
+  render();setTimeout(statsBar,0); // v350: defer the radar-tile pass off applyF's critical path (it re-runs a whole-list count)
 }
 
 // Render
@@ -3982,7 +3987,7 @@ function render(){
   // because even a one-shot 1,000-row table is heavy to lay out on mobile; desktop
   // keeps 1,000. Users can always lift it via the "Show all" link. Once a user
   // chooses a cap this session (_rowCap set), we respect it.
-  const _defCap=(window.matchMedia&&window.matchMedia('(max-width:820px)').matches)?150:300; // v337: lower default cap — laying out 1,000+ complex rows was a multi-second block; Show all lifts it
+  const _defCap=(window.matchMedia&&window.matchMedia('(max-width:820px)').matches)?80:150; // v337: cap default rows (Show all lifts it); v350: lowered further — rows now stream in chunks, and a smaller default fills the visible list fast on phones
   const cap=(window._rowCap||_defCap);
   if(cnt>cap){
     document.getElementById('rcount').innerHTML=`${cnt.toLocaleString()} stocks (top ${cap.toLocaleString()} shown) · <a href="#" onclick="_showAllRows();return false;" style="color:var(--blue);font-weight:700;">Show all ${cnt.toLocaleString()}</a> <span style="font-size:9px;color:var(--dim)">(may be slower)</span>`;
@@ -4009,8 +4014,9 @@ function renderRows(rows){
   // write. The old version created 1000 <tr> elements and appended them one at a
   // time — on a phone every sort/filter re-render reflowed the page 1000× and
   // froze the UI. One innerHTML assignment is dramatically faster.
+  const _rr=(from,to)=>{
   let out='';
-  for(let ri=0;ri<rows.length;ri++){
+  for(let ri=from;ri<to;ri++){
     const s=rows[ri];
     const up=s.chgPct>0.005,dn=s.chgPct<-0.005;
     const bp=Math.min(Math.abs(s.volPct)/400*100,100);
@@ -4058,7 +4064,7 @@ function renderRows(rows){
 <td><div class="tick-wrap">
   <a href="${tu}" target="_blank" class="tick-link"><span class="tick-code">${s.ticker}</span><span style="font-size:9px;color:var(--dim)">↗</span></a>
   <span class="tick-name" title="${s.name}">${s.name}</span>
-  <div class="tick-links"><a href="${newsSearchFor(s.ticker,s.exchange,s.name)}" target="_blank" style="color:#ff9caa;font-weight:600;" title="Search the news for ${s.ticker}">📰 News</a><a href="${nu}" target="_blank">Announcements ↗</a><a href="#" onclick="deepDive('${s.ticker}');return false;" style="color:#c88bff;font-weight:600;">🔬 Deep dive</a><a href="#" onclick="showChart('${s.ticker}');return false;" style="color:var(--gold);">📈 Chart</a><a href="#" onclick="showShareDetail('${s.ticker}');return false;" style="color:var(--gold);">📊 History</a><a href="#" onclick="showTechnicals('${s.ticker}');return false;" style="color:#58a6ff;">📐 Technicals</a><a href="#" onclick="printShareReport('${s.ticker}');return false;" style="color:#e0a0ff;" title="One-page printable report for ${s.ticker}">🖨 Report</a><a href="#" onclick="paperBuy('${s.ticker}');return false;" style="color:var(--green);">💼 Buy</a><span class="exch-tag">${s.exchange}</span></div>${s._trendChip||''}
+  <div class="tick-links"><a href="#" onclick="deepDive('${s.ticker}');return false;" style="color:#c88bff;font-weight:600;" title="Everything about ${s.ticker} — signals, technicals, news & announcements in one panel">🔬 Deep dive</a><a href="#" onclick="showChart('${s.ticker}');return false;" style="color:var(--gold);">📈 Chart</a><a href="#" onclick="showShareDetail('${s.ticker}');return false;" style="color:var(--gold);">📊 History</a><a href="${nu}" target="_blank">📢 Announcements ↗</a><a href="#" onclick="printShareReport('${s.ticker}');return false;" style="color:#e0a0ff;" title="One-page printable report for ${s.ticker}">🖨 Report</a><a href="#" onclick="paperBuy('${s.ticker}');return false;" style="color:var(--green);">💼 Buy</a><span class="exch-tag">${s.exchange}</span></div>${s._trendChip||''}
 </div></td>
 <td><span class="pv">${fmtP(s.price,s.currency)}</span></td>
 <td><span class="cv ${up?'up':dn?'dn':'fl'}">${up?'+':''}${(s.chgPct||0).toFixed(2)}%</span><br>
@@ -4073,7 +4079,19 @@ function renderRows(rows){
 <td style="text-align:center;">${s.watchScore!=null?`<span style="font-family:var(--mono);font-size:13px;font-weight:800;color:${s.watchScore>=7?'var(--green)':s.watchScore>=4?'var(--gold)':s.watchScore>=2?'var(--orange)':'var(--muted)'}">${s.watchScore}</span><span style="font-size:8px;color:var(--dim)">/10</span>`:'<span style="color:var(--dim)">?</span>'}</td>
 <td>${newsTag}</td><td>${sg}</td></tr>`;
   }
-  tbody.innerHTML=out;   // single DOM write
+  return out;
+  };
+  // v350: chunked render — paint the top rows instantly, then stream the rest in
+  // idle batches so a large list never blocks the main thread (was a ~600ms freeze
+  // on every filter / sort / scan, and far worse on phones).
+  const FIRST=Math.min(rows.length,20);
+  tbody.innerHTML=_rr(0,FIRST);
+  window._rrToken=(window._rrToken||0)+1; const _tok=window._rrToken;
+  if(rows.length>FIRST){
+    let _i=FIRST; const _CH=30;
+    const _step=()=>{ if(_tok!==window._rrToken)return; const _to=Math.min(_i+_CH,rows.length); try{ tbody.insertAdjacentHTML('beforeend',_rr(_i,_to)); }catch(e){} _i=_to; if(_i<rows.length)setTimeout(_step,0); };
+    setTimeout(_step,0);
+  }
 }
 
 function sb(k){if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=k==='ticker'||k==='name'?1:-1;}document.getElementById('sortSel').value=k;render();}
@@ -4641,7 +4659,7 @@ function _rules(){
     maxPositions:Math.round(num(r.maxPositions,8)), minLiq:num(r.minLiq,0),
     trailPct:num(r.trailPct,fresh?8:0), bePct:num(r.bePct,fresh?5:0), maxHoldDays:Math.round(num(r.maxHoldDays,fresh?10:0)),
     apOn:(r.apOn===true), apSource:(r.apSource==='top20'?'top20':'smart'),
-    apMinScore:num(r.apMinScore,0), apQuietOnly:(r.apQuietOnly===true),
+    apMinScore:num(r.apMinScore,0), apMinPrice:num(r.apMinPrice,0), apMaxPrice:num(r.apMaxPrice,0), apQuietOnly:(r.apQuietOnly===true),
     apMaxBuys:Math.max(1,Math.min(3,Math.round(num(r.apMaxBuys,1)))),
     apAmt:num(r.apAmt,0), apGreenOnly:(fresh||r.apGreenOnly===true), apNoChaseRsi:(fresh||r.apNoChaseRsi===true), apMaxChasePct:num(r.apMaxChasePct,fresh?8:0), apCombo:(typeof r.apCombo==='string'?r.apCombo:''), apEntry:(r.apEntry==='dip'?'dip':'open'), apDipPct:num(r.apDipPct,0),
     apLadder:(r.apLadder===true),
@@ -4653,7 +4671,7 @@ function _rulesSave(r){
     maxPositions:Math.max(0,Math.round(+r.maxPositions||0)), minLiq:+r.minLiq||0,
     trailPct:+r.trailPct||0, bePct:+r.bePct||0, maxHoldDays:Math.max(0,Math.round(+r.maxHoldDays||0)),
     apOn:(r.apOn===true), apSource:(r.apSource==='top20'?'top20':'smart'),
-    apMinScore:+r.apMinScore||0, apQuietOnly:(r.apQuietOnly===true),
+    apMinScore:+r.apMinScore||0, apMinPrice:+r.apMinPrice||0, apMaxPrice:+r.apMaxPrice||0, apQuietOnly:(r.apQuietOnly===true),
     apMaxBuys:Math.max(1,Math.min(3,Math.round(+r.apMaxBuys||1))),
     apAmt:+r.apAmt||0, apGreenOnly:(r.apGreenOnly===true), apNoChaseRsi:(r.apNoChaseRsi===true), apMaxChasePct:+r.apMaxChasePct||0, apCombo:(typeof r.apCombo==='string'?r.apCombo:''), apEntry:(r.apEntry==='dip'?'dip':'open'), apDipPct:+r.apDipPct||0,
     apLadder:(r.apLadder===true),
@@ -4786,6 +4804,13 @@ function showRules(){
         <label style="font-size:10px;color:var(--muted);display:flex;align-items:flex-end;gap:6px;padding-bottom:8px;"><input type="checkbox" id="rApQuiet" ${r.apQuietOnly?'checked':''} style="width:15px;height:15px;">🔇 quiet only (no news 5d)</label>
         <label style="font-size:10px;color:var(--muted);">💵 $ per buy<input type="number" id="rApAmt" min="0" step="any" value="${r.apAmt||''}" placeholder="blank = 📦 % rule" style="width:100%;margin-top:3px;padding:7px;border-radius:6px;background:var(--bg3);border:1px solid var(--border);color:var(--text);box-sizing:border-box;"><span style="font-size:8.5px;color:var(--dim)">min $500 · capped by 📦</span></label>
       </div>
+      <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px 10px;font-size:9.5px;color:var(--muted);align-items:center;">
+        <span style="color:var(--dim)">💲 Only buy shares priced between</span>
+        <label style="display:flex;align-items:center;gap:3px;">$<input type="number" id="rApMinPx" min="0" step="any" value="${r.apMinPrice||''}" placeholder="any" style="width:66px;padding:4px;border-radius:5px;background:var(--bg3);border:1px solid var(--border);color:var(--text);"></label>
+        <span style="color:var(--dim)">and</span>
+        <label style="display:flex;align-items:center;gap:3px;">$<input type="number" id="rApMaxPx" min="0" step="any" value="${r.apMaxPrice||''}" placeholder="any" style="width:66px;padding:4px;border-radius:5px;background:var(--bg3);border:1px solid var(--border);color:var(--text);"></label>
+        <span style="font-size:8.5px;color:var(--dim)">blank = no limit · this share\u2019s last close</span>
+      </div>
       <div style="margin-top:10px;padding:8px 10px;border:1px solid var(--gold);border-radius:8px;background:rgba(255,210,0,.05);">
         <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text);font-weight:700;cursor:pointer;"><input type="checkbox" id="rApLadder" ${r.apLadder?'checked':''} style="width:15px;height:15px;">🪜 Auto-follow my report-card ladder</label>
         <div style="font-size:9px;color:var(--muted);margin-top:4px;line-height:1.5;">On = the bot ignores the manual ticks below and each day buys only shares firing the <b>top-rated PROVEN signals</b> on your 📋 report card (SOLID/PROMISING with a positive edge — never an unproven TOO-EARLY one), and its 🧩 combo gate follows the card's best pairs too. It re-reads the ladder every data day, so as flags prove or fade the bot follows — no re-ticking. ${(function(){ try{ var A=(window._auditCache&&window._auditCache.A)||null; var t=(window._apLadderNow&&window._apLadderNow.length)?window._apLadderNow:(A?_ladderTopSignals(A):null); var nm={bo:'🚀 Breakout',inf:'🕵️ Informed?',inst:'🏦 Inst?',cx:'⤴ MA cross',vr:'🥇 Vol record'}; if(t&&t.length)return '<b style="color:var(--gold)">Now leading: '+t.map(function(k){return nm[k]||k;}).join(', ')+'</b>'; if(!A)return '<span style="color:var(--dim)">Open your 📋 report card once today, then today’s leaders show here.</span>'; return '<span style="color:var(--dim)">No single flag is proven enough yet — until one is it leans on the combo gate starter pairs.</span>'; }catch(e){ return ''; } })()}</div>
@@ -4861,7 +4886,7 @@ function _rulesFromForm(){
   const g=id=>(document.getElementById(id)||{}).value;
   const chk=id=>((document.getElementById(id)||{}).checked===true);
   return { targetPct:g('rTgt'), stopPct:g('rStop'), maxPosPct:g('rMaxPos'), maxPositions:g('rMaxN'), minLiq:0, plan:g('rPlan'),
-    apSource:g('rApSrc')||_rules().apSource, apMinScore:g('rApScore'), apQuietOnly:chk('rApQuiet'), apMaxBuys:g('rApMax'), apAmt:g('rApAmt'), trailPct:g('rTrail'), bePct:g('rBE'), maxHoldDays:g('rHold'), apGreenOnly:chk('rApGreen'), apNoChaseRsi:chk('rApRsi'), apMaxChasePct:g('rApChase'), apCombo:((document.getElementById('rApComboSel')||{}).value||''), apEntry:(((document.getElementById('rApEntrySel')||{}).value)==='dip'?'dip':'open'), apDipPct:g('rApDip'),
+    apSource:g('rApSrc')||_rules().apSource, apMinScore:g('rApScore'), apMinPrice:g('rApMinPx'), apMaxPrice:g('rApMaxPx'), apQuietOnly:chk('rApQuiet'), apMaxBuys:g('rApMax'), apAmt:g('rApAmt'), trailPct:g('rTrail'), bePct:g('rBE'), maxHoldDays:g('rHold'), apGreenOnly:chk('rApGreen'), apNoChaseRsi:chk('rApRsi'), apMaxChasePct:g('rApChase'), apCombo:((document.getElementById('rApComboSel')||{}).value||''), apEntry:(((document.getElementById('rApEntrySel')||{}).value)==='dip'?'dip':'open'), apDipPct:g('rApDip'),
     apSignals:(document.getElementById('rApSig_bo')?['bo','inf','inst','cx','dir','vr'].filter(k=>chk('rApSig_'+k)):_rules().apSignals), apLadder:(document.getElementById('rApLadder')?chk('rApLadder'):_rules().apLadder) };
 }
 function saveRulesFromForm(){
@@ -5092,6 +5117,8 @@ function _apCandidates(r){
   (p.holdings||[]).forEach(h=>held.add(h.ticker)); (p.orders||[]).forEach(o=>held.add(o.ticker));
   const _D=[]; const _T=(lbl,pl)=>{ _D.push([lbl,pl.length]); return pl; }; // v316: funnel diagnostics
   let pool=_T('pool',(allData||[]).filter(s=>s&&s.price>0&&!held.has(s.ticker)&&_apLiqOk(s)));
+  if(+r.apMinPrice>0)pool=_T('≥$'+r.apMinPrice,pool.filter(s=>s.price>=+r.apMinPrice)); // v355: price band
+  if(+r.apMaxPrice>0)pool=_T('≤$'+r.apMaxPrice,pool.filter(s=>s.price<=+r.apMaxPrice));
   if(r.apSource==='top20'){ pool=_T('top-20',pool.filter(s=>s.watchScore!=null).sort((a,b)=>(b.watchScore||0)-(a.watchScore||0)).slice(0,20)); }
   else{ pool=_T('smart list',pool.filter(s=>s.streakCalced&&s.daysUp>=2&&s.volCalced&&s.volPct>=50)); }
   if(r.apMinScore>0)pool=_T('score≥'+r.apMinScore,pool.filter(s=>(s.watchScore||0)>=r.apMinScore));
@@ -5140,7 +5167,7 @@ function _apBuy(s,r){
     const dstop=(r.stopPct>0)?+(lim*(1-r.stopPct/100)).toFixed(lim<1?4:3):0;
     p.cash=+(p.cash-dcost).toFixed(2); _chargeFee(p); p.orders=p.orders||[];
     p.orders.push({id:'o'+Date.now()+'d'+Math.floor(Math.random()*1000),ticker:s.ticker,exchange:s.exchange,name:s.name||'',currency:s.currency,
-      limit:lim,qty:dq,reserved:dcost,placedDate:today,checkedDate:today,expiry:_orderExpiry(today),
+      limit:lim,qty:dq,reserved:dcost,placedDate:today,checkedDate:today,preOpen:_orderPreOpen(s.exchange),expiry:_orderExpiry(today),
       target:dtgt>0?dtgt:null,stop:dstop>0?dstop:null,note:'\ud83e\udd16 Auto-pilot dip entry (practice)',fee:fee||0,
       tgtLog:dtgt>0?[{d:_pfMktDate(s.exchange),ts:_pfStamp(),from:null,to:dtgt}]:[],stopLog:dstop>0?[{d:_pfMktDate(s.exchange),ts:_pfStamp(),from:null,to:dstop}]:[]});
     _paperSave(p);
@@ -5151,7 +5178,7 @@ function _apBuy(s,r){
   if(typeof realFillsOn==='function'&&realFillsOn()){
     p.orders=p.orders||[];
     p.orders.push({id:_id,ticker:s.ticker,exchange:s.exchange,name:s.name||'',currency:s.currency,
-      market:true,limit:0,qty:0,amount:cost,reserved:cost,placedDate:today,checkedDate:today,expiry:_orderExpiry(today),
+      market:true,limit:0,qty:0,amount:cost,reserved:cost,placedDate:today,checkedDate:today,preOpen:_orderPreOpen(s.exchange),expiry:_orderExpiry(today),
       target:tgt>0?tgt:null,stop:stop>0?stop:null,note:note,fee:fee||0,
       tgtLog:tgt>0?[{d:_pfMktDate(s.exchange),ts:_pfStamp(),from:null,to:tgt}]:[],stopLog:stop>0?[{d:_pfMktDate(s.exchange),ts:_pfStamp(),from:null,to:stop}]:[]});
   }else{
@@ -5267,7 +5294,7 @@ function _apPlacePick(s,r,k){
   const stop=k.stopAt>0?+k.stopAt:(r.stopPct>0?+(lim*(1-r.stopPct/100)).toFixed(4):0);
   p.cash=+(p.cash-cost).toFixed(2); _chargeFee(p); p.orders=p.orders||[];
   p.orders.push({id:'o'+Date.now()+'p'+Math.floor(Math.random()*1000),ticker:s.ticker,exchange:s.exchange,name:s.name||'',currency:s.currency,
-    limit:lim,qty:qty,reserved:cost,placedDate:today,checkedDate:today,expiry:_orderExpiry(today),
+    limit:lim,qty:qty,reserved:cost,placedDate:today,checkedDate:today,preOpen:_orderPreOpen(s.exchange),expiry:_orderExpiry(today),
     target:tgt>0?tgt:null,stop:stop>0?stop:null,note:'\ud83e\udd16 Auto-pilot pick (practice)',fee:fee||0,
     tgtLog:tgt>0?[{d:_pfMktDate(s.exchange),ts:_pfStamp(),from:null,to:tgt}]:[],stopLog:stop>0?[{d:_pfMktDate(s.exchange),ts:_pfStamp(),from:null,to:stop}]:[]});
   _paperSave(p);
@@ -5468,13 +5495,14 @@ function undoSale(sellDate,ticker,buyDate){
     const totQty=existing.qty+t.qty;
     existing.invested=+(existing.invested+t.invested).toFixed(2);
     existing.qty=totQty;
+    existing.noAuto=true; existing.stop=0; // v339: keep the restored lot — don't let a rule re-sell it
   } else {
     p.holdings.push({
       id:'h'+Date.now()+Math.random().toString(36).slice(2,6),
       ticker:t.ticker,exchange:t.exchange,name:t.name,currency:t.currency,
       qty:t.qty,buyPrice:t.buyPrice,buyDate:t.buyDate,invested:t.invested,
       lastPrice:t.buyPrice,lastDate:t.buyDate,
-      target:t.target||0,stop:0,note:t.note||null,
+      target:t.target||0,stop:0,note:t.note||null,noAuto:true,
       tgtChecked:_todayLocal() // don't re-scan history that caused the bad sell
     });
   }
@@ -5482,7 +5510,32 @@ function undoSale(sellDate,ticker,buyDate){
   p.history.splice(idx,1);
   _paperSave(_paperPrune(p));
   const ls=document.getElementById('loadStatus');
-  if(ls)ls.innerHTML=`<span style="color:var(--green)">↩ Undone — ${t.ticker} restored to your holdings and cash reversed.</span> Its stop-loss was cleared so it won't re-trigger; set a new one if you want.`;
+  if(ls)ls.innerHTML=`<span style="color:var(--green)">↩ Undone — ${t.ticker} restored to your holdings and cash reversed.</span> Auto-sell is paused on it so a rule can't sell it straight back; set a 🎯 or 🛑 on it to hand it back to your rules.`;
+  showPortfolio();
+}
+// v338 — batch reverse of EVERY auto-triggered sell in the current account (one
+// confirm). Same per-trade restore as undoSale (return shares, reverse cash, clear
+// the holding's stop + guard it from re-firing today). Rules are left untouched.
+function _undoAllAutoSells(){
+  const p=_paper();
+  const autos=(p.history||[]).map((t,i)=>({t,i})).filter(x=>x.t&&x.t.auto);
+  if(!autos.length){ alert('There are no auto-sold trades to restore in this account.'); return; }
+  const total=autos.reduce((a,x)=>a+(x.t.proceeds||0),0);
+  const cur=(autos[0].t.currency)||'AUD';
+  if(!confirm(`Restore all ${autos.length} auto-sold position${autos.length>1?'s':''}?\n\nThis returns every auto-sold holding to your portfolio and reverses ${fmtP(total,cur)} of sale proceeds back out of your cash. Auto-sell is then PAUSED on each restored position so a rule can't sell it straight back — it stays put until you set a 🎯 target or 🛑 stop on it (which hands that one back to your rules). Your global rules are unchanged.`))return;
+  autos.sort((a,b)=>b.i-a.i); // splice highest index first so earlier indexes stay valid
+  let n=0;
+  autos.forEach(({t,i})=>{
+    p.cash=+((p.cash||0)-(t.proceeds||0)).toFixed(2);
+    p.holdings=p.holdings||[];
+    const existing=p.holdings.find(h=>h.ticker===t.ticker&&h.exchange===t.exchange&&h.buyDate===t.buyDate&&h.buyPrice===t.buyPrice);
+    if(existing){ existing.invested=+(existing.invested+t.invested).toFixed(2); existing.qty=existing.qty+t.qty; existing.noAuto=true; existing.stop=0; }
+    else { p.holdings.push({id:'h'+Date.now()+Math.random().toString(36).slice(2,6),ticker:t.ticker,exchange:t.exchange,name:t.name,currency:t.currency,qty:t.qty,buyPrice:t.buyPrice,buyDate:t.buyDate,invested:t.invested,lastPrice:t.buyPrice,lastDate:t.buyDate,target:t.target||0,stop:0,note:t.note||null,noAuto:true,tgtChecked:_todayLocal()}); }
+    p.history.splice(i,1); n++;
+  });
+  _paperSave(_paperPrune(p));
+  const ls=document.getElementById('loadStatus');
+  if(ls)ls.innerHTML=`<span style="color:var(--green)">↩ Restored ${n} auto-sold position${n>1?'s':''}; cash reversed.</span> Auto-sell is paused on each so a rule can't sell them straight back — set a 🎯/🛑 on one to hand it back to your rules.`;
   showPortfolio();
 }
 async function checkAutoSellTargets(acct){
@@ -5491,8 +5544,13 @@ async function checkAutoSellTargets(acct){
   const apiKey=((document.getElementById('apiKey')||{}).value||'').trim();
   const p=_paper(ACCT);
   const R302=_rules();
-  const _trailOn=R302.enabled&&R302.trailPct>0, _beOn=R302.enabled&&R302.bePct>0, _timeOn=R302.enabled&&R302.maxHoldDays>0;
-  const targeted=(p.holdings||[]).filter(h=>h.target>0||h.stop>0||_trailOn||_beOn||_timeOn);
+  // v352: the automatic trailing / break-even / max-hold rules run on the 🤖 auto-pilot
+  // account ONLY. On your 👤 My Trading account a share is sold only by a stop or target you
+  // set, or a trailing stop you add to that holding yourself (h.trail). Nothing auto-sells
+  // your own shares unless you asked for it.
+  const _isAuto=(ACCT==='auto');
+  const _trailG=_isAuto&&R302.enabled&&R302.trailPct>0, _beG=_isAuto&&R302.enabled&&R302.bePct>0, _timeG=_isAuto&&R302.enabled&&R302.maxHoldDays>0;
+  const targeted=(p.holdings||[]).filter(h=>h.target>0||h.stop>0||(+h.trail>0)||_trailG||_beG||_timeG);
   if(!targeted.length)return [];
   window._tgtChecking=true;
   const autoSold=[];let changed=false;
@@ -5510,6 +5568,12 @@ async function checkAutoSellTargets(acct){
   try{
     for(const h of targeted.slice()){
       if(!_armed(h))continue; // skip holdings bought today — give them a day first
+      if(h.noAuto)continue; // v339: a restored (↩ undone) position — auto-sell is paused so it stays; a manual 🎯/🛑 re-arms it
+      const _mo=!!h.stopManual; // v351: a stop set by hand in the portfolio overrides the trail/break-even/time rules for THIS holding
+      // v352: per-holding rules — auto-pilot uses the global trail%; your own account trails a
+      // holding only if you opted it in (🪤 h.trail%). A manual 🛑 stop still overrides everything.
+      const _trPct=_isAuto?(_trailG?R302.trailPct:0):(+h.trail>0?+h.trail:0);
+      const _trailOn=_trPct>0, _beOn=_beG, _timeOn=_timeG;
       let hit=null; // {date, fill}
       if(apiKey){
         try{
@@ -5534,8 +5598,9 @@ async function checkAutoSellTargets(acct){
             let _peak=(h.peakClose>0?h.peakClose:(h.buyPrice>0?h.buyPrice:0));
             let _beArmed=(h.beArmed===true);
             const _dynStop=function(){ let s=(h.stop>0?h.stop:0);
+              if(_mo)return s; // v351: manual stop governs — rules don't override it
               if(_beOn&&_beArmed&&h.buyPrice>0)s=Math.max(s,h.buyPrice);
-              if(_trailOn&&_peak>0)s=Math.max(s,+((_peak*(1-R302.trailPct/100))).toFixed(4));
+              if(_trailOn&&_peak>0)s=Math.max(s,+((_peak*(1-_trPct/100))).toFixed(4));
               return s; };
             let _held=0;
             for(const day of days){
@@ -5543,7 +5608,7 @@ async function checkAutoSellTargets(acct){
               // Skip any day whose values look corrupt (out of a sane band).
               const oOK=_sane(day.o), hiOK=_sane(day.hi), loOK=_sane(day.lo), cOK=_sane(day.c);
               // ⏱ time stop — held past the limit: exit at this day's open
-              if(_timeOn&&_held>R302.maxHoldDays&&oOK){ hit={date:day.d,fill:day.o,why:'time'}; break; }
+              if(_timeOn&&!_mo&&_held>R302.maxHoldDays&&oOK){ hit={date:day.d,fill:day.o,why:'time'}; break; }
               const _stopNow=_dynStop();
               const _why=(_stopNow>(h.stop>0?h.stop:0)+1e-9)?'trail':(h.stopSrc==='trail'?'trail':'stop');
               // Stop (fixed / trailed / break-even) — checked first, conservative
@@ -5573,7 +5638,7 @@ async function checkAutoSellTargets(acct){
               if(_peak>(h.peakClose||0)){ h.peakClose=_peak; changed=true; }
               if(_beArmed&&h.beArmed!==true){ h.beArmed=true; changed=true; }
               const _ns=_dynStop();
-              if(_ns>(h.stop>0?h.stop:0)){ (h.stopLog=h.stopLog||[]).push({d:days[days.length-1].d,ts:_pfStamp(),from:(h.stop>0?h.stop:null),to:_ns,why:'trail'}); h.stop=_ns; h.stopSrc='trail'; }
+              if(!_mo&&_ns>(h.stop>0?h.stop:0)){ (h.stopLog=h.stopLog||[]).push({d:days[days.length-1].d,ts:_pfStamp(),from:(h.stop>0?h.stop:null),to:_ns,why:'trail'}); h.stop=_ns; h.stopSrc='trail'; }
             }
           }
         }catch(e){/* fall through to close check */}
@@ -5587,12 +5652,13 @@ async function checkAutoSellTargets(acct){
         if(_beOn&&h.beArmed!==true&&h.buyPrice>0&&h.lastPrice>=h.buyPrice*(1+R302.bePct/100)){ h.beArmed=true; changed=true; }
       }
       const _fbStop=(function(){ let s=(h.stop>0?h.stop:0);
+        if(_mo)return s; // v351: manual stop governs
         if(_beOn&&h.beArmed===true&&h.buyPrice>0)s=Math.max(s,h.buyPrice);
-        if(_trailOn&&(h.peakClose||0)>0)s=Math.max(s,+(((h.peakClose)*(1-R302.trailPct/100))).toFixed(4));
+        if(_trailOn&&(h.peakClose||0)>0)s=Math.max(s,+(((h.peakClose)*(1-_trPct/100))).toFixed(4));
         return s; })();
       if(!hit && _lpSane && h.target>0 && h.lastPrice>=h.target)hit={date:_todayLocal(),fill:h.lastPrice,why:'target'};
       if(!hit && _lpSane && _fbStop>0 && h.lastPrice<=_fbStop)hit={date:_todayLocal(),fill:h.lastPrice,why:((_fbStop>(h.stop>0?h.stop:0)+1e-9)||h.stopSrc==='trail')?'trail':'stop'};
-      if(!hit && _timeOn && _lpSane && h.buyDate){ const _cd=Math.floor((Date.now()-new Date(String(h.buyDate).slice(0,10)).getTime())/86400000);
+      if(!hit && _timeOn && !_mo && _lpSane && h.buyDate){ const _cd=Math.floor((Date.now()-new Date(String(h.buyDate).slice(0,10)).getTime())/86400000);
         if(_cd>R302.maxHoldDays+3) hit={date:_todayLocal(),fill:h.lastPrice,why:'time'}; }
       if(hit){
         if(hit.why==='stop'||hit.why==='trail')hit.fill=_slipSell(hit.fill);
@@ -5680,6 +5746,8 @@ function _mergeHoldings(hold){
       buyDate:g.lots.length>1?(g.firstBuy+' … '+g.lastBuy):g.firstBuy,
       target:g.targets.size===1?[...g.targets][0]:null,
       stop:g.stops.size===1?[...g.stops][0]:null,
+      stopManual:(g.lots.length>1?g.lots.every(l=>!!l.stopManual):!!(g.lots[0]&&g.lots[0].stopManual)), // v351
+      trail:(g.lots.length>1?(g.lots.every(l=>+l.trail>0)?+g.lots[0].trail:0):(+(g.lots[0]&&g.lots[0].trail)||0)), // v352
       mixedTargets:g.targets.size>1, mixedStops:g.stops.size>1,
       tgtLog:g.lots.reduce((a,l)=>((l.tgtLog||[]).length>((a||[]).length)?l.tgtLog:a),[]),
       stopLog:g.lots.reduce((a,l)=>((l.stopLog||[]).length>((a||[]).length)?l.stopLog:a),[]),
@@ -5859,7 +5927,7 @@ function paperBuyConfirm(ticker){
     _chargeFee(p);
     p.orders=p.orders||[];
     p.orders.push({id:'o'+Date.now(),ticker:s.ticker,exchange:s.exchange,name:s.name||'',currency:s.currency,
-      limit:lim,qty,reserved:cost,placedDate:today,checkedDate:today,expiry:_orderExpiry(today),target:tgt>0?tgt:null,stop:stop>0?stop:null,note:note||null,fee:fee||0,
+      limit:lim,qty,reserved:cost,placedDate:today,checkedDate:today,preOpen:_orderPreOpen(s.exchange),expiry:_orderExpiry(today),target:tgt>0?tgt:null,stop:stop>0?stop:null,note:note||null,fee:fee||0,
       tgtLog:tgt>0?[{d:_pfMktDate(s.exchange),ts:_pfStamp(),from:null,to:tgt}]:[],stopLog:stop>0?[{d:_pfMktDate(s.exchange),ts:_pfStamp(),from:null,to:stop}]:[]});
     _paperSave(p);closeModal();showPortfolio();
     return;
@@ -5871,7 +5939,7 @@ function paperBuyConfirm(ticker){
     _chargeFee(p);
     p.orders=p.orders||[];
     p.orders.push({id:'o'+Date.now(),ticker:s.ticker,exchange:s.exchange,name:s.name||'',currency:s.currency,
-      market:true,limit:0,qty:0,amount:cost,reserved:cost,placedDate:today,checkedDate:today,expiry:_orderExpiry(today),
+      market:true,limit:0,qty:0,amount:cost,reserved:cost,placedDate:today,checkedDate:today,preOpen:_orderPreOpen(s.exchange),expiry:_orderExpiry(today),
       target:tgt>0?tgt:null,stop:stop>0?stop:null,note:note||null,fee:fee||0,
       tgtLog:tgt>0?[{d:_pfMktDate(s.exchange),ts:_pfStamp(),from:null,to:tgt}]:[],stopLog:stop>0?[{d:_pfMktDate(s.exchange),ts:_pfStamp(),from:null,to:stop}]:[]});
     _paperSave(p);closeModal();showPortfolio();
@@ -5890,6 +5958,20 @@ function paperBuyConfirm(ticker){
   showPortfolio();
 }
 
+// v344: was this order placed BEFORE its exchange opened today? If so it works from the bell,
+// so a price point touched on the placement day itself counts as a same-day fill.
+function _orderPreOpen(exch){
+  try{
+    if((exch||'ASX')!=='ASX')return false; // only the ASX clock is modelled here
+    const f=new Intl.DateTimeFormat('en-US',{timeZone:'Australia/Sydney',hour12:false,weekday:'short',hour:'2-digit',minute:'2-digit'});
+    const parts={}; f.formatToParts(new Date()).forEach(p=>parts[p.type]=p.value);
+    const dow={Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6}[parts.weekday];
+    if(dow<1||dow>5)return false; // weekend — no session to be 'before'
+    let hh=parseInt(parts.hour,10); if(hh===24)hh=0;
+    const m=hh*60+parseInt(parts.minute,10);
+    return m<600; // before 10:00 Sydney = pre-open
+  }catch(e){ return false; }
+}
 // ═══ Pending limit-BUY fills: fill if a day's intraday LOW reached the limit ═══
 // (gapped-down opens fill at the open). Mirrors the sell-target logic.
 async function checkLimitOrders(acct){
@@ -5919,7 +6001,8 @@ async function checkLimitOrders(acct){
           if(rows&&rows.length){
             const days=rows.filter(d=>d.d>since||d.d===since).sort((a,b)=>a.d<b.d?-1:1);
             for(const day of days){
-              if(day.d<=o.placedDate)continue;
+              if(day.d<o.placedDate||(day.d===o.placedDate&&!o.preOpen))continue; // v344: pre-open orders work from the placement day
+
               if(o.market){ if(isFinite(day.o)&&day.o>0){hit={date:day.d,fill:day.o};break;} continue; }
               if(isFinite(day.o)&&day.o<=o.limit){hit={date:day.d,fill:day.o};break;} // gapped below → open
               if(isFinite(day.lo)&&day.lo<=o.limit){hit={date:day.d,fill:o.limit};break;} // dipped to limit
@@ -5930,8 +6013,8 @@ async function checkLimitOrders(acct){
       }
       // Fallback: last close at/below limit fills.
       if(!hit){const s=allData.find(x=>x.ticker===o.ticker);
-        if(s&&o.market&&s.price>0){const qd=(s._q&&s._q.d)||todayL;if(qd>o.placedDate)hit={date:qd,fill:s.price};}
-        else if(s&&!o.market&&s.price<=o.limit)hit={date:todayL,fill:Math.min(o.limit,s.price)};}
+        if(s&&o.market&&s.price>0){const qd=(s._q&&s._q.d)||todayL;if(qd>o.placedDate||(qd===o.placedDate&&o.preOpen))hit={date:qd,fill:s.price};}
+        else if(s&&!o.market&&s.price<=o.limit&&(todayL>o.placedDate||o.preOpen))hit={date:todayL,fill:Math.min(o.limit,s.price)};}
       if(hit){
         const qtyF=o.market?Math.floor((o.amount||o.reserved)/hit.fill):o.qty;
         if(qtyF<1){
@@ -5983,7 +6066,7 @@ function paperSetTarget(id){
   if(price!==null&&price<=(lots[0].lastPrice||avg)){
     if(!confirm('That target is at or below the current price — it will sell on the next check. Set it anyway?'))return;
   }
-  lots.forEach(l=>{_logExit(l,'tgt',l.target!=null?l.target:null,price);l.target=price;});
+  lots.forEach(l=>{_logExit(l,'tgt',l.target!=null?l.target:null,price);l.target=price;delete l.noAuto;});
   _paperSave(p);
   showPortfolio();
 }
@@ -6022,7 +6105,27 @@ function paperSetStop(id){
   if(price!==null&&price>=(lots[0].lastPrice||avg)){
     if(!confirm('That stop is at or above the current price — it will sell immediately on the next check. Set it anyway?'))return;
   }
-  lots.forEach(l=>{_logExit(l,'stop',l.stop!=null?l.stop:null,price);l.stop=price;});
+  lots.forEach(l=>{_logExit(l,'stop',l.stop!=null?l.stop:null,price);l.stop=price;delete l.noAuto;
+    if(price!=null&&price>0){ l.stopManual=true; l.stopSrc='manual'; delete l.trail; } else { delete l.stopManual; if(l.stopSrc==='manual')delete l.stopSrc; }}); // v352: a fixed stop clears any trailing stop // v351: a stop set here overrides the rules; clearing it hands the holding back to the rules
+  _paperSave(p);
+  showPortfolio();
+}
+// v352: give ONE holding a trailing stop (opt-in). Your other shares are never auto-sold
+// unless you add a stop, a target, or a trailing stop like this.
+function paperTrail(id){
+  const p=_paper();
+  const lots=_lotsFor(p,id);
+  if(!lots.length)return;
+  const cur=(lots.length===1&&+lots[0].trail>0)?+lots[0].trail:null;
+  const many=lots.length>1?`\n(applies to all ${lots.length} lots)`:'';
+  const def=cur?String(cur):String(_rules().trailPct||8);
+  const v=prompt(`🪤 Trailing stop for ${lots[0].ticker}${cur?` — now ${cur}%`:''}${many}\n\nSells this holding if it falls this % below its highest close from here on — the stop only ever rises, never falls. Applies to THIS holding only; your other shares aren\u2019t auto-sold unless you add one.\n\nEnter a percent (e.g. 8). Leave blank to remove.`, def);
+  if(v===null)return;
+  const t=String(v).trim();
+  if(t===''){ lots.forEach(l=>{ delete l.trail; if(l.stopSrc==='trail'){ l.stop=0; delete l.stopSrc; delete l.peakClose; } }); _paperSave(p); showPortfolio(); return; }
+  const pct=parseFloat(t.replace('%',''));
+  if(!(isFinite(pct)&&pct>0&&pct<90)){ alert('Enter a percent between 0 and 90 — for example 8.'); return; }
+  lots.forEach(l=>{ l.trail=+pct; delete l.noAuto; delete l.stopManual; if(l.stopSrc==='manual')delete l.stopSrc; if(!(+l.peakClose>0))l.peakClose=Math.max(+l.buyPrice||0,+l.lastPrice||0); });
   _paperSave(p);
   showPortfolio();
 }
@@ -6654,13 +6757,15 @@ function paperAcceptBalance(){
 
 // Portfolio + 1-year history panel (scoped to All or a single exchange).
 // v263: flip the portfolio between its two pages without a full re-render.
+function _pfHideProfit(){ try{return localStorage.getItem('BETA_asxScreener.pfHideProfit.v1')==='1';}catch(e){return false;} }
+function _pfToggleProfit(){ const on=!_pfHideProfit(); try{localStorage.setItem('BETA_asxScreener.pfHideProfit.v1',on?'1':'0');}catch(e){} try{document.body.classList.toggle('pf-hideprofit',on);}catch(e){} const b=document.getElementById('pfHideBtn'); if(b)b.textContent=on?'🙈 Show P/L':'👁 Hide P/L'; }
 function _setPfView(v){
   try{
-    window._pfView=(v==='history')?'history':'holdings';
-    const hv=document.getElementById('pfHoldingsView'), tv=document.getElementById('pfHistoryView');
-    if(hv)hv.style.display=(window._pfView==='holdings')?'block':'none';
-    if(tv)tv.style.display=(window._pfView==='history')?'block':'none';
-    ['holdings','history'].forEach(function(k){
+    const views=['holdings','pending','history','performance'];
+    window._pfView=views.indexOf(v)>=0?v:'holdings';
+    views.forEach(function(k){
+      const el=document.getElementById('pf'+k.charAt(0).toUpperCase()+k.slice(1)+'View');
+      if(el)el.style.display=(k===window._pfView)?'block':'none';
       const bb=document.getElementById('pfTab_'+k); if(!bb)return;
       const on=(k===window._pfView);
       bb.style.borderColor=on?'var(--gold)':'var(--border)';
@@ -6670,7 +6775,25 @@ function _setPfView(v){
     try{const sc=document.querySelector('#appModal .modal-scroll');if(sc)sc.scrollTop=0;}catch(e){}
   }catch(e){}
 }
+// v348: one ⋯ menu per holding row — keeps rows short. Actions reuse the existing paper* fns.
+function _pfCloseMenu(){ const m=document.getElementById('pfRowMenu'); if(m)m.remove(); }
+function _pfRowMenu(id,ev){
+  try{ if(ev){ev.stopPropagation(); ev.preventDefault();} }catch(e){}
+  _pfCloseMenu();
+  const item=(fn,label,color)=>`<button onclick="_pfCloseMenu();${fn}('${id}')" style="display:block;width:100%;text-align:left;padding:11px 14px;border:none;background:none;color:${color||'var(--text)'};font:600 12px var(--sans);cursor:pointer;border-bottom:1px solid var(--border);">${label}</button>`;
+  const m=document.createElement('div');
+  m.id='pfRowMenu';
+  m.style.cssText='position:fixed;z-index:100000;background:var(--bg2);border:1px solid var(--border);border-radius:9px;box-shadow:0 10px 30px rgba(0,0,0,.55);overflow:hidden;min-width:190px;';
+  m.innerHTML=item('paperSetTarget','🎯 Set / change target','var(--gold)')+item('paperSetStop','🛑 Set / change stop','#ff9caa')+item('paperTrail','🪤 Trailing stop (this share)','var(--green)')+item('paperSetNote','📝 Add / edit note','var(--blue)')+item('paperSellMarket','💵 Sell all @ market','#ff9caa')+item('paperSell','✂ Sell part…','var(--muted)');
+  document.body.appendChild(m);
+  try{ const r=m.getBoundingClientRect(); const x=ev?ev.clientX:80, y=ev?ev.clientY:80;
+    m.style.left=Math.max(6,Math.min(x, window.innerWidth-r.width-8))+'px';
+    m.style.top=Math.max(6,Math.min(y, window.innerHeight-r.height-8))+'px';
+  }catch(e){}
+  setTimeout(()=>document.addEventListener('click',_pfCloseMenu,{once:true}),0);
+}
 function showPortfolio(exSel){
+  try{document.body.classList.toggle('pf-hideprofit',_pfHideProfit());}catch(e){}
   if(exSel)window._pfExSel=exSel;
   updatePaperPrices();
   if(!window._tgtChecking)checkAutoSellTargets().then(sold=>{if(sold&&sold.length)showPortfolio();});
@@ -6688,19 +6811,26 @@ function showPortfolio(exSel){
   // Exchange tabs from whatever exchanges appear in holdings/history.
   const exs=[...new Set([...(p.holdings||[]),...(p.history||[])].map(x=>x.exchange).filter(Boolean))].sort();
   const tabs=['ALL',...exs].map(e=>`<button onclick="showPortfolio('${e}')" style="padding:4px 10px;border-radius:5px;border:1px solid ${e===ex?'var(--gold)':'var(--border)'};background:${e===ex?'rgba(255,210,0,.15)':'var(--bg3)'};color:${e===ex?'var(--gold)':'var(--muted)'};font:600 10px var(--sans);cursor:pointer;">${e==='ALL'?'All':e}</button>`).join('');
+  // v348: sort holdings per the user's pick (default: biggest % gain first)
+  const _pfSort=window._pfSort||'plpct';
+  const _hpx=h=>h.lastPrice||h.buyPrice, _hval=h=>h.qty*_hpx(h), _hpl=h=>_hval(h)-h.invested;
+  const _pfSorters={plpct:(a,b)=>(_hpl(b)/(b.invested||1))-(_hpl(a)/(a.invested||1)),pl:(a,b)=>_hpl(b)-_hpl(a),val:(a,b)=>_hval(b)-_hval(a),name:(a,b)=>a.ticker<b.ticker?-1:a.ticker>b.ticker?1:0,buy:(a,b)=>(a.buyDate<b.buyDate?1:a.buyDate>b.buyDate?-1:0)};
+  try{ hold.sort(_pfSorters[_pfSort]||_pfSorters.plpct); }catch(e){}
+  const _pfSortControl=`<div style="display:flex;justify-content:flex-end;align-items:center;gap:6px;margin-bottom:6px;font-size:10px;color:var(--muted);"><span>Sort by</span><select onchange="window._pfSort=this.value;showPortfolio();" style="font-size:10px;padding:3px 6px;border-radius:5px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);cursor:pointer;">`+
+    [['plpct','P/L %'],['pl','P/L $'],['val','Value'],['name','Name A–Z'],['buy','Newest buy']].map(o=>`<option value="${o[0]}"${_pfSort===o[0]?' selected':''}>${o[1]}</option>`).join('')+`</select></div>`;
   let totInv=0,totVal=0;
   const rows=hold.map(h=>{
     const px=h.lastPrice||h.buyPrice, val=h.qty*px, pl=val-h.invested, plp=h.invested>0?(pl/h.invested)*100:0;
     totInv+=h.invested;totVal+=val;
     const c=pl>0.005?'var(--green)':pl<-0.005?'var(--red)':'var(--muted)';
     return `<tr>
-      <td style="padding:5px 6px;"><strong><a href="#" onclick="printShareReport('${h.ticker}');return false;" title="Open the printable report for ${h.ticker}" style="color:var(--gold);text-decoration:underline;text-decoration-style:dotted;cursor:pointer;">${h.ticker} 🖨</a></strong>${h.grouped?` <span style="font-size:7px;font-weight:700;color:var(--gold);border:1px solid var(--gold);border-radius:8px;padding:0 5px;vertical-align:middle;" title="${h.lotCount} separate purchases combined into one line at the average buy price">${h.lotCount} lots · avg</span>`:''}<br><span style="font-size:8px;color:var(--muted)">${h.exchange} · 📅 ${h.grouped?'bought <strong style="color:var(--text)">'+h.buyDate+'</strong>':'bought <strong style="color:var(--text)">'+h.buyDate+'</strong> · held '+tradingDaysHeld(h.buyDate,_todayLocal())+' trading days'}</span>${h.mixedTargets?'<br><span style="font-size:8px;color:var(--dim)">🎯 mixed across lots — set one to unify</span>':h.target?`<br><span style="font-size:8px;color:var(--gold)">🎯 ${fmtP(h.target,h.currency)} <span style="color:var(--dim)">(+${(((h.target-h.buyPrice)/h.buyPrice)*100).toFixed(1)}%)</span></span>`:''}${h.mixedStops?'<br><span style="font-size:8px;color:var(--dim)">🛑 mixed across lots — set one to unify</span>':h.stop?`${h.target?' ':'<br>'}<span style="font-size:8px;color:#ff9caa">🛑 ${fmtP(h.stop,h.currency)} <span style="color:var(--dim)">(-${(((h.buyPrice-h.stop)/h.buyPrice)*100).toFixed(1)}%)</span></span>`:''}${h.note?`<br><span style="font-size:8px;color:#8fa6c9;font-style:italic" title="${String(h.note).replace(/"/g,'&quot;')}">📝 ${String(h.note).slice(0,44)}${h.note.length>44?'…':''}</span>`:''}</td>
+      <td style="padding:5px 6px;"><strong><a href="#" onclick="printShareReport('${h.ticker}');return false;" title="Open the printable report for ${h.ticker}" style="color:var(--gold);text-decoration:underline;text-decoration-style:dotted;cursor:pointer;">${h.ticker} 🖨</a></strong>${h.grouped?` <span style="font-size:7px;font-weight:700;color:var(--gold);border:1px solid var(--gold);border-radius:8px;padding:0 5px;vertical-align:middle;" title="${h.lotCount} separate purchases combined into one line at the average buy price">${h.lotCount} lots · avg</span>`:''}<br><span style="font-size:8px;color:var(--muted)">${h.exchange} · 📅 ${h.grouped?'bought <strong style="color:var(--text)">'+h.buyDate+'</strong>':'bought <strong style="color:var(--text)">'+h.buyDate+'</strong> · held '+tradingDaysHeld(h.buyDate,_todayLocal())+' trading days'}</span>${h.mixedTargets?'<br><span style="font-size:8px;color:var(--dim)">🎯 mixed across lots — set one to unify</span>':h.target?`<br><span style="font-size:8px;color:var(--gold)">🎯 ${fmtP(h.target,h.currency)} <span style="color:var(--dim)">(+${(((h.target-h.buyPrice)/h.buyPrice)*100).toFixed(1)}%)</span></span>`:''}${h.mixedStops?'<br><span style="font-size:8px;color:var(--dim)">🛑 mixed across lots — set one to unify</span>':h.stop?`${h.target?' ':'<br>'}<span style="font-size:8px;color:#ff9caa">🛑 ${fmtP(h.stop,h.currency)} <span style="color:var(--dim)">(-${(((h.buyPrice-h.stop)/h.buyPrice)*100).toFixed(1)}%)</span>${h.stopManual?' <span style="color:var(--gold);font-weight:700;" title="You set this stop by hand — it overrides your auto-sell rules (the trailing / break-even / time rules won\u2019t change it). Clear the stop to hand this holding back to the rules.">🔒 fixed</span>':''}</span>`:''}${(+h.trail>0)?`<br><span style="font-size:8px;color:var(--green)">🪤 trailing ${h.trail}% <span style="color:var(--dim)">(only this share)</span></span>`:''}${h.note?`<br><span style="font-size:8px;color:#8fa6c9;font-style:italic" title="${String(h.note).replace(/"/g,'&quot;')}">📝 ${String(h.note).slice(0,44)}${h.note.length>44?'…':''}</span>`:''}</td>
       <td style="text-align:right;padding:5px 6px;font-family:var(--mono);">${h.qty.toLocaleString()}</td>
       <td style="text-align:right;padding:5px 6px;font-family:var(--mono);">${fmtP(h.buyPrice,h.currency)}</td>
       <td style="text-align:right;padding:5px 6px;font-family:var(--mono);">${fmtP(px,h.currency)}<br><span style="font-size:8px;color:var(--dim)">${h.lastDate||''}</span></td>
       <td style="text-align:right;padding:5px 6px;font-family:var(--mono);">${fmtP(val,h.currency)}</td>
-      <td style="text-align:right;padding:5px 6px;font-family:var(--mono);color:${c};">${pl>=0?'+':''}${pl.toFixed(2)}<br><span style="font-size:9px;">${plp>=0?'+':''}${plp.toFixed(2)}%</span></td>
-      <td style="text-align:center;padding:5px 6px;white-space:nowrap;"><button onclick="paperSetTarget('${h.id}')" title="Set / change take-profit sell price${(h.tgtLog&&h.tgtLog.length)?' — history: '+_exitLogText(h,'tgt'):''}" style="padding:4px 7px;border-radius:5px;border:1px solid ${h.target?'var(--gold)':'var(--border)'};background:${h.target?'rgba(255,210,0,.12)':'var(--bg3)'};color:${h.target?'var(--gold)':'var(--muted)'};font:600 10px var(--sans);cursor:pointer;">🎯${_exitChangeCount(h,'tgt')?'<sup style="font-size:7px;color:var(--gold);font-weight:800;">'+_exitChangeCount(h,'tgt')+'</sup>':''}</button> <button onclick="paperSetStop('${h.id}')" title="Set / change stop-loss${(h.stopLog&&h.stopLog.length)?' — history: '+_exitLogText(h,'stop'):''}" style="padding:4px 7px;border-radius:5px;border:1px solid ${h.stop?'var(--red)':'var(--border)'};background:${h.stop?'rgba(226,25,55,.12)':'var(--bg3)'};color:${h.stop?'#ff9caa':'var(--muted)'};font:600 10px var(--sans);cursor:pointer;">🛑${_exitChangeCount(h,'stop')?'<sup style="font-size:7px;color:#ff9caa;font-weight:800;">'+_exitChangeCount(h,'stop')+'</sup>':''}</button> <button onclick="paperSetNote('${h.id}')" title="Add / edit the trade note (why you bought)" style="padding:4px 7px;border-radius:5px;border:1px solid ${h.note?'var(--blue)':'var(--border)'};background:${h.note?'rgba(88,166,255,.10)':'var(--bg3)'};color:${h.note?'var(--blue)':'var(--muted)'};font:600 10px var(--sans);cursor:pointer;">📝</button> <button onclick="paperSellMarket('${h.id}')" title="Sell the whole holding now at the last close" style="padding:4px 8px;border-radius:5px;border:1px solid var(--red);background:rgba(226,25,55,.18);color:#ff9caa;font:600 10px var(--sans);cursor:pointer;">Sell @ mkt</button> <button onclick="paperSell('${h.id}')" title="Sell part or all — choose quantity" style="padding:4px 7px;border-radius:5px;border:1px solid var(--border2);background:var(--bg3);color:var(--muted);font:600 10px var(--sans);cursor:pointer;">Part…</button></td>
+      <td class="pf-pl" style="text-align:right;padding:5px 6px;font-family:var(--mono);color:${c};">${pl>=0?'+':''}${pl.toFixed(2)}<br><span style="font-size:9px;">${plp>=0?'+':''}${plp.toFixed(2)}%</span></td>
+      <td style="text-align:center;padding:4px 6px;white-space:nowrap;"><button onclick="_pfRowMenu('${h.id}',event)" title="Actions — target, stop, note, sell" style="padding:3px 11px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font:800 15px var(--sans);cursor:pointer;line-height:1;">⋯</button></td>
     </tr>`;
   }).join('');
   // Mobile stacked-card version of the same holdings (CSS shows this on phones,
@@ -6710,15 +6840,15 @@ function showPortfolio(exSel){
     const px=h.lastPrice||h.buyPrice, val=h.qty*px, pl=val-h.invested, plp=h.invested>0?(pl/h.invested)*100:0;
     const c=pl>0.005?'var(--green)':pl<-0.005?'var(--red)':'var(--muted)';
     const tgt=h.target?`🎯 ${fmtP(h.target,h.currency)}`:'';
-    const stp=h.stop?`🛑 ${fmtP(h.stop,h.currency)}`:'';
+    const stp=h.stop?`🛑 ${fmtP(h.stop,h.currency)}${h.stopManual?' 🔒':''}`:'';
     const note=h.note?`<div style="font-size:10px;color:#8fa6c9;font-style:italic;margin-top:4px;">📝 ${String(h.note).slice(0,60)}${h.note.length>60?'…':''}</div>`:'';
     const btn=(fn,arg,title,label,style)=>`<button onclick="${fn}('${arg}')" title="${title}" style="${style}">${label}</button>`;
     return `<div class="pf-card">
       <div class="pf-card-top">
         <strong style="font-size:13px;"><a href="#" onclick="printShareReport('${h.ticker}');return false;" style="color:var(--gold);text-decoration:underline;text-decoration-style:dotted;">${h.ticker} 🖨</a></strong>
-        <span style="font-family:var(--mono);font-weight:800;color:${c};font-size:13px;">${pl>=0?'+':''}${pl.toFixed(2)} (${plp>=0?'+':''}${plp.toFixed(1)}%)</span>
+        <span class="pf-pl" style="font-family:var(--mono);font-weight:800;color:${c};font-size:13px;">${pl>=0?'+':''}${pl.toFixed(2)} (${plp>=0?'+':''}${plp.toFixed(1)}%)</span>
       </div>
-      <div style="font-size:9px;color:var(--muted);margin-bottom:6px;">${h.exchange} · bought ${h.buyDate}${h.grouped?` · ${h.lotCount} lots avg`:''}${tgt?' · '+tgt:''}${stp?' · '+stp:''}</div>
+      <div style="font-size:9px;color:var(--muted);margin-bottom:6px;">${h.exchange} · bought ${h.buyDate}${h.grouped?` · ${h.lotCount} lots avg`:''}${tgt?' · '+tgt:''}${stp?' · '+stp:''}${(+h.trail>0)?' · 🪤 '+h.trail+'%':''}</div>
       <div class="pf-card-grid">
         <div><span>Qty</span> <b>${h.qty.toLocaleString()}</b></div>
         <div><span>Buy</span> <b>${fmtP(h.buyPrice,h.currency)}</b></div>
@@ -6735,6 +6865,18 @@ function showPortfolio(exSel){
     </div>`;
   }).join('');
   const totPl=totVal-totInv, totC=totPl>0.005?'var(--green)':totPl<-0.005?'var(--red)':'var(--muted)';
+  // v348: always-visible key numbers (above the tabs, on every view) + pending count
+  const _pfCashNow=p.cash||0, _pfResvNow=_reservedSum(p), _pfAcctNow=_pfCashNow+_pfResvNow+totVal;
+  const _pfPc=x=>x>0.005?'var(--green)':x<-0.005?'var(--red)':'var(--muted)';
+  const _fmtN=x=>'$'+Number(x).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  const _ordN=(p.orders||[]).filter(o=>ex==='ALL'||o.exchange===ex).length;
+  const keyStrip=`<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 13px;margin-bottom:10px;">
+    <div><div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Account</div><div style="font-family:var(--mono);font-weight:800;font-size:15px;color:var(--text);">${_fmtN(_pfAcctNow)}</div></div>
+    <div><div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">💵 Cash</div><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text);">${_fmtN(_pfCashNow)}</div></div>
+    ${_pfResvNow>0.005?`<div><div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">⏳ Reserved</div><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text);">${_fmtN(_pfResvNow)}</div></div>`:''}
+    <div><div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Open P/L</div><div class="pf-pl" style="font-family:var(--mono);font-weight:800;font-size:15px;color:${_pfPc(totPl)};">${totPl>=0?'+':''}${totPl.toFixed(2)}</div></div>
+    <button id="pfHideBtn" onclick="_pfToggleProfit()" title="Hide or show your profit/loss figures in the portfolio" style="margin-left:auto;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--muted);font:600 10px var(--sans);cursor:pointer;white-space:nowrap;">${_pfHideProfit()?'🙈 Show P/L':'👁 Hide P/L'}</button>
+  </div>`;
   const histRows=hist.map(t=>{
     const c=t.plAbs>0.005?'var(--green)':t.plAbs<-0.005?'var(--red)':'var(--muted)';
     const _nowS=(allData||[]).find(x=>x.ticker===t.ticker&&x.exchange===t.exchange);
@@ -6753,6 +6895,7 @@ function showPortfolio(exSel){
     </tr>`;
   }).join('');
   const closedPl=hist.reduce((a,t)=>a+(t.plAbs||0),0);
+  const _autoN=((p.history||[]).filter(t=>t&&t.auto)).length; // v338: auto-sold positions available to restore
   const pv=window._pfView||'holdings';       // v263: which portfolio page is showing
   window._modalBig=true;                    // portfolio opens large by default
   window._modalLabel='💼 Portfolio (paper trading)';
@@ -6761,15 +6904,47 @@ function showPortfolio(exSel){
     <div style="font-size:9px;color:var(--orange);margin:4px 0 10px;">Simulated trades at end-of-day closes · practice only, not real money, not advice. Prices update each time the day's data loads.</div>
     ${paperBalanceInconsistent()?`<div style="border:1px solid var(--orange);background:rgba(255,165,0,.10);border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:10px;color:var(--orange);">⚠ <strong>Your cash is ${(function(){const d=_paperLedgerDiff(_paper())-((_paper().ledgerBase)||0);return (d>=0?'+$':'-$')+Math.abs(d).toLocaleString(undefined,{minimumFractionDigits:2});})()} off what the trade ledger expects</strong>, so the return % may mislead. Usually this is history from an older version or a restore — not today's trades. If the balance shown IS what you expect, accept it and the app only warns again if something NEW drifts: <button onclick="paperAcceptBalance()" style="margin-left:6px;padding:4px 10px;border-radius:5px;border:1px solid var(--green);background:rgba(63,185,80,.14);color:var(--green);font:700 10px var(--sans);cursor:pointer;">✓ This balance is right — stop warning</button> <span style="color:var(--dim)">or</span> <button onclick="paperRepairBalance()" style="margin-left:4px;padding:4px 10px;border-radius:5px;border:1px solid var(--orange);background:rgba(255,165,0,.15);color:var(--orange);font:700 10px var(--sans);cursor:pointer;">💰 Set starting balance</button> <span style="color:var(--dim)">(tip: use ➕ add cash when adding money — it keeps the % honest)</span></div>`:''}
     ${acctTabs}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">${tabs}</div>
-    <div style="display:flex;gap:6px;margin-bottom:12px;">
-      <button onclick="_setPfView('holdings')" id="pfTab_holdings" style="flex:1;padding:8px;border-radius:7px;border:1px solid ${pv==='holdings'?'var(--gold)':'var(--border)'};background:${pv==='holdings'?'rgba(255,210,0,.14)':'var(--bg3)'};color:${pv==='holdings'?'var(--gold)':'var(--muted)'};font:700 11px var(--sans);cursor:pointer;">📊 Holdings &amp; summary (${hold.length})</button>
-      <button onclick="_setPfView('history')" id="pfTab_history" style="flex:1;padding:8px;border-radius:7px;border:1px solid ${pv==='history'?'var(--gold)':'var(--border)'};background:${pv==='history'?'rgba(255,210,0,.14)':'var(--bg3)'};color:${pv==='history'?'var(--gold)':'var(--muted)'};font:700 11px var(--sans);cursor:pointer;">📜 Trade history (${hist.length})</button>
+    ${keyStrip}
+    <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+      <button onclick="_setPfView('holdings')" id="pfTab_holdings" style="flex:1;min-width:110px;padding:8px;border-radius:7px;border:1px solid ${pv==='holdings'?'var(--gold)':'var(--border)'};background:${pv==='holdings'?'rgba(255,210,0,.14)':'var(--bg3)'};color:${pv==='holdings'?'var(--gold)':'var(--muted)'};font:700 11px var(--sans);cursor:pointer;">📊 Holdings (${hold.length})</button>
+      <button onclick="_setPfView('pending')" id="pfTab_pending" style="flex:1;min-width:110px;padding:8px;border-radius:7px;border:1px solid ${pv==='pending'?'var(--gold)':'var(--border)'};background:${pv==='pending'?'rgba(255,210,0,.14)':'var(--bg3)'};color:${pv==='pending'?'var(--gold)':'var(--muted)'};font:700 11px var(--sans);cursor:pointer;">⏳ Pending (${_ordN})</button>
+      <button onclick="_setPfView('history')" id="pfTab_history" style="flex:1;min-width:110px;padding:8px;border-radius:7px;border:1px solid ${pv==='history'?'var(--gold)':'var(--border)'};background:${pv==='history'?'rgba(255,210,0,.14)':'var(--bg3)'};color:${pv==='history'?'var(--gold)':'var(--muted)'};font:700 11px var(--sans);cursor:pointer;">📜 History (${hist.length})</button>
+      <button onclick="_setPfView('performance')" id="pfTab_performance" style="flex:1;min-width:110px;padding:8px;border-radius:7px;border:1px solid ${pv==='performance'?'var(--gold)':'var(--border)'};background:${pv==='performance'?'rgba(255,210,0,.14)':'var(--bg3)'};color:${pv==='performance'?'var(--gold)':'var(--muted)'};font:700 11px var(--sans);cursor:pointer;">📈 Performance</button>
     </div>
     <div id="pfHoldingsView" style="display:${pv==='holdings'?'block':'none'};">
+    ${hold.length?_pfSortControl:''}
+    <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px;">Current holdings${ex==='ALL'?'':' · '+ex} (${hold.length})</div>
+    ${hold.length?`<div class="pf-tablewrap" style="max-height:46vh;overflow:auto;border:1px solid var(--border);border-radius:8px;">
+      <table class="pf-holdings" style="width:100%;border-collapse:collapse;font-size:10px;">
+        <thead><tr style="position:sticky;top:0;background:var(--bg2);"><th style="text-align:left;padding:5px 6px;">Share</th><th style="text-align:right;padding:5px 6px;">Qty</th><th style="text-align:right;padding:5px 6px;">Buy</th><th style="text-align:right;padding:5px 6px;">Now</th><th style="text-align:right;padding:5px 6px;">Value</th><th style="text-align:right;padding:5px 6px;">P/L</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+      <div class="pf-cards">${cards}</div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;margin:6px 2px;color:var(--muted);">
+        <span>Invested: <strong style="color:var(--text)">${totInv.toFixed(2)}</strong></span>
+        <span>Value: <strong style="color:var(--text)">${totVal.toFixed(2)}</strong></span>
+        <span>Open P/L: <strong class="pf-pl" style="color:${totC}">${totPl>=0?'+':''}${totPl.toFixed(2)}</strong></span>
+      </div>`
+    :`<div style="font-size:10px;color:var(--muted);padding:10px;border:1px dashed var(--border);border-radius:8px;text-align:center;">No holdings${ex==='ALL'?'':' on '+ex} yet — use 💼 Buy on any share row.</div>`}
+
+    </div>
+    <div id="pfPendingView" style="display:${pv==='pending'?'block':'none'};">
+    ${(function(){
+      const ords=(p.orders||[]).filter(o=>ex==='ALL'||o.exchange===ex);
+      if(!ords.length)return '<div style="font-size:10px;color:var(--muted);padding:12px;border:1px dashed var(--border);border-radius:8px;text-align:center;">No pending orders. Place a limit or market buy from any share\'s 💼 Buy button — it\'ll wait here until it fills or expires.</div>';
+      const rows=ords.map(o=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--border2);border-radius:6px;margin-bottom:5px;background:rgba(88,166,255,.05);">
+        <div><strong style="color:var(--text);font-size:11px;">${o.ticker}</strong> <span style="font-size:9px;color:var(--muted)">${o.market?`market buy ~${fmtP(o.amount||o.reserved,o.currency)} at next open`:`limit buy ${o.qty} @ ${fmtP(o.limit,o.currency)}`}</span>${o.target?`<br><span style="font-size:8px;color:var(--gold)">🎯 ${fmtP(o.target,o.currency)}</span>`:''}${o.stop?` <span style="font-size:8px;color:#ff9caa">🛑 ${fmtP(o.stop,o.currency)}</span>`:''}</div>
+        <div style="text-align:right;"><span style="font-size:9px;color:var(--muted)">${fmtP(o.reserved,o.currency)} held</span>${o.expiry?`<br><span style="font-size:8px;color:var(--dim)">expires ${o.expiry}</span>`:''}<br><a href="#" onclick="paperCancelOrder('${o.id}');return false;" style="font-size:9px;color:#ff9caa;">cancel</a></div>
+      </div>`).join('');
+      return `<div style="margin:10px 0 4px;font-size:10px;color:var(--blue);font-weight:700;">⏳ Pending orders (${ords.length})</div>${rows}<div style="font-size:8px;color:var(--dim);margin-bottom:4px;">Limit orders fill when a day's low reaches your limit · market orders fill at the next day's open. Reserved cash returns on fill, cancel or expiry (${ORDER_EXPIRY_DAYS} days).</div>`;
+    })()}
+
+    </div>
+    <div id="pfPerformanceView" style="display:${pv==='performance'?'block':'none'};">
     ${(hold.length||hist.length)?(function(){
       const divs=((p.dividends)||[]).filter(d=>ex==='ALL'||d.exchange===ex).reduce((a,d)=>a+(d.total||0),0);
       const totalPl=totPl+closedPl+divs;
-      const card=(lbl,v,c)=>`<div style="flex:1;min-width:90px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;text-align:center;"><div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">${lbl}</div><div style="font-family:var(--mono);font-size:14px;font-weight:800;color:${c||'var(--text)'};margin-top:2px;">${v}</div></div>`;
+      const card=(lbl,v,c,cls)=>`<div style="flex:1;min-width:90px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;text-align:center;"><div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">${lbl}</div><div class="${cls||''}" style="font-family:var(--mono);font-size:14px;font-weight:800;color:${c||'var(--text)'};margin-top:2px;">${v}</div></div>`;
       const pc=x=>x>0.005?'var(--green)':x<-0.005?'var(--red)':'var(--muted)';
       const cash=p.cash||0, resv=_reservedSum(p), acct=cash+resv+totVal;
       const _curs=[...new Set(hold.map(h=>h.currency).filter(Boolean))];
@@ -6819,35 +6994,13 @@ function showPortfolio(exSel){
         ${(ex==='ALL'&&resv>0.005)?card('⏳ Reserved',resv.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})):''}
         ${card('Holdings value',totVal.toFixed(2))}
         ${card('Invested',totInv.toFixed(2))}
-        ${card('Unrealised P/L',(totPl>=0?'+':'')+totPl.toFixed(2)+' ('+(totInv>0?((totPl/totInv)*100>=0?'+':'')+((totPl/totInv)*100).toFixed(1):'0')+'%)',pc(totPl))}
-        ${card('Realised P/L 12mo',(closedPl>=0?'+':'')+closedPl.toFixed(2),pc(closedPl))}
+        ${card('Unrealised P/L',(totPl>=0?'+':'')+totPl.toFixed(2)+' ('+(totInv>0?((totPl/totInv)*100>=0?'+':'')+((totPl/totInv)*100).toFixed(1):'0')+'%)',pc(totPl),'pf-pl')}
+        ${card('Realised P/L 12mo',(closedPl>=0?'+':'')+closedPl.toFixed(2),pc(closedPl),'pf-pl')}
         ${divs>0.005?card('💰 Dividends','+'+divs.toFixed(2),'var(--green)'):''}
-        ${card('Total P/L',(totalPl>=0?'+':'')+totalPl.toFixed(2),pc(totalPl))}
-        ${(ex==='ALL'&&fees>0)?card('Fees paid',fees.toFixed(2),'var(--orange)'):''}
+        ${card('Total P/L',(totalPl>=0?'+':'')+totalPl.toFixed(2),pc(totalPl),'pf-pl')}
+        ${(ex==='ALL'&&fees>0)?card('Fees paid',fees.toFixed(2)+(brokerageFee()>0?' <span style="font-size:9px;color:var(--dim)">($'+brokerageFee()+'/trade)</span>':''),'var(--orange)'):''}
       </div>${statsHtml}`;
     })():''}
-    <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px;">Current holdings${ex==='ALL'?'':' · '+ex} (${hold.length})</div>
-    ${hold.length?`<div class="pf-tablewrap" style="max-height:46vh;overflow:auto;border:1px solid var(--border);border-radius:8px;">
-      <table class="pf-holdings" style="width:100%;border-collapse:collapse;font-size:10px;">
-        <thead><tr style="position:sticky;top:0;background:var(--bg2);"><th style="text-align:left;padding:5px 6px;">Share</th><th style="text-align:right;padding:5px 6px;">Qty</th><th style="text-align:right;padding:5px 6px;">Buy</th><th style="text-align:right;padding:5px 6px;">Now</th><th style="text-align:right;padding:5px 6px;">Value</th><th style="text-align:right;padding:5px 6px;">P/L</th><th></th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table></div>
-      <div class="pf-cards">${cards}</div>
-      <div style="display:flex;justify-content:space-between;font-size:10px;margin:6px 2px;color:var(--muted);">
-        <span>Invested: <strong style="color:var(--text)">${totInv.toFixed(2)}</strong></span>
-        <span>Value: <strong style="color:var(--text)">${totVal.toFixed(2)}</strong></span>
-        <span>Open P/L: <strong style="color:${totC}">${totPl>=0?'+':''}${totPl.toFixed(2)}</strong></span>
-      </div>`
-    :`<div style="font-size:10px;color:var(--muted);padding:10px;border:1px dashed var(--border);border-radius:8px;text-align:center;">No holdings${ex==='ALL'?'':' on '+ex} yet — use 💼 Buy on any share row.</div>`}
-    ${(function(){
-      const ords=(p.orders||[]).filter(o=>ex==='ALL'||o.exchange===ex);
-      if(!ords.length)return '';
-      const rows=ords.map(o=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--border2);border-radius:6px;margin-bottom:5px;background:rgba(88,166,255,.05);">
-        <div><strong style="color:var(--text);font-size:11px;">${o.ticker}</strong> <span style="font-size:9px;color:var(--muted)">${o.market?`market buy ~${fmtP(o.amount||o.reserved,o.currency)} at next open`:`limit buy ${o.qty} @ ${fmtP(o.limit,o.currency)}`}</span>${o.target?`<br><span style="font-size:8px;color:var(--gold)">🎯 ${fmtP(o.target,o.currency)}</span>`:''}${o.stop?` <span style="font-size:8px;color:#ff9caa">🛑 ${fmtP(o.stop,o.currency)}</span>`:''}</div>
-        <div style="text-align:right;"><span style="font-size:9px;color:var(--muted)">${fmtP(o.reserved,o.currency)} held</span>${o.expiry?`<br><span style="font-size:8px;color:var(--dim)">expires ${o.expiry}</span>`:''}<br><a href="#" onclick="paperCancelOrder('${o.id}');return false;" style="font-size:9px;color:#ff9caa;">cancel</a></div>
-      </div>`).join('');
-      return `<div style="margin:10px 0 4px;font-size:10px;color:var(--blue);font-weight:700;">⏳ Pending orders (${ords.length})</div>${rows}<div style="font-size:8px;color:var(--dim);margin-bottom:4px;">Limit orders fill when a day's low reaches your limit · market orders fill at the next day's open. Reserved cash returns on fill, cancel or expiry (${ORDER_EXPIRY_DAYS} days).</div>`;
-    })()}
     ${vh.length>=2?(function(){
       const vals=vh.map(x=>x.eq!=null?x.eq:x.val);
       // ── Benchmark: normalise an index ETF (A200/VAS/STW/IOZ, whichever is
@@ -6888,7 +7041,7 @@ function showPortfolio(exSel){
       </div>`;
     })():''}
     </div>
-    <div id="pfHistoryView" style="display:${pv==='history'?'block':'none'};">
+        <div id="pfHistoryView" style="display:${pv==='history'?'block':'none'};">
     <div style="font-size:11px;font-weight:700;color:var(--text);margin:12px 0 4px;">Trade history${ex==='ALL'?'':' · '+ex} · last 12 months shown (${hist.length}) <span style="font-weight:400;font-size:8px;color:var(--dim)">· all trades ever are kept — 📤 CSV exports the full ledger</span></div>
     ${hist.length?`<div class="pf-tablewrap" style="max-height:40vh;overflow:auto;border:1px solid var(--border);border-radius:8px;">
       <table class="pf-history" style="width:100%;border-collapse:collapse;font-size:10px;">
@@ -8323,10 +8476,18 @@ function _sortedCloses(history){
 function _sma(arr,n){if(arr.length<n)return null;let s=0;for(let i=arr.length-n;i<arr.length;i++)s+=arr[i];return s/n;}
 function _rsi(closes,period){
   if(closes.length<period+1)return null;
+  // v341: Wilder's RSI (the standard used by virtually every charting platform),
+  // replacing a simple last-N average (Cutler's variant) so values match a broker's
+  // chart. Seed with the simple average of the first `period` changes, then apply
+  // Wilder's smoothing across every later change: avg = (avg*(period-1)+x)/period.
   let gain=0,loss=0;
-  for(let i=closes.length-period;i<closes.length;i++){const d=closes[i]-closes[i-1];if(d>=0)gain+=d;else loss-=d;}
-  const ag=gain/period, al=loss/period;
-  if(al===0)return 100;
+  for(let i=1;i<=period;i++){ const d=closes[i]-closes[i-1]; if(d>=0)gain+=d; else loss-=d; }
+  let ag=gain/period, al=loss/period;
+  for(let i=period+1;i<closes.length;i++){ const d=closes[i]-closes[i-1];
+    ag=(ag*(period-1)+(d>0?d:0))/period;
+    al=(al*(period-1)+(d<0?-d:0))/period;
+  }
+  if(al===0)return ag===0?50:100; // no losses: flat → neutral, gains → 100
   const rs=ag/al;return Math.round(100-(100/(1+rs)));
 }
 // Compute every technical signal for a share from its history rows.
@@ -9164,18 +9325,14 @@ function showTop10Panel(pairs){
   const rows=_shown.map(x=>{
     const s=x.p.s,r=x.p.r,i1=x.rank;
     const b=band10(r.score);
-    return `<div style="padding:8px 4px;border-bottom:1px solid var(--border);">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-        <span style="font-weight:700;color:var(--text);font-size:12px;">${i1}. <a href="#" onclick="printShareReport('${s.ticker}');return false;" title="Open the printable one-page report for ${s.ticker}" style="color:var(--gold);text-decoration:underline;text-decoration-style:dotted;cursor:pointer;">${s.ticker} 🖨</a></span>
-        <span style="display:flex;align-items:center;gap:8px;">
-          ${_popupStar(s.ticker)}
-          <span style="font-weight:800;font-size:16px;color:${b.c};">${r.score}</span>
-          <span style="font-size:9px;color:var(--dim);">/10</span>
-          <span style="font-size:9px;color:${b.c};width:56px;text-align:right;">${b.t}</span>
-        </span>
-      </div>
-      <div style="height:5px;border-radius:3px;background:var(--bg3);margin:4px 0 3px;overflow:hidden;"><div style="height:100%;width:${r.score*10}%;background:${b.c};"></div></div>
-      <div style="font-size:9px;color:var(--muted);line-height:1.4;">${r.parts.length?r.parts.join(' · '):'No active signals'}</div>
+    const _bd=(r.parts.length?r.parts.join(' · '):'No active signals').replace(/"/g,'&quot;');
+    return `<div title="${_bd}" style="display:flex;align-items:center;gap:9px;padding:6px 3px;border-bottom:1px solid var(--border);">
+      <span style="flex:0 0 30px;text-align:right;font-weight:700;font-size:12px;color:var(--muted);">${i1}.</span>
+      <a href="#" onclick="printShareReport('${s.ticker}');return false;" title="Open the printable one-page report for ${s.ticker}" style="flex:0 0 auto;color:var(--gold);text-decoration:underline;text-decoration-style:dotted;font-weight:700;font-size:12.5px;white-space:nowrap;cursor:pointer;">${s.ticker} 🖨</a>
+      <div style="flex:1 1 auto;height:7px;border-radius:4px;background:var(--bg3);overflow:hidden;min-width:36px;"><div style="height:100%;width:${r.score*10}%;background:${b.c};"></div></div>
+      <span style="flex:0 0 auto;font-weight:800;font-size:15px;color:${b.c};">${r.score}</span><span style="flex:0 0 auto;font-size:9px;color:var(--dim);">/10</span>
+      <span style="flex:0 0 56px;font-size:9px;color:${b.c};text-align:right;">${b.t}</span>
+      ${_popupStar(s.ticker)}
     </div>`;
   }).join('')||`<div style="padding:22px 8px;text-align:center;color:var(--muted);font-size:12px;">None of the Top ${_all.length} match the active quick filters.<br><br>Tap <b>Showing</b> in the stats bar above to clear them.</div>`;
   const filtNote=_anyOn?`<div style="font-size:10px;color:var(--gold);margin-bottom:8px;">⚡ Quick filters on — showing ${_shown.length} of ${_all.length}. Tap <b>Showing</b> in the stats bar to clear.</div>`:'';
@@ -9186,7 +9343,7 @@ function showTop10Panel(pairs){
     <div style="font-size:10px;color:var(--orange);margin-bottom:10px;">Ranked by an accumulation-weighted score out of 10 — mostly days with price up <strong>and</strong> volume up together, blended with streaks and momentum. <strong>A data summary, not advice.</strong> Verify via ↗ links. <span style="color:var(--gold)">Tap a share code for its report, or ☆ to add it to a watchlist.</span></div>
     ${filtNote}
     ${_popupListSelect()}
-    <div style="max-height:44vh;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:2px 10px;">${rows}</div>
+    <div style="max-height:74vh;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:2px 12px;">${rows}</div>
     <div style="display:flex;gap:8px;margin-top:12px;">
       <button onclick="exportTop20CSV()" style="flex:1;padding:9px;border-radius:6px;border:1px solid var(--green);background:rgba(63,185,80,.14);color:var(--green);font:600 12px var(--sans);cursor:pointer;">📤 Save CSV</button>
       <button onclick="printTop10()" style="flex:1;padding:9px;border-radius:6px;border:1px solid var(--blue);background:rgba(56,139,253,.14);color:var(--blue);font:600 12px var(--sans);cursor:pointer;">🖨 Print / PDF</button>
@@ -9635,7 +9792,10 @@ function deepDive(ticker){
   const chgcol=s.chgPct>0?'var(--green)':s.chgPct<0?'#ff6b6b':'var(--muted)';
   let html=`<div style="font-weight:700;font-size:16px;color:var(--text);">🔬 ${s.ticker} <span style="font-size:11px;color:var(--muted)">${s.name||''}</span></div>
   <div style="font-size:9px;color:var(--dim);margin:4px 0 8px;">Everything Insight Trading computes for this share — plus links to official sources for shareholders, directors & news. Estimates from price/volume, not advice.</div>
-  <button onclick="showChart('${s.ticker}')" style="width:100%;margin-bottom:8px;padding:8px;border-radius:7px;border:1px solid var(--gold);background:rgba(255,210,0,.12);color:var(--gold);font:700 11px var(--sans);cursor:pointer;">📈 Open price chart</button>
+  <div style="display:flex;gap:6px;margin-bottom:8px;">
+    <button onclick="showChart('${s.ticker}')" style="flex:1;padding:8px;border-radius:7px;border:1px solid var(--gold);background:rgba(255,210,0,.12);color:var(--gold);font:700 11px var(--sans);cursor:pointer;">📈 Price chart</button>
+    <button onclick="showTechnicals('${s.ticker}')" style="flex:1;padding:8px;border-radius:7px;border:1px solid #58a6ff;background:rgba(88,166,255,.12);color:#58a6ff;font:700 11px var(--sans);cursor:pointer;">📐 Technicals</button>
+  </div>
   <button onclick="printShareReport('${s.ticker}')" style="width:100%;margin-bottom:8px;padding:8px;border-radius:7px;border:1px solid #c88bff;background:rgba(200,139,255,.12);color:#e0a0ff;font:700 11px var(--sans);cursor:pointer;">🖨 Printable one-page report</button>
   <div style="display:flex;gap:6px;margin-bottom:8px;">
     <a href="${newsSearchFor(s.ticker,s.exchange,s.name)}" target="_blank" style="flex:1;text-align:center;padding:8px;border-radius:7px;border:1px solid var(--red);background:rgba(226,25,55,.10);color:#ff9caa;font:700 11px var(--sans);text-decoration:none;">📰 Latest news</a>
@@ -10144,7 +10304,7 @@ function runLoadPreset(){
   window._preferOffline=false;   // force-live overrides prefer-offline for this run
   window._offlineMode=false;     // v236: live preset run leaves offline mode too
   if(typeof _histClearCache==='function')_histClearCache(); // drop session cache too
-  const msg=document.getElementById('lpMsg'); if(msg)msg.innerHTML=`<span style="color:#58a6ff">⚡ Loading "${p.name}" live from the API…</span>`;
+  const msg=document.getElementById('lpMsg'); if(msg)msg.innerHTML=`<span style="color:#58a6ff">⚡ Loading "${p.name}" fresh from the API…</span>`;
   if(!allData.length){
     // need to load the exchange list first, then prepare with the recipe
     if(typeof loadData==='function')loadData();
@@ -10402,7 +10562,7 @@ async function prepareAllSignals(auto){
         } else { _sliceFailed++; (window._prepFailed=window._prepFailed||[]).push(s); }
         done++;
       });
-      try{ statsBar&&statsBar(); }catch(e){} // v305: radar tiles fill in LIVE as signals load (they sat at 0 until the very end)
+      try{ if(((i/BATCH)&7)===0)statsBar&&statsBar(); }catch(e){} // v347: refresh tiles every 8th batch (was every batch) — much lighter on slow devices; exact tiles are set at the end
       _maybeSlowNetworkHint&&_maybeSlowNetworkHint();
       const _servingDisk=(!!window._preferOffline && (window._savedN||0)>=ranked.length) || (window._healCount>i*0.8);
       if(i+BATCH<ranked.length && !_servingDisk)await new Promise(r=>setTimeout(r,350));
@@ -11611,13 +11771,17 @@ async function bulkVolume(){
   // every scan works fully offline.
   if(allData.length && allData.every(s=>Array.isArray(s.series)&&s.series.length>5) && !window._forceNetBulk){
     let done=0;
-    for(const s of allData){
+    const _cl=[], _vl=[]; // v347: reused scratch arrays — no per-share map/filter/slice garbage, so the whole-market recompute no longer triggers GC-pause freezes
+    for(let _bi=0;_bi<allData.length;_bi++){
+      if((_bi&127)===127)await new Promise(r=>setTimeout(r,0)); // v347: yield every 128 shares so a big saved market can't freeze the UI
+      const s=allData[_bi];
       const ser=s.series; if(!ser||ser.length<3)continue;
-      const closes=ser.map(r=>r.c).filter(isFinite);
-      const vols=ser.map(r=>r.v).filter(v=>isFinite(v)&&v>0);
+      _cl.length=0; _vl.length=0;
+      for(let _k=0;_k<ser.length;_k++){ const _c=ser[_k].c, _v=ser[_k].v; if(isFinite(_c))_cl.push(_c); if(isFinite(_v)&&_v>0)_vl.push(_v); }
+      const closes=_cl, vols=_vl;
       if(vols.length>1){
-        const hist=vols.slice(0,-1);
-        const avg=hist.reduce((a,v)=>a+v,0)/hist.length;
+        let _vsum=0; for(let i=0;i<vols.length-1;i++)_vsum+=vols[i]; // avg of all vols except the most recent (== old vols.slice(0,-1) mean)
+        const avg=_vsum/(vols.length-1);
         s.avgVol=Math.round(avg);
         s.volPct=avg>0?Math.round((vols[vols.length-1]-avg)/avg*100):0;
         s.volCalced=true; s.volWindow=s.volWindow||'demo';
@@ -12074,7 +12238,7 @@ Output the complete array. Start with [`;
     return;
   }
 
-  {const _n=document.getElementById('notice'); if(_n){_n.innerHTML=`📡 ${exch} · ${today} · ${results.length.toLocaleString()} stocks · ${via==='ai-proxy'?'<span style="color:var(--orange)">live · AI relay</span>':(via==='quote-list'?'live · quote list':'live')}${(window._dlTypeDropped>0)?` · <span style="color:var(--dim)" title="Your load-type chips (Setup ▸ What to load from the API) are skipping these security types — tick more chips there to load everything">${window._dlTypeDropped.toLocaleString()} skipped by type</span>`:''}`; _n.style.display='inline-block';}}
+  {const _n=document.getElementById('notice'); if(_n){_n.innerHTML=`📡 ${exch} · ${today} · ${results.length.toLocaleString()} stocks · <span title="End-of-day closing prices from the last completed trading session — NOT real-time. Fetched just now from the internet (not your saved data).">${via==='ai-proxy'?'<span style="color:var(--orange)">end-of-day · AI relay</span>':(via==='quote-list'?'end-of-day · quote list':'end-of-day')}</span>${(window._dlTypeDropped>0)?` · <span style="color:var(--dim)" title="Your load-type chips (Setup ▸ What to load from the API) are skipping these security types — tick more chips there to load everything">${window._dlTypeDropped.toLocaleString()} skipped by type</span>`:''}`; _n.style.display='inline-block';}}
   document.getElementById('statsBar').style.display='flex';
   document.getElementById('toolbar').style.display='flex';
   document.getElementById('exchBadge').textContent=`🌐 ${exch} — ${results.length.toLocaleString()} stocks`;
@@ -12481,7 +12645,7 @@ async function simpleLoad(fresh){
   }
   // Otherwise we need a live load, which needs an API key.
   if(!hasKey){
-    if(st)st.innerHTML='To load live prices you need your free data key. Open Advanced to add it, or press Demo to try the app with sample shares.';
+    if(st)st.innerHTML='To load the latest end-of-day prices you need your free data key. Open Advanced to add it, or press Demo to try the app with sample shares.';
     _refreshSimpleLoad();
     return;
   }
@@ -14325,8 +14489,7 @@ body.tbl-tight .d{width:6px;height:6px;}
 body.tbl-tight .vbg{width:40px;}
 body.tbl-tight .vw{gap:3px;}
 /* stage 2: still too wide → fold the least-critical columns (they return when there's room) */
-body.tbl-tighter #tblwrap th:nth-child(1),body.tbl-tighter #tblwrap td:nth-child(1),
-body.tbl-tighter #tblwrap th:nth-child(6),body.tbl-tighter #tblwrap td:nth-child(6){display:none!important;}
+body.tbl-tighter #tblwrap th:nth-child(1),body.tbl-tighter #tblwrap td:nth-child(1){display:none!important;} /* v340: hide ONLY the checkbox when tight — never the 📊 Range column. (Was hiding nth-child(6); after the Range column was inserted at position 6 that silently hid Range. The table scrolls horizontally instead.) */
 body.tbl-tighter .tick-name{max-width:80px;}
 </style>
 <script id="fitJs">
