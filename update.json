@@ -1,5 +1,1 @@
-{
-  "version": "2026.07.22-379",
-  "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta build 2026.07.22-379 — thanks for testing! This copy updates separately from the released app. Anything odd, confusing or brilliant: use the ✉ feedback link in the top-left."
-}
+{"version": "2026.07.22-380", "url": "https://teecee1313.github.io/insight-beta/", "notes": "Beta build 2026.07.22-380 — thanks for testing! New: private access. When it's switched on, the app asks for a tester password the first time you open it (Tony will share it with you); enter it once and it's remembered on that device — and it's verified on the server, so the beta stays invite-only. Everything else is unchanged. Anything odd, confusing or brilliant: use the ✉ feedback link in the top-left."}
