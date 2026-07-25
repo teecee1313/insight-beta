@@ -1,5 +1,5 @@
 {
-  "version": "2026.07.22-407",
+  "version": "2026.07.25-408",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta build 2026.07.22-407 — thanks for testing! This copy updates separately from the released app. Anything odd, confusing or brilliant: use the ✉ feedback link in the top-left."
+  "notes": "Beta build 2026.07.25-408 — every exchange now has its own practice account (own cash pot), the bot's daily lock and report card are per exchange, and the auto-trade bridge queue is ASX-only for now. Thanks for testing — anything odd: ✉ feedback link top-left."
 }
