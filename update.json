@@ -1,5 +1,5 @@
 {
-  "version": "2026.07.22-407",
+  "version": "2026.07.25-408",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta build 2026.07.22-407 — thanks for testing! This copy updates separately from the released app. Anything odd, confusing or brilliant: use the ✉ feedback link in the top-left."
+  "notes": "Beta build 2026.07.25-408 — 💱 NYSE trades now use their own US$10,000 practice wallet, kept fully separate from your AU$ account (US prices show as US$; each exchange tab shows its own cash and returns). Faster history loads from your own data server continue rolling out. Anything odd, confusing or brilliant: use the ✉ feedback link in the top-left."
 }
