@@ -1,1 +1,5 @@
-{"version": "2026.07.22-399", "url": "https://teecee1313.github.io/insight-beta/", "notes": "Beta build 2026.07.22-399 — outcome-window switch hardening: mismatched-window server answers are never cached (the v398 'dead 10d button' after tapping before the Worker update), and a stale server now draws a plain ⚠ explainer on the card. Feedback via ✉, top-left."}
+{
+  "version": "2026.07.22-400",
+  "url": "https://teecee1313.github.io/insight-beta/",
+  "notes": "Beta build 2026.07.22-400 — thanks for testing! This copy updates separately from the released app. Anything odd, confusing or brilliant: use the ✉ feedback link in the top-left."
+}
