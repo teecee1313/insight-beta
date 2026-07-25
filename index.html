@@ -2097,9 +2097,6 @@ function _sanPaper(p){
   // Sanitise them at the boundary too, the same way holdings/history are, so every render is safe.
   try{ (p.orders||[]).forEach(o=>{ if(o&&typeof o==='object'){ _sanShare(o); if(o.note!=null)o.note=_sanText(o.note,140)||null; if(o.expiry!=null)o.expiry=_sanText(o.expiry,24); if(o.id!=null)o.id=_sanText(o.id,40); } }); }catch(e){}
   try{ (p.dividends||[]).forEach(d=>{ if(d&&typeof d==='object'){ _sanShare(d); if(d.note!=null)d.note=_sanText(d.note,140)||null; } }); }catch(e){}
-  // v408: per-currency wallets ride inside the account object — clean them at the
-  // same boundary (a pasted backup could carry anything). Numbers only, short keys.
-  try{ if(p.wallets&&typeof p.wallets==='object'){ const cl={}; Object.keys(p.wallets).slice(0,8).forEach(k=>{ const w=p.wallets[k]; const ck=String(k).toUpperCase().replace(/[^A-Z]/g,'').slice(0,3); if(!ck||ck==='AUD'||!w||typeof w!=='object')return; cl[ck]={cash:+(+w.cash||0).toFixed(2),startCap:+(+w.startCap||0).toFixed(2),feesPaid:+(+w.feesPaid||0).toFixed(2),wdProfit:+(+w.wdProfit||0).toFixed(2)}; }); p.wallets=cl; } }catch(e){}
   return p;
 }
 function _sanResearch(){
@@ -3964,7 +3961,7 @@ function applyF(){
 
 // Render
 const fmtV=v=>v>=1e9?(v/1e9).toFixed(1)+'B':v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v?String(v):'—';
-const fmtP=(p,cur)=>{if(!p&&p!==0)return'—';const s=cur==='USD'?'US$':(cur&&cur!=='AUD'?cur+' ':'$');return s+(p<0.001?p.toFixed(4):p<0.01?p.toFixed(4):p<1?p.toFixed(3):p.toFixed(2));}; // v408: US$ marked so NYSE prices can't be misread as AUD
+const fmtP=(p,cur)=>{if(!p&&p!==0)return'—';const s=cur&&cur!=='AUD'&&cur!=='USD'?cur+' ':'$';return s+(p<0.001?p.toFixed(4):p<0.01?p.toFixed(4):p<1?p.toFixed(3):p.toFixed(2));};
 
 // ── VOLUME SURGE RATING (direction-aware) ────────────────────────────────
 // The heat LEVEL measures how unusual today's volume is vs this share's own
@@ -4815,11 +4812,8 @@ function _staleDays(d){
   if(!d)return 0;
   try{return tradingDaysHeld(String(d).slice(0,10),_todayLocal());}catch(e){return 0;}
 }
-function _acctValue(p,cur){
-  // v408: currency-scoped when asked — position sizing for a US buy must
-  // measure the US side of the account, not a blend of AUD and USD.
-  let hv=0;(p.holdings||[]).forEach(h=>{if(cur&&(h.currency||'AUD')!==cur)return;hv+=h.qty*(h.lastPrice||h.buyPrice);});
-  if(cur)return _wCash(p,cur)+_reservedSum(p,cur)+hv;
+function _acctValue(p){
+  let hv=0;(p.holdings||[]).forEach(h=>{hv+=h.qty*(h.lastPrice||h.buyPrice);});
   return (p.cash||0)+_reservedSum(p)+hv;
 }
 function _paperRiskPrev(){
@@ -4829,7 +4823,7 @@ function _paperRiskPrev(){
   const buyPx=parseFloat((document.getElementById('paperBuyPx')||{}).value)||0;
   const lim=parseFloat((document.getElementById('paperLimit')||{}).value)||0;
   const px=(window._buyType==='limit'&&lim>0)?lim:buyPx;
-  const p=_paper(); const acct=_acctValue(p,window._buyCur||'AUD'); // v408: % of the account SIDE you're buying in
+  const p=_paper(); const acct=_acctValue(p);
   if(!(amt>0)||!(px>0)){el.innerHTML='';return;}
   const qty=Math.floor(amt/px);
   const posPct=acct>0?(amt/acct)*100:0;
@@ -4849,7 +4843,7 @@ function paperAddDividend(id){
   const tk=lots[0].ticker,cur=lots[0].currency;
   const total=+(totQty*per).toFixed(2);
   if(!confirm('Record a dividend for '+tk+'?\n\n'+totQty.toLocaleString()+' shares \u00d7 '+per+' = '+fmtP(total,cur)+' added to your cash.'))return;
-  _wAdd(p,cur,total); // v408: the dividend lands in the wallet matching the share's currency
+  p.cash=+((p.cash||0)+total).toFixed(2);
   p.dividends=p.dividends||[];
   p.dividends.unshift({ticker:tk,exchange:lots[0].exchange,currency:cur,date:_todayLocal(),perShare:per,qty:totQty,total});
   _paperSave(p);
@@ -4861,44 +4855,15 @@ function setBrokerage(v){
   try{localStorage.setItem(BROKERAGE_STORE,(isFinite(n)&&n>0)?n:0);}catch(e){}
   showPortfolio();
 }
-function _chargeFee(p,cur){
-  // v408: the fee comes out of the wallet matching the trade's currency
-  // (no currency given = the legacy AUD fields, exactly as before).
+function _chargeFee(p,label){
   const fee=brokerageFee();
-  if(fee>0){const w=_wallet(p,cur);w.cash=+(((w.cash)||0)-fee).toFixed(2);w.feesPaid=+((((w.feesPaid)||0)+fee)).toFixed(2);}
+  if(fee>0){p.cash=+((p.cash||0)-fee).toFixed(2);p.feesPaid=+(((p.feesPaid||0)+fee)).toFixed(2);}
   return fee;
 }
 // The account's starting capital: $10k by default, but repairable to match the
 // money ACTUALLY put in for accounts that traded before the $10k rule existed.
 function _startCap(p){return (typeof p.startCap==='number'&&isFinite(p.startCap)&&p.startCap>0)?p.startCap:PAPER_START_CASH;}
-// v408: pass a currency to count only that currency's pending orders (orders
-// with no recorded currency are legacy = AUD). No argument = every order, as before.
-function _reservedSum(p,cur){return (p.orders||[]).reduce((a,o)=>a+((cur&&(o.currency||'AUD')!==cur)?0:((o.reserved||0)+(o.fee||0))),0);}
-// ═══ v408 — 💱 PER-CURRENCY PRACTICE WALLETS ════════════════════════════════
-// Trading NYSE means US dollars, and US dollars must never mix with Australian
-// ones. AUD stays exactly where it always lived — p.cash / p.startCap /
-// p.feesPaid / p.wdProfit — so every existing account, backup and repair tool
-// keeps working untouched. Any OTHER currency gets its own little wallet inside
-// p.wallets[CUR] with the same fields, opened automatically with a fresh
-// US$10,000 (practice money) the first time that currency is touched. Every
-// cash movement goes through these helpers with the share's currency, so a US
-// buy can only ever spend the US pot.
-function _wallet(p,cur){
-  if(!cur||cur==='AUD')return p;                       // AUD = the legacy fields on the account itself
-  p.wallets=p.wallets||{};
-  if(!p.wallets[cur])p.wallets[cur]={cash:PAPER_START_CASH,startCap:PAPER_START_CASH,feesPaid:0,wdProfit:0};
-  return p.wallets[cur];
-}
-function _wCash(p,cur){return +((_wallet(p,cur).cash)||0);}
-function _wAdd(p,cur,d){const w=_wallet(p,cur);w.cash=+(((w.cash)||0)+d).toFixed(2);}
-function _wStartCap(p,cur){ if(!cur||cur==='AUD')return _startCap(p); const w=_wallet(p,cur); return (typeof w.startCap==='number'&&isFinite(w.startCap)&&w.startCap>0)?w.startCap:PAPER_START_CASH; }
-function _wFeeBack(p,cur,fee){const w=_wallet(p,cur);if(fee>0)w.feesPaid=+(Math.max(0,((w.feesPaid)||0)-fee)).toFixed(2);}
-// Every wallet's cash added together (legacy AUD + the rest) — "practice
-// dollars" for the at-a-glance totals; per-currency truth lives in the views.
-function _cashAll(p){let t=+(p.cash||0);try{Object.keys(p.wallets||{}).forEach(k=>{t+=+(p.wallets[k].cash||0);});}catch(e){} return +t.toFixed(2);}
-function _startCapAll(p){let t=_startCap(p);try{Object.keys(p.wallets||{}).forEach(k=>{t+=+(p.wallets[k].startCap||0);});}catch(e){} return t;}
-function _wdProfitAll(p){let t=+(p.wdProfit||0);try{Object.keys(p.wallets||{}).forEach(k=>{t+=+(p.wallets[k].wdProfit||0);});}catch(e){} return t;}
-function _hasWallets(p){try{return Object.keys(p.wallets||{}).length>0;}catch(e){return false;}}
+function _reservedSum(p){return (p.orders||[]).reduce((a,o)=>a+(o.reserved||0)+(o.fee||0),0);}
 
 // ═══ v286 — My Rules: the customer's own trading plan (practice discipline) ═══
 const RULES_KEY='BETA_asxScreener.rules.v1';
@@ -5539,8 +5504,7 @@ function _apCandidates(r){
 function _apBuy(s,r){
   // queue a PRACTICE buy through the exact same path shape as a manual buy
   const p=_paper(); const fee=brokerageFee(); const today=_todayLocal();
-  const _cur=s.currency||'AUD'; // v408: this buy trades in the SHARE's currency wallet
-  const acct=_acctValue(p,_cur); const sizePct=(r.maxPosPct>0?r.maxPosPct:10);
+  const acct=_acctValue(p); const sizePct=(r.maxPosPct>0?r.maxPosPct:10);
   const _cap=acct*sizePct/100;
   let _want=(r.apAmt>0?r.apAmt:_cap), _trim=false;
   // v366 🎲 RISK-BASED SIZING (optional): equalise the DOLLARS AT RISK per trade
@@ -5553,12 +5517,12 @@ function _apBuy(s,r){
     if(_riskCap<_want)_want=_riskCap;
   }
   if(_want>_cap){ _want=_cap; _trim=true; }   // 📦 rule is a guardrail — your $ never breaches it
-  const amt=Math.min(_want,_wCash(p,_cur)-fee);
+  const amt=Math.min(_want,(p.cash||0)-fee);
   if(!(amt>0))return {ok:false,why:'no practice cash left'};
   const px=s.price; const qty=Math.floor(amt/px);
   const cost=+(qty*px).toFixed(2);
   if(qty<1||cost<500)return {ok:false,why:'size under the $500 minimum parcel'};
-  if(cost+fee>_wCash(p,_cur)+0.005)return {ok:false,why:'not enough practice cash'};
+  if(cost+fee>p.cash+0.005)return {ok:false,why:'not enough practice cash'};
   const tgt=r.targetPct>0?_tickRound(px*(1+r.targetPct/100),s.exchange):0; // v394: snap target to a valid tick
   const stop=r.stopPct>0?_tickRound(px*(1-r.stopPct/100),s.exchange):0;     // v394: snap stop to a valid tick
   const note='🤖 Auto-pilot (practice)';
@@ -5569,10 +5533,10 @@ function _apBuy(s,r){
     if(!(lim>0))return {ok:false,why:'🎣 dip % too deep — the limit price came out at zero; check the 🎣 setting'}; // v366: apDipPct=100 made lim 0 → Infinity÷NaN poisoned the cash balance
     const dq=Math.floor(amt/lim); const dcost=+(dq*lim).toFixed(2);
     if(dq<1||dcost<500)return {ok:false,why:'dip parcel under $500'};
-    if(dcost+fee>_wCash(p,_cur)+0.005)return {ok:false,why:'not enough practice cash'};
+    if(dcost+fee>p.cash+0.005)return {ok:false,why:'not enough practice cash'};
     const dtgt=(r.targetPct>0)?_tickRound(lim*(1+r.targetPct/100),s.exchange):0; // v394: snap
     const dstop=(r.stopPct>0)?_tickRound(lim*(1-r.stopPct/100),s.exchange):0;     // v394: snap
-    _wAdd(p,_cur,-dcost); _chargeFee(p,_cur); p.orders=p.orders||[];
+    p.cash=+(p.cash-dcost).toFixed(2); _chargeFee(p); p.orders=p.orders||[];
     p.orders.push({id:'o'+Date.now()+'d'+Math.floor(Math.random()*1000),ticker:s.ticker,exchange:s.exchange,name:s.name||'',currency:s.currency,
       limit:lim,qty:dq,reserved:dcost,placedDate:today,checkedDate:today,preOpen:_orderPreOpen(s.exchange),expiry:_orderExpiry(today),
       target:dtgt>0?dtgt:null,stop:dstop>0?dstop:null,note:'\ud83e\udd16 Auto-pilot dip entry (practice)',fee:fee||0,
@@ -5580,7 +5544,7 @@ function _apBuy(s,r){
     _paperSave(p);
     return {ok:true,qty:dq,cost:dcost,px:lim,tgt:dtgt,stop:dstop,trim:_trim,dip:true};
   }
-  _wAdd(p,_cur,-cost); _chargeFee(p,_cur);
+  p.cash=+(p.cash-cost).toFixed(2); _chargeFee(p);
   const _id='o'+Date.now()+'a'+Math.floor(Math.random()*1000);
   if(typeof realFillsOn==='function'&&realFillsOn()){
     p.orders=p.orders||[];
@@ -5694,20 +5658,19 @@ function addApPickFromForm(){
 function removeApPick(tk){ _apPicksSave(_apPicksLoad().filter(k=>k.tk!==tk)); const box=document.getElementById('apPicksBox'); if(box)box.innerHTML=_apPicksHtml(); }
 function _apPlacePick(s,r,k){
   const p=_paper(); const fee=brokerageFee(); const today=_todayLocal();
-  const _cur=s.currency||'AUD'; // v408: the pick trades in the SHARE's currency wallet
-  const acct=_acctValue(p,_cur); const sizePct=(r.maxPosPct>0?r.maxPosPct:10);
+  const acct=_acctValue(p); const sizePct=(r.maxPosPct>0?r.maxPosPct:10);
   const _cap=acct*sizePct/100;
   let _want=(k&&k.amt>0)?k.amt:(r.apAmt>0?r.apAmt:_cap), _trim=false;
   if(_want>_cap){ _want=_cap; _trim=true; }   // 📦 guardrail
-  const amt=Math.min(_want,_wCash(p,_cur)-fee);
+  const amt=Math.min(_want,(p.cash||0)-fee);
   if(!(amt>0))return {ok:false,why:'no practice cash left'};
   const lim=_tickRound(+k.buyAt,s.exchange); const qty=Math.floor(amt/lim); // v393: snap pick buy price to a valid ASX tick
   const cost=+(qty*lim).toFixed(2);
   if(qty<1||cost<500)return {ok:false,why:'size under the $500 minimum parcel'};
-  if(cost+fee>_wCash(p,_cur)+0.005)return {ok:false,why:'not enough practice cash'};
+  if(cost+fee>p.cash+0.005)return {ok:false,why:'not enough practice cash'};
   const tgt=_tickRound(k.sellAt>0?+k.sellAt:(r.targetPct>0?lim*(1+r.targetPct/100):0),s.exchange); // v394: snap
   const stop=_tickRound(k.stopAt>0?+k.stopAt:(r.stopPct>0?lim*(1-r.stopPct/100):0),s.exchange);     // v394: snap
-  _wAdd(p,_cur,-cost); _chargeFee(p,_cur); p.orders=p.orders||[];
+  p.cash=+(p.cash-cost).toFixed(2); _chargeFee(p); p.orders=p.orders||[];
   p.orders.push({id:'o'+Date.now()+'p'+Math.floor(Math.random()*1000),ticker:s.ticker,exchange:s.exchange,name:s.name||'',currency:s.currency,
     limit:lim,qty:qty,reserved:cost,placedDate:today,checkedDate:today,preOpen:_orderPreOpen(s.exchange),expiry:_orderExpiry(today),
     target:tgt>0?tgt:null,stop:stop>0?stop:null,note:'\ud83e\udd16 Auto-pilot pick (practice)',fee:fee||0,
@@ -5871,14 +5834,11 @@ function _ensureCash(p){
   // Migration for accounts created before the cash balance existed: rebuild the
   // balance as if the $10k account had been there from the first trade.
   if(typeof p.cash!=='number'||!isFinite(p.cash)){
-    // v408: rebuild the AUD balance from AUD items only — foreign-currency trades
-    // live in their own wallets and must not leak into the Australian ledger.
-    const _au=x=>((x&&x.currency)||'AUD')==='AUD';
-    const spent=(p.holdings||[]).filter(_au).reduce((a,h)=>a+(h.invested||0),0);
-    const reserved=(p.orders||[]).filter(_au).reduce((a,o)=>a+(o.reserved||0),0); // v366: pending fees already live in feesPaid — counting them here doubled them
-    const closedPl=(p.history||[]).filter(_au).reduce((a,t)=>a+(t.plAbs||0),0);
-    const histFees=(p.history||[]).filter(_au).reduce((a,t)=>a+(t.fees||0),0);
-    const divs=(p.dividends||[]).filter(_au).reduce((a,d)=>a+(d.total||0),0);
+    const spent=(p.holdings||[]).reduce((a,h)=>a+(h.invested||0),0);
+    const reserved=(p.orders||[]).reduce((a,o)=>a+(o.reserved||0),0); // v366: pending fees already live in feesPaid — counting them here doubled them
+    const closedPl=(p.history||[]).reduce((a,t)=>a+(t.plAbs||0),0);
+    const histFees=(p.history||[]).reduce((a,t)=>a+(t.fees||0),0);
+    const divs=(p.dividends||[]).reduce((a,d)=>a+(d.total||0),0);
     p.cash=+(_startCap(p)-spent-reserved+closedPl-(p.feesPaid||0)+histFees+divs-(p.wdProfit||0)).toFixed(2);
     p.ledgerBase=0;
   }
@@ -5968,7 +5928,7 @@ function updatePaperPrices(acct){
       byEx[h.exchange].val+=hv;
     });
     const upsert=(arr,snap)=>{const ex=arr.findIndex(x=>x.d===snap.d);if(ex>=0)arr[ex]=snap;else arr.push(snap);return arr.filter(x=>x.d>=cutoff);};
-    p.valueHistory=upsert(p.valueHistory||[],{d:today,inv:+inv.toFixed(2),val:+val.toFixed(2),eq:+(_cashAll(p)+_reservedSum(p)+val).toFixed(2)}); // v379: eq = FULL account value (cash + reserved-in-pending-orders + holdings) · v408: cash = every wallet added together (practice units), identical to before unless you trade a second currency
+    p.valueHistory=upsert(p.valueHistory||[],{d:today,inv:+inv.toFixed(2),val:+val.toFixed(2),eq:+((p.cash||0)+_reservedSum(p)+val).toFixed(2)}); // v379: eq = FULL account value (cash + reserved-in-pending-orders + holdings), so the day-by-day chart matches the account total — was dropping money reserved in pending orders
     p.vhByEx=p.vhByEx||{};
     Object.keys(byEx).forEach(ex=>{
       p.vhByEx[ex]=upsert(p.vhByEx[ex]||[],{d:today,inv:+byEx[ex].inv.toFixed(2),val:+byEx[ex].val.toFixed(2)});
@@ -6013,18 +5973,17 @@ function undoSale(sellDate,ticker,buyDate){
   // the restored holding carries it, since that purchase still stands.
   const _sf=(t.sellFee!=null)?(+t.sellFee||0):Math.min((t.fees||0),((typeof brokerageFee==='function'?brokerageFee():0)||0));
   const _back=+(((t.proceeds||0)-_sf)).toFixed(2);
-  const _wc=_wCash(p,t.currency); // v408: the sale paid into the trade's currency wallet — undo takes it back from the same one
-  if(_back>_wc+0.005){
-    const _need=+(_back-_wc).toFixed(2);
-    alert(`Can't undo this ${t.ticker} sale yet — you've already reinvested the money.\n\nUndoing puts the ${t.qty.toLocaleString()} shares back and takes back the ${fmtP(_back,t.currency)} you were paid, but you only have ${fmtP(_wc,t.currency)} cash right now.\n\nFree up about ${fmtP(_need,t.currency)} first — cancel a pending order or sell a holding, or use ➕ add cash — then undo.`);
+  if(_back>(p.cash||0)+0.005){
+    const _need=+(_back-(p.cash||0)).toFixed(2);
+    alert(`Can't undo this ${t.ticker} sale yet — you've already reinvested the money.\n\nUndoing puts the ${t.qty.toLocaleString()} shares back and takes back the ${fmtP(_back,t.currency)} you were paid, but you only have ${fmtP(p.cash||0,t.currency)} cash right now.\n\nFree up about ${fmtP(_need,t.currency)} first — cancel a pending order or sell a holding, or use ➕ add cash — then undo.`);
     return;
   }
   const msg=`Undo this sale?\n\n${t.ticker}: sold ${t.qty.toLocaleString()} @ ${fmtP(t.sellPrice,t.currency)} on ${t.sellDate}.\n\nThis returns the ${t.qty.toLocaleString()} shares to your holdings and takes the ${fmtP(_back,t.currency)} back out of your cash. Auto-sell is paused on the restored shares so a rule can't sell them straight back.`;
   if(!confirm(msg))return;
   // v367 (merged): take back the NET cash the sale added and refund the
   // sell-side fee in the ledger — balance stays exactly consistent.
-  _wAdd(p,t.currency,-_back);
-  _wFeeBack(p,t.currency,_sf);
+  p.cash=+((p.cash||0)-_back).toFixed(2);
+  if(_sf>0)p.feesPaid=+(Math.max(0,(p.feesPaid||0)-_sf)).toFixed(2);
   // restore the holding (merge if the same ticker/buyDate lot exists)
   p.holdings=p.holdings||[];
   const existing=p.holdings.find(h=>h.ticker===t.ticker&&h.exchange===t.exchange&&h.buyDate===t.buyDate&&h.buyPrice===t.buyPrice);
@@ -6064,8 +6023,8 @@ function _undoAllAutoSells(){
   autos.sort((a,b)=>b.i-a.i); // splice highest index first so earlier indexes stay valid
   let n=0;
   autos.forEach(({t,i})=>{
-    _wAdd(p,t.currency,-(t.proceeds||0)); // v408: reverse the sale out of ITS currency wallet
-    if(t.sellFee>0){ _wAdd(p,t.currency,t.sellFee); _wFeeBack(p,t.currency,t.sellFee); } // v366: refund the sell-side fee the undone sale charged
+    p.cash=+((p.cash||0)-(t.proceeds||0)).toFixed(2);
+    if(t.sellFee>0){ p.cash=+(p.cash+t.sellFee).toFixed(2); p.feesPaid=+(Math.max(0,(p.feesPaid||0)-t.sellFee)).toFixed(2); } // v366: refund the sell-side fee the undone sale charged
     p.holdings=p.holdings||[];
     const existing=p.holdings.find(h=>h.ticker===t.ticker&&h.exchange===t.exchange&&h.buyDate===t.buyDate&&h.buyPrice===t.buyPrice);
     if(existing){ existing.invested=+(existing.invested+t.invested).toFixed(2); existing.qty=existing.qty+t.qty; existing.noAuto=true; existing.stop=0; }
@@ -6235,8 +6194,8 @@ async function checkAutoSellTargets(acct){
         p.history.unshift({ticker:h.ticker,exchange:h.exchange,name:h.name,currency:h.currency,
           buyDate:h.buyDate,buyPrice:h.buyPrice,qty:_sellQty,invested:_soldInv,
           sellDate:hit.date,sellPrice:hit.fill,proceeds,fees,sellFee:(_sf||0),buyFee:_buyFeePart,plAbs,plPct,auto:true,target:h.target,stop:h.stop,trigger:_partial?'target-scale':hit.why,note:h.note||null,tgtLog:h.tgtLog||null,stopLog:h.stopLog||null}); // v366: sellFee/buyFee recorded so ↩ undo can refund the fee properly
-        _wAdd(p,h.currency,proceeds); // v408: the auto-sell pays into the share's currency wallet
-        _chargeFee(p,h.currency);
+        p.cash=+((p.cash||0)+proceeds).toFixed(2);
+        _chargeFee(p);
         if(_partial){
           // Keep the runner: reduce qty + cost basis, lift the stop to break-even,
           // clear the target so it rides the trailing stop, and mark it scaled.
@@ -6432,11 +6391,10 @@ function paperBuy(ticker){
   window._pfCtx='main'; // v312: manual buys always land in 👤 My trading, never the bot's account
   const s=allData.find(x=>x.ticker===ticker);
   if(!s||!(s.price>0)){alert('Share not found or no price loaded.');return;}
-  window._buyCur=s.currency||'AUD'; // v408: the dialog + risk preview work in the share's currency
   window._modalLabel='🛒 Practice buy';
   showModal(`
     <div style="font-weight:700;font-size:15px;color:var(--text);">💼 Paper buy — ${s.ticker}</div>
-    <div style="font-size:11px;color:var(--muted);margin:4px 0 10px;">${s.name||''} · last close ${fmtP(s.price,s.currency)}${(s._q&&s._q.d)?` <span style="color:var(--dim)">(${s._q.d})</span>`:''} · 💵 cash available: <strong style="color:var(--green)">${fmtP(_wCash(_paper(),s.currency),s.currency)}</strong></div>
+    <div style="font-size:11px;color:var(--muted);margin:4px 0 10px;">${s.name||''} · last close ${fmtP(s.price,s.currency)}${(s._q&&s._q.d)?` <span style="color:var(--dim)">(${s._q.d})</span>`:''} · 💵 cash available: <strong style="color:var(--green)">${_paper().cash.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></div>
     ${(function(){const qd=(s._q&&s._q.d)||s.lastDate;const n=_staleDays(qd);return n>1?`<div style="border:1px solid var(--orange);background:rgba(255,165,0,.08);border-radius:6px;padding:5px 8px;margin:0 0 10px;font-size:9px;color:var(--orange);">⚠ This price is ${n} trading days old (${qd}). Tap ⚡ fresh prices first so your practice buy uses today’s price.</div>`:'';})()}
     <label style="display:block;font-size:10px;color:var(--muted);margin-bottom:4px;">Amount to invest (${s.currency})</label>
     <input type="number" id="paperAmt" min="0" step="any" placeholder="e.g. 1000" style="width:100%;padding:9px 11px;border-radius:7px;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:14px;box-sizing:border-box;">
@@ -6543,9 +6501,9 @@ function paperBuyConfirm(ticker){
 
   if(isLimit&&lim>0){
     // Reserve the cash and create a PENDING limit-buy order.
-    if(cost+fee>_wCash(p,s.currency)+0.005){alert(`Not enough paper cash to reserve for this order. Needs ${fmtP(cost,s.currency)}${fee>0?' + $'+fee.toFixed(2)+' brokerage':''} · available ${fmtP(_wCash(p,s.currency),s.currency)}.`);return;}
-    _wAdd(p,s.currency,-cost);
-    _chargeFee(p,s.currency);
+    if(cost+fee>p.cash+0.005){alert(`Not enough paper cash to reserve for this order. Needs ${fmtP(cost,s.currency)}${fee>0?' + $'+fee.toFixed(2)+' brokerage':''} · available ${p.cash.toFixed(2)}.`);return;}
+    p.cash=+(p.cash-cost).toFixed(2);
+    _chargeFee(p);
     p.orders=p.orders||[];
     p.orders.push({id:'o'+Date.now(),ticker:s.ticker,exchange:s.exchange,name:s.name||'',currency:s.currency,
       limit:lim,qty,reserved:cost,placedDate:today,checkedDate:today,preOpen:_orderPreOpen(s.exchange),expiry:_orderExpiry(today),target:tgt>0?tgt:null,stop:stop>0?stop:null,trail:_trV,note:note||null,fee:fee||0,
@@ -6555,9 +6513,9 @@ function paperBuyConfirm(ticker){
   }
   // Realistic fills mode: queue the market buy — it fills at the NEXT day's open.
   if(realFillsOn()){
-    if(cost+fee>_wCash(p,s.currency)+0.005){alert(`Not enough paper cash. Cost ${fmtP(cost,s.currency)}${fee>0?' + $'+fee.toFixed(2)+' brokerage':''} · available ${fmtP(_wCash(p,s.currency),s.currency)}.`);return;}
-    _wAdd(p,s.currency,-cost);
-    _chargeFee(p,s.currency);
+    if(cost+fee>p.cash+0.005){alert(`Not enough paper cash. Cost ${fmtP(cost,s.currency)}${fee>0?' + $'+fee.toFixed(2)+' brokerage':''} · available ${p.cash.toFixed(2)}.`);return;}
+    p.cash=+(p.cash-cost).toFixed(2);
+    _chargeFee(p);
     p.orders=p.orders||[];
     p.orders.push({id:'o'+Date.now(),ticker:s.ticker,exchange:s.exchange,name:s.name||'',currency:s.currency,
       market:true,limit:0,qty:0,amount:cost,reserved:cost,placedDate:today,checkedDate:today,preOpen:_orderPreOpen(s.exchange),expiry:_orderExpiry(today),
@@ -6567,9 +6525,9 @@ function paperBuyConfirm(ticker){
     return;
   }
   // Market order — fills now at last close.
-  if(cost+fee>_wCash(p,s.currency)+0.005){alert(`Not enough paper cash. Cost ${fmtP(cost,s.currency)}${fee>0?' + $'+fee.toFixed(2)+' brokerage':''} · available ${fmtP(_wCash(p,s.currency),s.currency)}.`);return;}
-  _wAdd(p,s.currency,-cost);
-  _chargeFee(p,s.currency);
+  if(cost+fee>p.cash+0.005){alert(`Not enough paper cash. Cost ${fmtP(cost,s.currency)}${fee>0?' + $'+fee.toFixed(2)+' brokerage':''} · available ${p.cash.toFixed(2)}.`);return;}
+  p.cash=+(p.cash-cost).toFixed(2);
+  _chargeFee(p);
   p.holdings.push({id:'t'+Date.now(),ticker:s.ticker,exchange:s.exchange,name:s.name||'',currency:s.currency,
     buyDate:today,buyPrice:px,qty,invested:+(qty*px).toFixed(2),buyFee:fee||0,
     lastPrice:s.price,lastDate:(s._q&&s._q.d)||today,target:tgt>0?tgt:null,stop:stop>0?stop:null,trail:_trV,note:note||null,
@@ -6618,15 +6576,15 @@ async function checkLimitOrders(acct){
       let snap=_tickRound(old,o.exchange);
       if(Math.abs(snap-old)<1e-9)continue;
       let newCost=+(o.qty*snap).toFixed(2), delta=+(newCost-(o.reserved||0)).toFixed(2);
-      if(delta>0.005 && delta>_wCash(p,o.currency)+0.005){ snap=_tickFloor(old,o.exchange); newCost=+(o.qty*snap).toFixed(2); delta=+(newCost-(o.reserved||0)).toFixed(2); }
+      if(delta>0.005 && delta>(p.cash||0)+0.005){ snap=_tickFloor(old,o.exchange); newCost=+(o.qty*snap).toFixed(2); delta=+(newCost-(o.reserved||0)).toFixed(2); }
       if(!(snap>0)||Math.abs(snap-old)<1e-9)continue;
-      _wAdd(p,o.currency,-delta); o.limit=snap; o.reserved=newCost; changed=true; // v408: reserve moves within the order's own currency wallet
+      p.cash=+((p.cash||0)-delta).toFixed(2); o.limit=snap; o.reserved=newCost; changed=true;
     }
     const key=((document.getElementById('apiKey')||{}).value||'').trim();
     for(const o of orders.slice()){
       if(o.expiry&&todayL>o.expiry){
-        _wAdd(p,o.currency,(o.reserved||0)+(o.fee||0));
-        _wFeeBack(p,o.currency,o.fee||0);
+        p.cash=+((p.cash||0)+(o.reserved||0)+(o.fee||0)).toFixed(2);
+        if(o.fee>0)p.feesPaid=+(Math.max(0,(p.feesPaid||0)-o.fee)).toFixed(2);
         p.orders=p.orders.filter(x=>x.id!==o.id);
         changed=true;
         filled.push(`${o.ticker} order expired after ${ORDER_EXPIRY_DAYS} days — ${fmtP(o.reserved,o.currency)} returned to cash`);
@@ -6686,15 +6644,15 @@ async function checkLimitOrders(acct){
         changed=true;
         const qtyF=o.market?Math.floor((o.amount||o.reserved)/hit.fill):o.qty;
         if(qtyF<1){
-          _wAdd(p,o.currency,(o.reserved||0)+(o.fee||0));
-          _wFeeBack(p,o.currency,o.fee||0);
+          p.cash=+((p.cash||0)+(o.reserved||0)+(o.fee||0)).toFixed(2);
+          if(o.fee>0)p.feesPaid=+(Math.max(0,(p.feesPaid||0)-o.fee)).toFixed(2);
           p.orders=p.orders.filter(x=>x.id!==o.id);
           filled.push(`${o.ticker} order cancelled — can\u2019t afford one share at the fill price; cash returned`);
           continue;
         }
         const cost=+(qtyF*hit.fill).toFixed(2);
         const refund=+(o.reserved-cost).toFixed(2);            // reserved at limit; fill ≤ limit → refund difference
-        if(refund>0)_wAdd(p,o.currency,refund);
+        if(refund>0)p.cash=+((p.cash||0)+refund).toFixed(2);
         p.holdings.push({id:'t'+Date.now()+Math.random().toString(36).slice(2,5),ticker:o.ticker,exchange:o.exchange,name:o.name,currency:o.currency,
           buyDate:hit.date,buyPrice:hit.fill,qty:qtyF,invested:cost,buyFee:o.fee||0,lastPrice:hit.fill,lastDate:hit.date,target:o.target,stop:o.stop,trail:o.trail||0,note:o.note||null,
           tgtLog:Array.isArray(o.tgtLog)?o.tgtLog:[],stopLog:Array.isArray(o.stopLog)?o.stopLog:[]});
@@ -6711,8 +6669,8 @@ async function checkLimitOrders(acct){
 function paperCancelOrder(id){
   const p=_paper();const o=(p.orders||[]).find(x=>x.id===id);if(!o)return;
   if(!confirm(`Cancel ${o.market?'market':'limit'} buy order: ${o.market?fmtP(o.amount||o.reserved,o.currency)+' of '+o.ticker+' at next open':o.qty+' '+o.ticker+' @ '+fmtP(o.limit,o.currency)}?\nThe reserved ${fmtP(o.reserved,o.currency)}${o.fee>0?' (and the $'+o.fee.toFixed(2)+' brokerage)':''} returns to cash.`))return;
-  _wAdd(p,o.currency,(o.reserved||0)+(o.fee||0));
-  _wFeeBack(p,o.currency,o.fee||0);
+  p.cash=+((p.cash||0)+(o.reserved||0)+(o.fee||0)).toFixed(2);
+  if(o.fee>0)p.feesPaid=+(Math.max(0,(p.feesPaid||0)-o.fee)).toFixed(2);
   p.orders=p.orders.filter(x=>x.id!==id);
   _paperSave(p);showPortfolio();
 }
@@ -6733,8 +6691,8 @@ function paperEditOrderLimit(id){
   if(Math.abs(np-cur)<1e-9)return; // unchanged
   const newCost=+(o.qty*np).toFixed(2);
   const delta=+(newCost-(o.reserved||0)).toFixed(2); // >0 needs more reserved; <0 refunds
-  if(delta>0 && delta>_wCash(p,o.currency)+0.005){ alert('Raising the limit needs '+fmtP(delta,o.currency)+' more reserved, but you only have '+fmtP(_wCash(p,o.currency),o.currency)+' cash. Lower the price, reduce the order, or add cash.'); return; }
-  _wAdd(p,o.currency,-delta);   // delta>0 subtracts; delta<0 adds the refund back — always within the order's own currency wallet
+  if(delta>0 && delta>(p.cash||0)+0.005){ alert('Raising the limit needs '+fmtP(delta,o.currency)+' more reserved, but you only have '+fmtP(p.cash||0,o.currency)+' cash. Lower the price, reduce the order, or add cash.'); return; }
+  p.cash=+((p.cash||0)-delta).toFixed(2);   // delta>0 subtracts; delta<0 adds the refund back
   o.limit=np; o.reserved=newCost; o.checkedDate=_todayLocal();
   _paperSave(p);
   const ls=document.getElementById('loadStatus'); if(ls)ls.innerHTML='<span style="color:var(--green)">✎ '+o.ticker+' limit updated to '+fmtP(np,o.currency)+' — '+fmtP(newCost,o.currency)+' reserved'+(delta<0?' ('+fmtP(-delta,o.currency)+' returned to cash)':delta>0?' ('+fmtP(delta,o.currency)+' more reserved)':'')+'.</span>';
@@ -6946,7 +6904,7 @@ function paperDeleteHolding(id){
   if(!confirm(`Delete ${tk} completely?\n\n${totQty.toLocaleString()} shares removed and ${fmtP(totInv,cur)} returned to your cash. No sale or P/L is recorded. This can't be undone.`))return;
   const ids=new Set(lots.map(l=>l.id));
   p.holdings=(p.holdings||[]).filter(x=>!ids.has(x.id));
-  _wAdd(p,cur,totInv);     // refund the money that was tied up — into ITS currency wallet (v408)
+  p.cash=+((p.cash||0)+totInv).toFixed(2);     // refund the money that was tied up
   _paperSave(_paperPrune?_paperPrune(p):p);
   showPortfolio();
 }
@@ -6980,8 +6938,8 @@ function paperSellMarket(id){
       sellDate:today,sellPrice:px,proceeds:lProc,fees:lFees,plAbs:lPl,plPct:+(lInv>0?(lPl/lInv)*100:0).toFixed(2),
       trigger:'market',note:l.note||null,tgtLog:l.tgtLog||null,stopLog:l.stopLog||null});
   }
-  _wAdd(p,cur,proceeds); // v408: sale proceeds land in the share's currency wallet
-  _chargeFee(p,cur);
+  p.cash=+((p.cash||0)+proceeds).toFixed(2);
+  _chargeFee(p);
   const ids=new Set(lots.map(l=>l.id));
   p.holdings=p.holdings.filter(x=>!ids.has(x.id));
   _paperSave(_paperPrune?_paperPrune(p):p);
@@ -7003,8 +6961,8 @@ function paperDeleteHolding(id){
   const totBuyFee=lots.reduce((a,l)=>a+(+l.buyFee||0),0);
   const back=+(totInv+totBuyFee).toFixed(2);
   if(!confirm(`🗑 Delete ${tk} from your holdings?\n\nRemoves this position (${totQty.toLocaleString()} shares) WITHOUT recording a sale — use it to clear a wrong or corrupted holding. The ${fmtP(back,cur)} you paid for it goes back to your cash; no profit or loss is recorded.\n\nYour 🤖 auto-pilot account is NOT affected. Tip: 💾 back up first — this can't be undone.`))return;
-  _wAdd(p,cur,back); // v408: refund into the holding's currency wallet
-  _wFeeBack(p,cur,totBuyFee);
+  p.cash=+((p.cash||0)+back).toFixed(2);
+  if(totBuyFee>0)p.feesPaid=+(Math.max(0,(p.feesPaid||0)-totBuyFee)).toFixed(2);
   const ids=new Set(lots.map(l=>l.id));
   p.holdings=(p.holdings||[]).filter(x=>!ids.has(x.id));
   _paperSave(_paperPrune?_paperPrune(p):p,_acct);
@@ -7027,8 +6985,8 @@ function paperDeleteTrade(sellDate,ticker,buyDate){
   if(idx<0){alert('Could not find that trade to delete.');return;}
   const t=p.history[idx];
   if(!confirm(`🗑 Delete this closed ${t.ticker} trade from your history?\n\nSold ${(+t.qty||0).toLocaleString()} @ ${fmtP(t.sellPrice,t.currency)} on ${t.sellDate} · recorded P/L ${(+t.plAbs||0)>=0?'+':''}${(+t.plAbs||0).toFixed(2)}.\n\nRemoves the record and reverses that ${((+t.plAbs||0)>=0)?'profit':'loss'} from your cash so the balance stays consistent — for clearing a wrong or duplicate trade. Your 🤖 auto-pilot account is NOT affected.`))return;
-  _wAdd(p,t.currency,-(+t.plAbs||0)); // v408: reverse the P/L from the trade's own currency wallet
-  _wFeeBack(p,t.currency,+t.fees||0);
+  p.cash=+((p.cash||0)-(+t.plAbs||0)).toFixed(2);
+  if(+t.fees>0)p.feesPaid=+(Math.max(0,(p.feesPaid||0)-(+t.fees||0))).toFixed(2);
   p.history.splice(idx,1);
   _paperSave(_paperPrune?_paperPrune(p):p,_acct);
   const ls=document.getElementById('loadStatus');
@@ -7106,8 +7064,8 @@ function paperSellConfirm(id){
     else { l.qty-=take; l.invested=+(l.qty*l.buyPrice).toFixed(2); l.buyFee=+(Math.max(0,(l.buyFee||0)-buyFeePart)).toFixed(2); }
     remaining-=take;
   }
-  _wAdd(p,lots[0].currency,+totalProceeds.toFixed(2)); // v408: proceeds land in the share's currency wallet
-  _chargeFee(p,lots[0].currency);
+  p.cash=+((p.cash||0)+(+totalProceeds.toFixed(2))).toFixed(2);
+  _chargeFee(p);
   const dropIds=new Set(lots.filter(l=>l._sellAll).map(l=>l.id));
   p.holdings=p.holdings.filter(x=>!dropIds.has(x.id));
   _paperSave(_paperPrune(p));
@@ -7264,9 +7222,9 @@ function refreshPortfolioBtn(){
   if(!hold.length&&!(p.history||[]).length){b.innerHTML='💼 Portfolio';b.style.color='var(--muted)';b.style.borderColor='var(--border2)';return;}
   let val=0;
   hold.forEach(h=>{val+=h.qty*(h.lastPrice||h.buyPrice);});
-  const acct=_cashAll(p)+_reservedSum(p)+val; // reserved limit-order cash is still yours · v408: cash = every currency wallet (practice units)
-  const SC=_startCapAll(p);
-  const pl=acct+_wdProfitAll(p)-SC, plp=(pl/SC)*100; // v366: profit you withdrew still counts as profit you made
+  const acct=(p.cash||0)+_reservedSum(p)+val; // reserved limit-order cash is still yours
+  const SC=_startCap(p);
+  const pl=acct+(p.wdProfit||0)-SC, plp=(pl/SC)*100; // v366: profit you withdrew still counts as profit you made
   const bad=paperBalanceInconsistent();
   const c=bad?'var(--orange)':pl>0.005?'var(--green)':pl<-0.005?'var(--red)':'var(--muted)';
   b.innerHTML=bad
@@ -7397,8 +7355,7 @@ function paperRecomputeFees(){
   const _acct=window._pfCtx||'main';
   const p=_paper(_acct);
   const _who=(_acct==='auto')?'🤖 Auto-pilot':'👤 My Trading';
-  const _au=x=>((x&&x.currency)||'AUD')==='AUD'; // v408: this repairs the AUD ledger — foreign trades keep their fees in their own wallets
-  const realFees=+(((p.holdings||[]).filter(_au).reduce((a,h)=>a+(+h.buyFee||0),0))+((p.history||[]).filter(_au).reduce((a,t)=>a+(+t.fees||0),0))+((p.orders||[]).filter(_au).reduce((a,o)=>a+(+o.fee||0),0))).toFixed(2); // v367: pending orders' escrowed fees are legitimate feesPaid too — without them, fix-fees + a later cancel double-refunded
+  const realFees=+(((p.holdings||[]).reduce((a,h)=>a+(+h.buyFee||0),0))+((p.history||[]).reduce((a,t)=>a+(+t.fees||0),0))+((p.orders||[]).reduce((a,o)=>a+(+o.fee||0),0))).toFixed(2); // v367: pending orders' escrowed fees are legitimate feesPaid too — without them, fix-fees + a later cancel double-refunded
   const cur=+(p.feesPaid||0).toFixed(2);
   const diff=+(cur-realFees).toFixed(2);
   if(Math.abs(diff)<0.005){ alert('Fees on the '+_who+' account already match your trades ('+fmtP(realFees,'AUD')+'). Nothing to fix.'); return; }
@@ -7412,13 +7369,12 @@ function paperRecomputeFees(){
 }
 function paperRepairBalance(){
   const p=_paper();
-  const _au=x=>((x&&x.currency)||'AUD')==='AUD'; // v408: repairs act on the AUD ledger only — foreign wallets keep their own books
-  const spent=(p.holdings||[]).filter(_au).reduce((a,h)=>a+(h.invested||0),0);
-  const reserved=_reservedSum(p,'AUD');
-  const closedPl=(p.history||[]).filter(_au).reduce((a,t)=>a+(t.plAbs||0),0);
+  const spent=(p.holdings||[]).reduce((a,h)=>a+(h.invested||0),0);
+  const reserved=_reservedSum(p);
+  const closedPl=(p.history||[]).reduce((a,t)=>a+(t.plAbs||0),0);
   const fees=p.feesPaid||0;
-  const histFees=(p.history||[]).filter(_au).reduce((a,t)=>a+(t.fees||0),0);
-  const divs=(p.dividends||[]).filter(_au).reduce((a,d)=>a+(d.total||0),0);
+  const histFees=(p.history||[]).reduce((a,t)=>a+(t.fees||0),0);
+  const divs=(p.dividends||[]).reduce((a,d)=>a+(d.total||0),0);
   // Money currently tied up in the market (open holdings + reserved orders),
   // and the realised (banked) result so far — net of fees, plus dividends.
   const committed=+(spent+reserved).toFixed(2);
@@ -7488,50 +7444,42 @@ function paperRepairBalance(){
 // consistent (no more scary warning after topping up).
 function paperAddCash(){
   const p=_paper();
-  // v408: the cash goes into the wallet of the exchange you're LOOKING at — on
-  // the NYSE view that's the US$ wallet, everywhere else the AU$ one.
-  const _cur=(typeof EXCH_CUR!=='undefined'&&EXCH_CUR[_pfEx()])||'AUD';
-  const w=_wallet(p,_cur);
-  const raw=prompt('➕ Add practice cash'+(_cur!=='AUD'?' — '+_cur+' (the '+_pfEx()+' wallet)':'')+'\n\nHow much do you want to add to your account? (e.g. 5000)\nYour starting balance rises by the same amount, so your return % stays honest.\n\nTip: enter a negative number to withdraw cash.','5000');
+  const raw=prompt('➕ Add practice cash\n\nHow much do you want to add to your account? (e.g. 5000)\nYour starting balance rises by the same amount, so your return % stays honest.\n\nTip: enter a negative number to withdraw cash.','5000');
   if(raw===null)return;
   const amt=parseFloat(String(raw).replace(/[,$\s]/g,''));
   if(!isFinite(amt)||amt===0){alert('Enter an amount, e.g. 5000.');return;}
-  if(amt<0&&(w.cash||0)+amt<0){alert('You can\u2019t withdraw more than your cash balance ('+fmtP(w.cash||0,_cur)+').');return;}
-  w.cash=+((w.cash||0)+amt).toFixed(2);
+  if(amt<0&&(p.cash||0)+amt<0){alert('You can\u2019t withdraw more than your cash balance ('+(p.cash||0).toFixed(2)+').');return;}
+  p.cash=+((p.cash||0)+amt).toFixed(2);
   if(amt>0){
-    if(_cur==='AUD')p.startCap=+((_startCap(p))+amt).toFixed(2);
-    else w.startCap=+((_wStartCap(p,_cur))+amt).toFixed(2);
+    p.startCap=+((_startCap(p))+amt).toFixed(2);
   }else{
     // v366: withdrawals NEVER shrink the starting balance \u2014 any reduction
     // distorts the return-% denominator (the old symmetric subtraction could
     // hit the $1 clamp and show returns in the millions). Withdrawn cash is
     // tracked instead and still counts as money you made: return = (account
     // now + withdrawn \u2212 start) \u00f7 start.
-    w.wdProfit=+(((w.wdProfit||0)+(-amt))).toFixed(2);
+    p.wdProfit=+(((p.wdProfit||0)+(-amt))).toFixed(2);
   }
   p.deposits=p.deposits||[];
-  p.deposits.push({date:_todayLocal(),amount:+amt.toFixed(2),currency:_cur});
+  p.deposits.push({date:_todayLocal(),amount:+amt.toFixed(2)});
   _paperSave(p);
-  alert((amt>0?'✓ Added ':'✓ Withdrew ')+fmtP(Math.abs(amt),_cur)+(amt>0?' to':' from')+' your practice account.\nCash: '+fmtP(w.cash,_cur)+' · starting balance now '+fmtP(_cur==='AUD'?_startCap(p):_wStartCap(p,_cur),_cur)+'.');
+  alert((amt>0?'✓ Added $':'✓ Withdrew $')+Math.abs(amt).toLocaleString(undefined,{minimumFractionDigits:2})+(amt>0?' to':' from')+' your practice account.\nCash: $'+p.cash.toLocaleString(undefined,{minimumFractionDigits:2})+' · starting balance now $'+p.startCap.toLocaleString(undefined,{minimumFractionDigits:2})+'.');
   showPortfolio();
 }
 function _paperLedgerDiff(p){
   // cash − what the ledger says cash should be (0 = perfectly consistent)
-  // v408: this audits the AUD ledger (p.cash) — trades in other currencies move
-  // their own wallets, so they're excluded here or every US buy would false-flag.
-  const _au=x=>((x&&x.currency)||'AUD')==='AUD';
-  const spent=(p.holdings||[]).filter(_au).reduce((a,h)=>a+(h.invested||0),0);
+  const spent=(p.holdings||[]).reduce((a,h)=>a+(h.invested||0),0);
   // v366: reserved is o.reserved ONLY — the pending order's fee was ALREADY
   // moved into feesPaid at placement, so adding o.fee here subtracted it twice
   // and every open order showed a false "balance corrupted" warning of exactly
   // one brokerage fee.
-  const reserved=(p.orders||[]).filter(_au).reduce((a,o)=>a+(o.reserved||0),0);
-  const closedPl=(p.history||[]).filter(_au).reduce((a,t)=>a+(t.plAbs||0),0);
+  const reserved=(p.orders||[]).reduce((a,o)=>a+(o.reserved||0),0);
+  const closedPl=(p.history||[]).reduce((a,t)=>a+(t.plAbs||0),0);
   // v234: closed trades since the fees update carry their fees INSIDE plAbs, and
   // those same fees also sit in feesPaid — add them back so they aren't counted
   // twice. Dividends are real cash in, so they count too.
-  const histFees=(p.history||[]).filter(_au).reduce((a,t)=>a+(t.fees||0),0);
-  const divs=(p.dividends||[]).filter(_au).reduce((a,d)=>a+(d.total||0),0);
+  const histFees=(p.history||[]).reduce((a,t)=>a+(t.fees||0),0);
+  const divs=(p.dividends||[]).reduce((a,d)=>a+(d.total||0),0);
   const expect=+(_startCap(p)-spent-reserved+closedPl-(p.feesPaid||0)+histFees+divs-(p.wdProfit||0)).toFixed(2); // v366: withdrawn profit left the account as real cash
   return +(((p.cash||0)-expect)).toFixed(2);
 }
@@ -7687,18 +7635,13 @@ function showPortfolio(exSel){
   }).join('');
   const totPl=totVal-totInv, totC=totPl>0.005?'var(--green)':totPl<-0.005?'var(--red)':'var(--muted)';
   // v348: always-visible key numbers (above the tabs, on every view) + pending count
-  // v408: on a specific exchange view, cash/reserved are that exchange's CURRENCY
-  // wallet; on ALL with a second currency open, each wallet is shown separately.
-  const _vCur=(ex!=='ALL'&&typeof EXCH_CUR!=='undefined'&&EXCH_CUR[ex])||null;
-  const _valAUD=_hasWallets(p)?holdRaw.filter(h=>(h.currency||'AUD')==='AUD').reduce((a,h)=>a+h.qty*(h.lastPrice||h.buyPrice),0):totVal;
-  const _pfCashNow=_vCur?_wCash(p,_vCur):(p.cash||0), _pfResvNow=_vCur?_reservedSum(p,_vCur):_reservedSum(p,'AUD'), _pfAcctNow=_pfCashNow+_pfResvNow+(_vCur?totVal:_valAUD);
+  const _pfCashNow=p.cash||0, _pfResvNow=_reservedSum(p), _pfAcctNow=_pfCashNow+_pfResvNow+totVal;
   const _pfPc=x=>x>0.005?'var(--green)':x<-0.005?'var(--red)':'var(--muted)';
-  const _fmtN=x=>fmtP(Number(x),_vCur||'AUD');
-  const _walletsLine=(ex==='ALL'&&_hasWallets(p))?Object.keys(p.wallets).map(k=>` <span style="color:var(--dim);font-size:10px;">+ ${fmtP(_wCash(p,k),k)}</span>`).join(''):'';
+  const _fmtN=x=>'$'+Number(x).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
   const _ordN=(p.orders||[]).filter(o=>ex==='ALL'||o.exchange===ex).length;
   const keyStrip=`<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 13px;margin-bottom:10px;">
-    <div><div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Account</div><div style="font-family:var(--mono);font-weight:800;font-size:15px;color:var(--text);">${_fmtN(_pfAcctNow)}${(ex==='ALL'&&_hasWallets(p))?' <span style="color:var(--dim);font-size:9px;" title="Australian-dollar side of the account — your other currency wallets are listed beside 💵 Cash">AUD side</span>':''}</div></div>
-    <div><div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">💵 Cash</div><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text);">${_fmtN(_pfCashNow)}${_walletsLine}</div></div>
+    <div><div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Account</div><div style="font-family:var(--mono);font-weight:800;font-size:15px;color:var(--text);">${_fmtN(_pfAcctNow)}</div></div>
+    <div><div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">💵 Cash</div><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text);">${_fmtN(_pfCashNow)}</div></div>
     ${_pfResvNow>0.005?`<div><div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">⏳ Reserved</div><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text);">${_fmtN(_pfResvNow)}</div></div>`:''}
     <div><div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Open P/L</div><div class="pf-pl" style="font-family:var(--mono);font-weight:800;font-size:15px;color:${_pfPc(totPl)};">${totPl>=0?'+':''}${totPl.toFixed(2)}</div></div>
     <button id="pfHideBtn" onclick="_pfToggleProfit()" title="Hide or show your profit/loss figures in the portfolio" style="margin-left:auto;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--muted);font:600 10px var(--sans);cursor:pointer;white-space:nowrap;">${_pfHideProfit()?'🙈 Show P/L':'👁 Hide P/L'}</button>
@@ -7799,14 +7742,11 @@ function showPortfolio(exSel){
       const totalPl=totPl+closedPl+divs;
       const card=(lbl,v,c,cls)=>`<div style="flex:1;min-width:90px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;text-align:center;"><div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">${lbl}</div><div class="${cls||''}" style="font-family:var(--mono);font-size:14px;font-weight:800;color:${c||'var(--text)'};margin-top:2px;">${v}</div></div>`;
       const pc=x=>x>0.005?'var(--green)':x<-0.005?'var(--red)':'var(--muted)';
-      // v408: on a single-exchange view every money figure is that exchange's
-      // CURRENCY wallet; on ALL the cards stay AUD-side (wallets shown in the strip).
-      const _vC=(ex!=='ALL'&&typeof EXCH_CUR!=='undefined'&&EXCH_CUR[ex])||null;
-      const cash=_vC?_wCash(p,_vC):(p.cash||0), resv=_vC?_reservedSum(p,_vC):_reservedSum(p,'AUD'), acct=cash+resv+totVal;
+      const cash=p.cash||0, resv=_reservedSum(p), acct=cash+resv+totVal;
       const _curs=[...new Set(hold.map(h=>h.currency).filter(Boolean))];
       const mixed=(ex==='ALL'&&_curs.length>1);
-      const SC=_vC?_wStartCap(p,_vC):_startCap(p);
-      const fees=_vC?(_wallet(p,_vC).feesPaid||0):(p.feesPaid||0);
+      const SC=_startCap(p);
+      const fees=p.feesPaid||0;
       // ── All-time trading stats from the permanent ledger (exchange-scoped) ──
       const allT=(typeof histAll!=='undefined'?histAll:hist);
       let statsHtml='';
@@ -7844,17 +7784,17 @@ function showPortfolio(exSel){
         </div>`;
       }
       return `${mixed?`<div style="border:1px solid var(--orange);background:rgba(255,165,0,.08);border-radius:8px;padding:6px 10px;margin-bottom:8px;font-size:9px;color:var(--orange);">⚠ You hold shares in different currencies (${_curs.join(' + ')}) — the combined totals below add them as-is. Use the exchange tabs for exact single-currency figures.</div>`:''}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:${statsHtml?'8px':'12px'};">
-        ${(ex==='ALL'||_vC)?(function(){const _wd=_vC?(_wallet(p,_vC).wdProfit||0):(p.wdProfit||0);const _r=((acct+_wd-SC)/SC)*100;return card((_vC&&_vC!=='AUD')?(_vC+' account'):'Account total',fmtP(acct,_vC||'AUD')+' <span style="font-size:9px">('+(_r>=0?'+':'')+_r.toFixed(1)+'%'+(_wd>0?' incl. '+fmtP(_wd,_vC||'AUD')+' withdrawn':'')+')</span>',pc(acct+_wd-SC));})():''}
-        ${((ex==='ALL'&&SC!==PAPER_START_CASH)||(_vC&&_vC!=='AUD'&&SC!==PAPER_START_CASH))?card('Start capital',fmtP(SC,_vC||'AUD')):''}
-        ${(ex==='ALL'||_vC)?card('💵 Cash',fmtP(cash,_vC||'AUD')):''}
-        ${((ex==='ALL'||_vC)&&resv>0.005)?card('⏳ Reserved',fmtP(resv,_vC||'AUD')):''}
+        ${ex==='ALL'?(function(){const _wd=(p.wdProfit||0);const _r=((acct+_wd-SC)/SC)*100;return card('Account total',acct.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="font-size:9px">('+(_r>=0?'+':'')+_r.toFixed(1)+'%'+(_wd>0?' incl. $'+_wd.toLocaleString()+' withdrawn':'')+')</span>',pc(acct+_wd-SC));})():''}
+        ${(ex==='ALL'&&SC!==PAPER_START_CASH)?card('Start capital',SC.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})):''}
+        ${ex==='ALL'?card('💵 Cash',cash.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})):''}
+        ${(ex==='ALL'&&resv>0.005)?card('⏳ Reserved',resv.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})):''}
         ${card('Holdings value',totVal.toFixed(2))}
         ${card('Invested',totInv.toFixed(2))}
         ${card('Unrealised P/L',(totPl>=0?'+':'')+totPl.toFixed(2)+' ('+(totInv>0?((totPl/totInv)*100>=0?'+':'')+((totPl/totInv)*100).toFixed(1):'0')+'%)',pc(totPl),'pf-pl')}
         ${card('Realised P/L 12mo',(closedPl>=0?'+':'')+closedPl.toFixed(2),pc(closedPl),'pf-pl')}
         ${divs>0.005?card('💰 Dividends','+'+divs.toFixed(2),'var(--green)'):''}
         ${card('Total P/L',(totalPl>=0?'+':'')+totalPl.toFixed(2),pc(totalPl),'pf-pl')}
-        ${((ex==='ALL'||_vC)&&fees>0)?card('Fees paid',fees.toFixed(2)+(brokerageFee()>0?' <span style="font-size:9px;color:var(--dim)">($'+brokerageFee()+'/trade)</span>':''),'var(--orange)'):''}
+        ${(ex==='ALL'&&fees>0)?card('Fees paid',fees.toFixed(2)+(brokerageFee()>0?' <span style="font-size:9px;color:var(--dim)">($'+brokerageFee()+'/trade)</span>':''),'var(--orange)'):''}
       </div>${statsHtml}`;
     })():''}
     ${vh.length>=2?(function(){
@@ -14056,7 +13996,7 @@ function myChangesData(){
   let p=null; try{ p=_paper(); }catch(e){ p={holdings:[]}; }
   const holdItems=[];
   const addH=(sev,icon,tk,txt)=>holdItems.push({sev,icon,tk,txt});
-  const _rul=(function(){try{return _rules();}catch(e){return null;}})(); const _acctBy={}; const _acctOf=c=>{c=c||'AUD'; if(!(c in _acctBy)){try{_acctBy[c]=_acctValue(p,c);}catch(e){_acctBy[c]=0;}} return _acctBy[c];}; // v408: size warnings measure the account side the holding trades in
+  const _rul=(function(){try{return _rules();}catch(e){return null;}})(); let _acct=0; try{_acct=_acctValue(p);}catch(e){}
   (p.holdings||[]).forEach(h=>{
     const s=by[h.ticker]; if(!s||!(s.price>0))return; out.holdN++; seen[h.ticker]=1;
     const chg=s.chgPct!=null?s.chgPct:0, cur=s.currency||'';
@@ -14066,7 +14006,7 @@ function myChangesData(){
     else if(h.target>0&&s.price>=h.target*0.97) addH(1,'🎯',h.ticker,`is within 3% of your target (${fmtP(h.target,cur)}) — closed ${fmtP(s.price,cur)}.`);
     if(Math.abs(chg)>=3) addH(2,chg>0?'📈':'📉',h.ticker,`(your holding) moved ${chg>0?'+':''}${chg.toFixed(1)}% today${(s.volCalced&&s.volPct>=100)?` on ${Math.round(s.volPct)}% above-average volume`:''}.`);
     if(s.annConfirmed&&(s.annNews5d||0)>0) addH(1,'📢',h.ticker,`(your holding) has ${s.annNews5d} confirmed price-sensitive announcement${s.annNews5d>1?'s':''} in the last 5 days${s.annHeadline?` — “${String(s.annHeadline).slice(0,70)}”`:''}. Tap to verify.`);
-    if(_rul&&_rul.enabled){ const _val=h.qty*s.price; const _acct=_acctOf(h.currency);
+    if(_rul&&_rul.enabled){ const _val=h.qty*s.price;
       if(_rul.maxPosPct>0&&_acct>0&&(_val/_acct)*100>_rul.maxPosPct+0.5) addH(2,'📦',h.ticker,`is ${Math.round((_val/_acct)*100)}% of your account — over your ${_rul.maxPosPct}% max-size rule.`);
       if(_rul.stopPct>0&&!(h.stop>0)&&h.buyPrice>0&&s.price<=h.buyPrice*(1-_rul.stopPct/100)) addH(1,'🛑',h.ticker,`is down ${Math.round((1-s.price/h.buyPrice)*100)}% from your ${fmtP(h.buyPrice,cur)} buy — past your -${_rul.stopPct}% stop rule.`);
     }
