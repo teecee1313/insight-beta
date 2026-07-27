@@ -1,5 +1,5 @@
 {
-  "version": "2026.07.27-458",
+  "version": "2026.07.27-459",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta build 2026.07.27-458 — FIXED: a share's history could stop at the previous session while the main table already showed today's, flying the amber \"today's session isn't loaded\" banner on a day it plainly was. The saved history recorded the day it was written, and the app read that as proof of what was inside it. It now checks the newest bar itself, and fills the missing day from the quote already on screen — no extra download. NEW: two turnover tiles on the Market Radar under Volume — $250k+ Traded and $1M+ Traded — how many shares had that much value change hands today (close x volume). Tap to filter, tap again to clear, stack them with the rest. A liquidity check, not advice. Anything odd, confusing or brilliant: use the ✉ feedback link in the top-left."
+  "notes": "Beta build 2026.07.27-459 — thanks for testing! This copy updates separately from the released app. Anything odd, confusing or brilliant: use the ✉ feedback link in the top-left."
 }
