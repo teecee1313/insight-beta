@@ -1,5 +1,5 @@
 {
-  "version": "2026.07.27-456",
+  "version": "2026.07.27-457",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta build 2026.07.27-456 — thanks for testing! This copy updates separately from the released app. Anything odd, confusing or brilliant: use the ✉ feedback link in the top-left."
+  "notes": "Beta build 2026.07.27-457 — the 🧪 Evidence buckets are switched on here for the first time. 🟢 SOLID, 🟡 PROMISING and ⚪ TOO EARLY now sit second on the Market Radar, always on screen even on a phone, and tapping them filters every view. The ⚖️ per-share chips and the scan-banner tier chip come with them. They were held back on beta since v452 while the grading maths settled. Anything odd, confusing or brilliant: use the ✉ feedback link in the top-left."
 }
