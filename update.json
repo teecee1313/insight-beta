@@ -1,5 +1,5 @@
 {
-  "version": "2026.07.28-497",
+  "version": "2026.07.28-498",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta build 2026.07.28-497 \u2014 the \ud83d\udcd6 Help guide button now parks itself just above the small print at the bottom of the page instead of on top of it. Anything odd, confusing or brilliant: use the \u2709 feedback link in the top-left."
+  "notes": "Beta build 2026.07.28-498 \u2014 evidence tiers now come from what the days support rather than from how often a scan fired, and are measured against a market you could actually buy. New NOT PROVEN tier. Anything odd, confusing or brilliant: use the \u2709 feedback link in the top-left."
 }
