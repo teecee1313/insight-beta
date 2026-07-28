@@ -1,5 +1,5 @@
 {
-  "version": "2026.07.28-500",
+  "version": "2026.07.28-501",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta build 2026.07.28-500 \u2014 the \u26aa tile now reads NOT PROVEN and counts something real, the signals line shows the NOT PROVEN count, and a share firing merely-unproven signals is no longer told they underperform. Anything odd, confusing or brilliant: use the \u2709 feedback link in the top-left."
+  "notes": "Beta build 2026.07.28-501 \u2014 shares whose only signals are too new to have a record now carry a \u23f3 too early mark instead of being reported as 'we found nothing'. Anything odd, confusing or brilliant: use the \u2709 feedback link in the top-left."
 }
