@@ -1,5 +1,5 @@
 {
-  "version": "2026.07.28-495",
+  "version": "2026.07.28-496",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta build 2026.07.28-495 \u2014 \ud83c\udfc6 Top 20 no longer freezes for a few seconds before it shows you anything, big tables draw faster, and the \"within 3% of its high\" style tests now use the exact figure rather than the rounded one. Anything odd, confusing or brilliant: use the \u2709 feedback link in the top-left."
+  "notes": "Beta build 2026.07.28-496 \u2014 the \ud83d\udcd6 Help guide button is now a small circle in the bottom-right rather than a wide pill sitting on top of the page. Point at it and it opens out to the full name. Anything odd, confusing or brilliant: use the \u2709 feedback link in the top-left."
 }
