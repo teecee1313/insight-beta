@@ -1,5 +1,5 @@
 {
-  "version": "2026.07.28-490",
+  "version": "2026.07.28-491",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta build 2026.07.28-487 \u2014 thanks for testing! This copy updates separately from the released app. Anything odd, confusing or brilliant: use the \u2709 feedback link in the top-left."
+  "notes": "Beta build 2026.07.28-491 \u2014 \u21a9 Undo now works in this test copy: you can reverse a closed trade from the History list, same as the released app. Anything odd, confusing or brilliant: use the \u2709 feedback link in the top-left."
 }
