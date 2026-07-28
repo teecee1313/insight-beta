@@ -1,5 +1,5 @@
 {
-  "version": "2026.07.28-501",
+  "version": "2026.07.28-502",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta build 2026.07.28-501 \u2014 shares whose only signals are too new to have a record now carry a \u23f3 too early mark instead of being reported as 'we found nothing'. Anything odd, confusing or brilliant: use the \u2709 feedback link in the top-left."
+  "notes": "Beta build 2026.07.28-502 \u2014 a \ud83d\udee0 Owner tools block in the load panel with the \ud83d\udd2c server check and a link to the pantry, and the two evidence sub-lines now say whether they are counting SHARES or SIGNALS. Anything odd, confusing or brilliant: use the \u2709 feedback link in the top-left."
 }
