@@ -1,5 +1,5 @@
 {
-  "version": "2026.07.28-503",
+  "version": "2026.07.28-504",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta build 2026.07.28-503 \u2014 \ud83c\udfaf Trade Plan on every share's detail: how far it moves, how much to buy for a chosen risk, whether a stop is really possible, how long it takes to get out. Built on volatility persistence (0.89 correlation), not on any claim about direction. Anything odd, confusing or brilliant: use the \u2709 feedback link in the top-left."
+  "notes": "Beta build 2026.07.28-504 — thanks for testing! This copy updates separately from the released app. Anything odd, confusing or brilliant: use the ✉ feedback link in the top-left."
 }
