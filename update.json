@@ -1,5 +1,5 @@
 {
-  "version": "2026.07.28-512",
+  "version": "2026.07.28-524",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta build 2026.07.28-512 — thanks for testing! This copy updates separately from the released app. Anything odd, confusing or brilliant: use the ✉ feedback link in the top-left."
+  "notes": "BETA 2026.07.28-524 \u2014 twelve releases in one jump (513\u2192524). Highlights: \u2705 buy checklist \u00b7 \ud83e\ude9c profit ladder \u00b7 \u23ed honest queued market sells (fill at next open, like limits) \u00b7 \u21a9 undo and \ud83d\uddd1 delete tools removed (manipulation-proofing \u2014 repairs go through \ud83d\udcbe export/restore) \u00b7 \ud83d\udce1 compact one-line radar with \u25b8 full radar a tap away \u00b7 NYSE now needs your own data key (our server concentrates on the ASX) \u00b7 honest lock screen \u00b7 \ud83c\udf31 'Climbing the ladder' nursery on the report card \u00b7 \ud83c\udfdb THREE-YEAR durability study: every signal line shows how it fared 1\u20132 and 2\u20133 years ago, with a crown for lines that held across all three \u00b7 \ud83c\udf93 Lesson 50 explains the SOLID/PROMISING bars with diagrams. Please poke at the report card hardest \u2014 that's where this month lives. Hard-refresh (Ctrl+F5)."
 }
