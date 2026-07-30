@@ -656,8 +656,10 @@ body.theme-light .tblwrap th:nth-child(3),body.theme-light .tblwrap td:nth-child
 .ed code{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:2px 6px;font-family:var(--mono);font-size:11px;color:var(--orange);}
 
 /* ═══════════ MOBILE / NARROW SCREENS ═══════════ */
+.ph-only{display:none;} /* v582: phone-only affordances (e.g. the ticker-cell news chip) — enabled inside the phone block below */
 @media (max-width: 768px){
   html,body{overflow:auto;height:auto;}
+  .ph-only{display:inline;}
   /* Header wraps instead of overflowing */
   header{height:auto;flex-wrap:wrap;padding:8px 12px;gap:8px;}
   .hr2{margin-left:0;width:100%;flex-wrap:wrap;gap:8px;}
@@ -711,13 +713,16 @@ body.theme-light .tblwrap th:nth-child(3),body.theme-light .tblwrap td:nth-child
      modal lost their first column (the scan name) on any screen under 768px,
      leaving columns of figures with nothing saying what they were. The rule
      was only ever meant for the share table in #tblwrap. */
-  #tblwrap table th:nth-child(1), #tblwrap table td:nth-child(1),   /* checkbox */
-  #tblwrap table th:nth-child(7), #tblwrap table td:nth-child(7),   /* vol surge */
-  #tblwrap table th:nth-child(8), #tblwrap table td:nth-child(8),   /* volume detail */
-  #tblwrap table th:nth-child(9), #tblwrap table td:nth-child(9),   /* price streak */
-  #tblwrap table th:nth-child(10), #tblwrap table td:nth-child(10), /* vol streak */
-  #tblwrap table th:nth-child(11), #tblwrap table td:nth-child(11), /* accumulation */
-  #tblwrap table th:nth-child(14), #tblwrap table td:nth-child(14){ /* signals */
+  /* v582 — the third stale-index rot in this rule's history, and the last:
+     those nth-child numbers were written for the 14-column table, and after
+     the v556 redesign (10 columns) they were hiding the merged VOLUME column,
+     STREAKS, SCORE·ACCUM and the whole SIGNALS cell — evidence chips included
+     — on every phone. Columns now carry their OWN phone behaviour (.ph-hide
+     on the th and its td, in lockstep), so adding or removing a column can
+     never again silently change which OTHER columns a phone shows.
+     Phones keep: star · ticker (sticky) · price · change · 💰 PN Edge ·
+     ⭐ Score·🔥 Accum. The 📰 news chip moves into the ticker cell (.ph-only). */
+  #tblwrap table .ph-hide{
     display:none;
   }
   /* likewise: the touch-friendly padding belongs to the share table, not to
@@ -810,7 +815,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
     <span>Insight<span style="color:var(--gold)"> Trading</span></span>
     <span style="font-size:9px;font-weight:600;letter-spacing:2px;color:var(--muted);">MARKET ANALYSER</span>
     <span id="appVer" style="font-size:9px;color:var(--dim);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;"></span>
-    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.07.28-561" style="color:#ff9142;">✉ feedback</a></span>
+    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.07.28-599" style="color:#ff9142;">✉ feedback</a></span>
   </div>
   <div class="hbadge" id="exchBadge">🌐 Multi-Exchange Screener</div>
   <div class="notice" id="notice" style="display:none">—</div>
@@ -1516,6 +1521,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
 
     <div style="font-size:9px;color:var(--dim);font-weight:700;letter-spacing:.5px;margin:2px 0 4px;">DATA</div>
     <button id="streakBtn" onclick="calcStreaks()" title="Re-fetches fresh price history and recomputes streaks/signals for the shares currently listed" style="width:100%;margin-bottom:6px;padding:8px;border-radius:7px;border:1px solid var(--green);background:rgba(63,185,80,.12);color:var(--green);font:700 11px var(--sans);cursor:pointer;">🔄 Refresh / redownload data</button>
+    <button id="fillSrvBtn" onclick="_fillFromServer()" title="Builds your saved price history straight from YOUR server's store — one request per trading day instead of one per share through a free public relay. Use it after clearing data, on a new device, or any time loading crawls. About 300 trading days for every share." style="width:100%;margin-bottom:6px;padding:8px;border-radius:7px;border:1px solid var(--blue);background:rgba(88,166,255,.12);color:var(--blue);font:700 11px var(--sans);cursor:pointer;">⚡ Fill from my server store</button>
     <button id="resetBtn" onclick="doReset()" title="Clear all filters back to defaults" style="width:100%;margin-bottom:10px;padding:8px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--muted);font:700 11px var(--sans);cursor:pointer;">↺ Clear all filters</button>
 
     <div style="font-size:9px;color:var(--dim);font-weight:700;letter-spacing:.5px;margin:2px 0 4px;">SETTINGS</div>
@@ -1681,16 +1687,16 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
   <div class="tblwrap" id="tblwrap" style="display:none">
     <table>
       <thead><tr>
-        <th style="width:26px;text-align:center;"><input type="checkbox" id="selAll" onclick="toggleSelectAll(this)" title="Select all shown"></th>
+        <th class="ph-hide" style="width:26px;text-align:center;"><input type="checkbox" id="selAll" onclick="toggleSelectAll(this)" title="Select all shown"></th>
         <th style="width:28px;"></th>
         <th onclick="sb('ticker')" data-i18n="colTicker">Ticker / Name</th>
         <th onclick="sb('price')" data-i18n="colPrice">Price</th>
         <th onclick="sb('chgPct')" data-i18n="colChange">Change</th>
         <th onclick="sb('pnEdge')" title="💰 The Paula–Ninó Edge (PN Edge) — money made per $100 invested by the strongest PROVEN line firing on this share today, measured beyond the market, before costs. Tap to sort the whole table by it. ‘—’ means no proven line fired on that share today — which is normal: most days, most shares fire nothing proven.">💰 PN Edge</th>
-        <th onclick="sb('volPct')" title="One volume story: the surge (today vs this share's average, +100% = double), today's raw turnover, the buying/selling pressure read, and a 📰 chip when news likely explains it. Tap sorts by surge; use Sort by → Volume for raw turnover.">📊 Volume</th>
-        <th onclick="sb('daysUp')" title="Persistence, both kinds: top dots = consecutive days the PRICE closed higher; bottom dots = consecutive days VOLUME ran above average. Tap sorts by price streak; Sort by → Vol Streak for the other.">Streaks</th>
+        <th class="ph-hide" onclick="sb('volPct')" title="One volume story: the surge (today vs this share's average, +100% = double), today's raw turnover, the buying/selling pressure read, and a 📰 chip when news likely explains it. Tap sorts by surge; use Sort by → Volume for raw turnover.">📊 Volume</th>
+        <th class="ph-hide" onclick="sb('daysUp')" title="Persistence, both kinds: top dots = consecutive days the PRICE closed higher; bottom dots = consecutive days VOLUME ran above average. Tap sorts by price streak; Sort by → Vol Streak for the other.">Streaks</th>
         <th onclick="sb('watchScore')" title="Top: ⭐ Watch Score /10 (price+volume up days blended with streaks & momentum — a data summary, not advice, and not graded evidence like PN Edge). Bottom: 🔥 Accum — days in the last 10 with price up AND volume well above average. Tap sorts by Score; Sort by → Accumulation 10d for the other.">⭐ Score · 🔥 Accum</th>
-        <th onclick="sb('sigRank')" data-i18n="colSignals" title="Sort by signal strength (scan scores &amp; flags)">Signals</th>
+        <th class="ph-hide" onclick="sb('sigRank')" data-i18n="colSignals" title="Sort by signal strength (scan scores &amp; flags)">Signals</th>
       </tr></thead>
       <tbody id="tbody"></tbody>
     </table>
@@ -1707,7 +1713,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
 // source into IndexedDB (first run of each version), keeping the last 8, so any
 // previous version can be re-downloaded as a working .html file ("versions"
 // link in Setup). Captured here, before scripts modify the page.
-const APP_VERSION='2026.07.28-561-beta';
+const APP_VERSION='2026.07.28-599-beta';
 // ── Make the app installable (PWA) without needing a separate manifest file ──
 // We build the manifest in-memory and attach it as a Blob URL, so the whole app
 // stays a single HTML file you can upload as-is. Phones/desktops then offer
@@ -2543,13 +2549,56 @@ async function _serverGrades(shares, dataDate, exch, hold){
     const h=(hold===10||hold===30)?hold:5;
     const n=(shares&&shares.length)||0;
     const ck=(dataDate||'')+(n?('_n'+n):'')+(h!==5?('_h'+h):'');
-    const _post=async(body)=>{
-      const r=await fetch(base,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-      if(!r.ok)return null;
-      const j=await r.json();
-      return (j&&j.A&&j.A.M)?j.A:null;
+    /* v569: a hang is not an answer. Without this, a request that never
+       returns left the card on "Grading every signal…" indefinitely. The
+       probe gets 20s (it is a cache lookup), a real grade 90s (it uploads a
+       market), and a timeout is treated as a failure so the card can say so. */
+    const _post=async(body,ms)=>{
+      /* v583: a failure must carry its REASON. This used to collapse a
+         rate-limit, a timeout, a network drop and a server error into one
+         silent null — so the radar could only ever say "could not reach our
+         server", which was frequently untrue and always unhelpful. The last
+         real failure is kept on window._gradeFail for the strip to name.
+         (A 400 is NOT recorded: that is the expected miss of a cache probe,
+         and of pantry mode on a pre-w419 worker.) */
+      const ctl=(typeof AbortController==='function')?new AbortController():null;
+      const tm=setTimeout(function(){ try{ ctl&&ctl.abort(); }catch(e){} },(ms||60000));
+      try{
+        let r;
+        try{ r=await fetch(base,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:ctl?ctl.signal:undefined}); }
+        catch(fe){ window._gradeFail={kind:(fe&&fe.name==='AbortError')?'timeout':'network',ms:(ms||60000),at:Date.now()}; return null; }
+        if(!r.ok){
+          if(r.status!==400){ let _m=''; try{ const jj=await r.json(); _m=(jj&&jj.error)?String(jj.error):''; }catch(e2){}
+            window._gradeFail={kind:'http',status:r.status,msg:_m,at:Date.now()}; }
+          return null;
+        }
+        const j=await r.json();
+        if(j&&j.A&&j.A.M){ window._gradeFail=null; return j.A; }
+        return null;
+      } finally { clearTimeout(tm); }
     };
-    if(ck){ try{ const cached=await _post({exch:exch||'ASX',dataDate:ck,hold:h,shares:[]}); if(cached)return cached; }catch(e){} } // probe the window-specific cache
+    /* v580 (needs worker w419): GRADE FROM THE PANTRY. The worker already
+       holds every bar this function has been slimming and uploading — so ask
+       it to grade its OWN store at our floor and upload nothing. The server
+       checks its daily pantry cache first (fast HIT), so one call covers both
+       the probe and the compute. On a pre-w419 worker this exact request
+       answers 400 ("no shares supplied") and _post returns null, and we fall
+       through to the upload path below unchanged — capability detection by
+       behaviour, no version probe, so the app can ship before the paste. */
+    try{
+      /* v586 · ONE RULER (Tony's sign-off): every line is measured once per
+         day on the $250k universe — "shares you could actually trade". The
+         💧 floor no longer changes the measurement; it only filters the view.
+         This is what ends the paradox where a LOWER floor produced FEWER
+         badges (micro-caps joining every average dragged 19 of 21 proven
+         edges under the $0.50 costs bar — Tony's own three-floor screenshots,
+         30 Jul, are the audit record). One ruler also means ONE daily server
+         compute shared by every device at every floor. */
+      const RULER=250000;
+      const pan=await _post({exch:exch||'ASX',dataDate:(dataDate||'')+'_p',hold:h,pantry:true,liqFloor:RULER,shares:[]},120000);
+      if(pan)return pan;
+    }catch(e){/* pantry mode unavailable — the upload path still works */}
+    if(ck){ try{ const cached=await _post({exch:exch||'ASX',dataDate:ck,hold:h,shares:[]},20000); if(cached)return cached; }catch(e){} } // probe the window-specific cache
     // v538: upload only what the maths reads. The engine grades the last 250
     // days, holds ≤30, and looks back ≤250 bars for the breakout reference —
     // 540 bars covers every window with slack. With three years now stored,
@@ -2561,7 +2610,7 @@ async function _serverGrades(shares, dataDate, exch, hold){
     if(shares&&shares.length){ try{
       const TAIL=540;
       const slim=shares.map(function(sh){ var ser=Array.isArray(sh.series)?sh.series:[]; if(ser.length>TAIL)ser=ser.slice(-TAIL); return {ticker:sh.ticker,series:ser.map(function(b){return {d:b.d,c:b.c,v:b.v};})}; });
-      const fresh=await _post({exch:exch||'ASX',dataDate:ck,hold:h,shares:slim}); if(fresh)return fresh; }catch(e){} }
+      const fresh=await _post({exch:exch||'ASX',dataDate:ck,hold:h,shares:slim},90000); if(fresh)return fresh; }catch(e){} }
     return null;
   }catch(e){ return null; }
 }
@@ -4381,7 +4430,7 @@ async function fetchLiveNews(ticker,exch,name){
     if(!r.ok){
       if(exch==='ASX'){
         const url2=`https://api.marketaux.com/v1/news/all?symbols=${encodeURIComponent(ticker)}&filter_entities=true&language=en&limit=5&api_token=${encodeURIComponent(key)}`;
-        const r2=await fetch(url2).catch(()=>null);
+        const r2=await _fetchTO(url2,null,25000).catch(()=>null);
         if(r2&&r2.ok){const d2=await r2.json();const items2=(d2.data||[]).map(_mapNews);_newsCache[ck]={t:Date.now(),items:items2};return {ok:true,items:items2};}
       }
       return {ok:false,reason:'http'+r.status};
@@ -4446,8 +4495,9 @@ function _pnEdgeCell(s){
     if(fresh&&s._evTier&&s._evTier!=='TOO EARLY'&&s._evEdge!=null){
       var g=_edgeGauge(s._evEdge);
       var why=(s._evWhy||'').replace(/"/g,'&quot;');
-      var tip='💰 The Paula–Ninó Edge — money per $100 from the strongest proven line firing on this share today ('+s._evTier+').'+(why?'\nLines: '+why:'')+'\n'+g.tip+rng;
-      return '<span title="'+tip+'" style="cursor:help;white-space:nowrap;"><b style="color:'+g.col+';font-family:var(--mono);">'+g.money+'</b><span style="color:var(--dim);font-size:9px;">/$100</span> '+g.bar+'</span>';
+      var _thin=(s._evThin===true);
+      var tip='💰 The Paula–Ninó Edge — money per $100 from the strongest proven line firing on this share today ('+s._evTier+').'+(why?'\nLines: '+why:'')+'\n'+g.tip+(_thin?('\n\n💧 BUT this share trades below the \u0024250k ruler every line is measured on, so the edge was never measured on shares like it — and on turnover this thin the buy–sell spread would likely eat it. Treat the figure as borrowed, not earned.'):'')+rng;
+      return '<span title="'+tip+'" style="cursor:help;white-space:nowrap;opacity:'+(_thin?'0.55':'1')+';">'+(_thin?'<span style="color:#7fb3ff;font-size:9px;">💧</span>':'')+'<b style="color:'+g.col+';font-family:var(--mono);">'+g.money+'</b><span style="color:var(--dim);font-size:9px;">/$100</span> '+g.bar+'</span>';
     }
     var tipE='No proven line fired on this share today — that’s normal: most days, most shares fire nothing proven. The 📋 report card shows which lines ARE proven right now.'+rng;
     return '<span title="'+tipE+'" style="cursor:help;color:var(--dim);">—</span>';
@@ -4601,22 +4651,22 @@ function renderRows(rows){
     const starred=inWatch(s.ticker);
     const isSel=selected.has(s.ticker);
     out+=`<tr${isSel?' style="background:rgba(56,139,253,.08)"':''}>
-<td style="text-align:center;"><input type="checkbox" ${isSel?'checked':''} onclick="toggleSelect('${s.ticker}')"></td>
+<td class="ph-hide" style="text-align:center;"><input type="checkbox" ${isSel?'checked':''} onclick="toggleSelect('${s.ticker}')"></td>
 <td style="text-align:center;cursor:pointer;font-size:15px;color:${starred?'var(--gold)':'var(--dim)'}" onclick="toggleStar('${s.ticker}')" title="${starred?'Remove from':'Add to'} watchlist">${starred?'★':'☆'}</td>
 <td><div class="tick-wrap">
   <a href="${tu}" target="_blank" class="tick-link"><span class="tick-code">${s.ticker}</span><span style="font-size:9px;color:var(--dim)">↗</span></a>
   <span class="tick-name" title="${s.name}">${s.name}</span>
-  <div class="tick-links"><a href="#" onclick="paperBuy('${s.ticker}');return false;" style="color:var(--green);font-weight:700;">💼 Buy</a><button class="row-more" onclick="_rowMenu('${s.ticker}',event)" title="More for ${s.ticker} — 🔬 deep dive, 📈 chart, 📊 history, 📢 announcements, 🖨 report">⋯ more</button><span class="exch-tag">${s.exchange}</span></div>${s._trendChip||''}
+  <div class="tick-links"><a href="#" onclick="paperBuy('${s.ticker}');return false;" style="color:var(--green);font-weight:700;">💼 Buy</a>${(s.newsFlag==='likely')?'<span class="ph-only" title="News likely in the last 5 days — see Filter by news or the share report.">\ud83d\udcf0</span>':''}<button class="row-more" onclick="_rowMenu('${s.ticker}',event)" title="More for ${s.ticker} — 🔬 deep dive, 📈 chart, 📊 history, 📢 announcements, 🖨 report">⋯ more</button><span class="exch-tag">${s.exchange}</span></div>${s._trendChip||''}
 </div></td>
 <td><span class="pv">${fmtP(s.price,s.currency)}</span></td>
 <td><span class="cv ${up?'up':dn?'dn':'fl'}">${up?'+':''}${(s.chgPct||0).toFixed(2)}%</span><br>
     <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">${up?'+':''}${Math.abs(s.chgAbs||0).toFixed(3)}</span></td>
 <td style="text-align:center;">${_pnEdgeCell(s)}</td>
-<td><div class="vw"><div class="vbg"><div class="vfl" style="width:${s.volCalced?bp:0}%"></div></div>
+<td class="ph-hide"><div class="vw"><div class="vbg"><div class="vfl" style="width:${s.volCalced?bp:0}%"></div></div>
     <span class="vp ${vc}">${s.volCalced?(s.volPct>=0?'+':'')+s.volPct+'%':'–'}</span></div><div style="font-family:var(--mono);font-size:9px;color:${volDepthGood(s.volWindow)?'var(--green)':'var(--muted)'};margin-top:2px">today ${fmtV(s.volume)}${s.volCalced&&s.avgVol?` · vs ${s.volWindow||''} avg ${fmtV(s.avgVol)}`:''}${(s.newsFlag==='likely')?` <span title="News likely in the last 5 days — a volume spike WITH news is a different animal from one without. Use Filter by news or the share's report for the detail." style="cursor:help;">📰</span>`:''}</div>${_srBadge}</td>
-<td title="Top: price up-days in a row. Bottom: volume above its average in a row."><div class="str">${dts}</div><div style="font-family:var(--mono);font-size:8px;color:var(--muted)">${s.streakCalced?s.daysUp+'d px':'–'}</div><div class="str" style="margin-top:2px">${vds}</div><div style="font-family:var(--mono);font-size:8px;color:var(--muted)">${s.volStreakCalced?(s.volDays||0)+'d vol':'–'}</div></td>
+<td class="ph-hide" title="Top: price up-days in a row. Bottom: volume above its average in a row."><div class="str">${dts}</div><div style="font-family:var(--mono);font-size:8px;color:var(--muted)">${s.streakCalced?s.daysUp+'d px':'–'}</div><div class="str" style="margin-top:2px">${vds}</div><div style="font-family:var(--mono);font-size:8px;color:var(--muted)">${s.volStreakCalced?(s.volDays||0)+'d vol':'–'}</div></td>
 <td style="text-align:center;" title="Top: ⭐ Watch Score /10. Bottom: 🔥 accumulation days of the last 10.">${s.watchScore!=null?`<span style="font-family:var(--mono);font-size:13px;font-weight:800;color:${s.watchScore>=7?'var(--green)':s.watchScore>=4?'var(--gold)':s.watchScore>=2?'var(--orange)':'var(--muted)'}">${s.watchScore}</span><span style="font-size:9px;color:var(--dim)">/10</span>`:'<span style="color:var(--dim)">–</span>'}<div style="margin-top:2px">${s.accum10!=null?`<span style="font-family:var(--mono);font-size:10px;font-weight:700;color:${s.accum10>=5?'var(--gold)':s.accum10>=3?'var(--green)':'var(--muted)'}">🔥${s.accum10}</span><span style="font-size:8px;color:var(--dim)">/10</span>`:'<span style="font-size:9px;color:var(--dim)">–</span>'}</div></td>
-<td>${sg}</td></tr>`;
+<td class="ph-hide">${sg}</td></tr>`;
   }
   return out;
   };
@@ -4988,7 +5038,7 @@ function _shdNewsLoad(tk,exch){
     var c=_shdNewsCache[tk];
     if(c&&(Date.now()-c.t)<600e3){ _shdNewsRender(tk,c.rows,c.note); return; }
     el.innerHTML='<div style="font-size:9px;color:var(--dim);margin:12px 0 4px;">📰 checking the news store…</div>';
-    fetch(DATA_PROXY+'/news/for?exch='+encodeURIComponent(exch||currentExch)+'&ticker='+encodeURIComponent(tk)+'&days=120')
+    _fetchTO(DATA_PROXY+'/news/for?exch='+encodeURIComponent(exch||currentExch)+'&ticker='+encodeURIComponent(tk)+'&days=120',null,20000)
       .then(function(r){ return (r&&r.ok)?r.json():null; })
       .then(function(j){
         var note=null, rows=[];
@@ -6838,7 +6888,7 @@ function _apQueueSellPush(sells){
           note:'auto-pilot exit · '+whyTxt };
       }).filter(Boolean);
       if(!orders.length)return;
-      fetch(DATA_PROXY.replace(/\/+$/,'')+'/bridge/push',{method:'POST',headers:_bridgeHeaders(),body:JSON.stringify({day:day,orders:orders})})
+      _fetchTO(DATA_PROXY.replace(/\/+$/,'')+'/bridge/push',{method:'POST',headers:_bridgeHeaders(),body:JSON.stringify({day:day,orders:orders})},20000)
         .then(function(res){
           if(!(res&&res.ok))return;
           try{ const ls=document.getElementById('loadStatus');
@@ -6879,8 +6929,8 @@ async function _bridgeBoxTest(){
   _bridgeBoxNote('Checking with the server…','var(--muted)');
   try{
     var today=new Date().toISOString().slice(0,10);
-    var r=await fetch(DATA_PROXY.replace(/\/+$/,'')+'/bridge/push',
-      {method:'POST',headers:_bridgeHeaders(),body:JSON.stringify({day:today,orders:[]})});
+    var r=await _fetchTO(DATA_PROXY.replace(/\/+$/,'')+'/bridge/push',
+      {method:'POST',headers:_bridgeHeaders(),body:JSON.stringify({day:today,orders:[]})},20000);
     if(r.ok){ _bridgeBoxNote('✅ The server accepted this key. Auto-trade can queue orders.','var(--green)'); }
     else if(r.status===401){ _bridgeBoxNote('❌ The server rejected this key. Check it matches the BRIDGE_KEY secret on your Worker, and the copy in your desktop bridge.','#ff9caa'); }
     else if(r.status===503){ _bridgeBoxNote('⚠️ Your Worker has no BRIDGE_KEY secret set, so the bridge is switched off there. Add it in the Cloudflare dashboard first.','var(--gold)'); }
@@ -6925,7 +6975,7 @@ function _apQueuePush(ent,r){
         note:(b.limit?'auto-pilot pick':'auto-pilot scanner')+(b.score!=null?' · score '+b.score+'/10':'') };
     }).filter(Boolean);
     if(!orders.length)return;
-    fetch(DATA_PROXY.replace(/\/+$/,'')+'/bridge/push',{method:'POST',headers:_bridgeHeaders(),body:JSON.stringify({day:day,orders:orders})})
+    _fetchTO(DATA_PROXY.replace(/\/+$/,'')+'/bridge/push',{method:'POST',headers:_bridgeHeaders(),body:JSON.stringify({day:day,orders:orders})},20000)
       .then(res=>{
         if(!(res&&res.ok))return;
         // Mark the STORED diary entry as queued only after the server said yes —
@@ -9425,7 +9475,7 @@ async function _newsRegister(force){
     var K='BETA_asxScreener.newsReg.v1', st=null;
     try{ st=JSON.parse(localStorage.getItem(K)); }catch(e){}
     if(!force&&st&&st.hash===hash&&(Date.now()-(st.t||0))<6*3600e3)return;
-    var r=await fetch(DATA_PROXY+'/news/watch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    var r=await _fetchTO(DATA_PROXY+'/news/watch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)},20000);
     if(!r||!r.ok)return;                                        // locked / offline / server without the feature: silent
     var j=await r.json();
     if(j&&j.ok){ try{ localStorage.setItem(K,JSON.stringify({hash:hash,t:Date.now(),tracked:j.tracked||0,off:!!j.off})); }catch(e){} }
@@ -10673,7 +10723,7 @@ function statsBar(){
   let g=0,l=0,v200=0,dir=0,c2=0,v50=0,qm=0,vs=0,s7=0,hi=0,fl=0,ma=0,bull=0,bear=0;
   let _brk=0,_vrec=0,_cross=0,_inst=0,_blk=0,_dist=0; // v358: report-card signal tiles
   let _t250=0,_t1m=0;                                  // v458: dollar-turnover tiles
-  let _evs=0,_evp=0,_eve=0,_evAny=false,_evSkipL=0,_evSkipH=0; const _evD0=(typeof _evDD==='function')?_evDD():''; // v452 · v459 skip counts
+  let _evs=0,_evp=0,_eve=0,_evAbs=0,_evAny=false,_evSkipL=0,_evSkipH=0; /* v591: _evAbs = shares whose building line was OUTRANKED by a proven one (best-badge-wins absorption) */ const _evD0=(typeof _evDD==='function')?_evDD():''; // v452 · v459 skip counts
   const _sgN={hi52:0,gold:0,rsirec:0,squeeze:0,rsl:0,newsvol:0}; // v460: the six newer signals, counted off the same stamp
   let _evThinN=0,_evNegN=0; // v462: included, but flagged · v465: fired-but-losing
   for(const s of d){
@@ -10698,9 +10748,10 @@ function statsBar(){
     // PROMISING, and badges are now SOLID-or-PROMISING only. It counts the real
     // thing instead — shares firing graded signals where none has a record we
     // can stand behind.
-    if(s._evD===_evD0){ _evAny=true; if(s._evTier==='SOLID')_evs++; else if(s._evTier==='PROMISING')_evp++; else if(s._evUnp)_eve++;
+    if(s._evD===_evD0){ _evAny=true; if(s._evTier==='SOLID'){_evs++; if(s._evPromN>0)_evAbs++;} else if(s._evTier==='PROMISING')_evp++; else if(s._evUnp)_eve++;
       if(!s._evTier&&s._evSkip==='liq')_evSkipL++; else if(!s._evTier&&s._evSkip==='hist')_evSkipH++;
       if(s._evThin&&s._evSkip!=='hist')_evThinN++;   // v465: only count the thin shares we actually CHECKED — the label says so
+      window._evAbsorbN=_evAbs; window._evPromShareN=_evp; /* v591: the strip explains 0 PROMISING with these */
       if(s._evNeg)_evNegN++;
       if(Array.isArray(s._evKeys))for(var _sgk=0;_sgk<s._evKeys.length;_sgk++){ if(_sgN[s._evKeys[_sgk]]!=null)_sgN[s._evKeys[_sgk]]++; } } // v453 buckets · v459 skipped · v460 signal counts · v462 thin
   }
@@ -10769,19 +10820,33 @@ function statsBar(){
       try{
         if(_rn&&window._scanSrc&&window._scanSrc!=='unavailable'){
           var _fromDev=(window._scanSrc==='device'), _dayDev=(window._scanStale==='device');
-          if(!_fromDev&&!_dayDev){ _rn.textContent=_rn.textContent+'  ·  scored on our server'+((window._auditCache&&window._auditCache.A)?' + card lines incl. combos':''); }
+          if(!_fromDev&&!_dayDev){ var _lqL=function(k){ try{ for(var q=0;q<_CARD_LIQ.length;q++)if(_CARD_LIQ[q][0]===k)return _CARD_LIQ[q][1]; }catch(e3){} return k||'?'; }; var _cGr=(window._auditCache&&window._auditCache.liq)||''; var _cNow=(typeof _cardLiqKey==='function')?_cardLiqKey():''; var _cl=_lqL(_cGr||_cNow); var _ch=(window._auditCache&&window._auditCache.A&&window._auditCache.A.hold)||5; _rn.textContent=_rn.textContent+'  ·  scored on our server'+((window._auditCache&&window._auditCache.A)?(' + card lines incl. combos ('+_ch+'-day window · 💧 '+_cl+')'):''); try{
+            var _wsSt=window._warmState||'';
+            if(_wsSt==='asking')_rn.textContent=_rn.textContent+'  \u00b7  \u23f3 asking the server now\u2026'+_evElapsed(window._warmAskAt);
+            else if(_wsSt==='running')_rn.textContent=_rn.textContent+'  ·  ⏳ grading on our server…'+_evElapsed(window._warmAt)+' — the FIRST grade of a new day, window or floor computes fresh (usually 30–90 seconds); every later look, on every device, is instant from the day\'s cache';
+            else if(_wsSt==='failed'&&!(window._auditCache&&window._auditCache.A))_rn.textContent=_rn.textContent+'  ·  ⚠ background grading could not reach the server — retrying once; open the 📋 report card to force it';
+          }catch(e5){}
+          try{ if(window._auditCache&&window._auditCache.A)_rn.textContent=_rn.textContent+'  ·  one ruler: every line is measured on the $250k universe (shares you could actually trade) — your 💧 floor only filters which shares you are viewing, so changing it can never change a badge'; }catch(e4){}try{ var _lc=_evLineCounts(); if(_lc&&(_lc.sol||_lc.pro||_lc.asideN)){ var _bits=[]; if(_lc.aside.tiny)_bits.push(_lc.aside.tiny+' proven but too small to trade (under $0.50/$100)'); if(_lc.aside.seq)_bits.push(_lc.aside.seq+' sequence'+(_lc.aside.seq>1?'s':'')+' (yesterday-dependent, never on a buy list)'); if(_lc.aside.warn)_bits.push(_lc.aside.warn+' warning-direction'); if(_lc.aside.neg)_bits.push(_lc.aside.neg+' with no positive edge'); _rn.textContent=_rn.textContent+'  ·  those share counts come from '+_lc.sol+' proven (SOLID) and '+_lc.pro+' building (PROMISING) line'+((_lc.sol+_lc.pro)===1?'':'s')+' that can badge a share — one common line can badge hundreds of shares at once'+(_bits.length?(' · '+_lc.asideN+' more graded line'+(_lc.asideN>1?'s':'')+' set aside: '+_bits.join(', ')+((window._evPromShareN===0&&window._evAbsorbN>0)?(' — and 0 PROMISING shares is best-badge-wins, not absence: '+window._evAbsorbN+' share'+(window._evAbsorbN===1?'':'s')+' DO fire a building line today, but a proven line also fires on every one of them and the stronger badge wins'):((window._evPromShareN===0&&_lc.pro>0)?(' — and 0 PROMISING shares means none of the '+_lc.pro+' building line'+(_lc.pro===1?' is':'s are')+' FIRING on any share today: a line badges a share only when its exact signals fire on it that day, and building lines are the rarer patterns — some days the market simply does not show them. <button onclick="_promLiveModal()" style="border:1px solid var(--gold);color:var(--gold);background:rgba(255,210,0,.08);border-radius:6px;padding:1px 7px;font:700 10px var(--sans);cursor:pointer;margin-left:2px;">\ud83d\udd2c prove it</button>'):((_lc.pro===0)?' — which is why 0 PROMISING can be honest':'')))):''); } }catch(e6){}
+          try{ if(window._auditCache&&window._auditCache.A&&_cl.indexOf('Any')===0){ var _esc=function(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }; var _btn=function(k,lbl){ return '<button onclick="_evSetFloor(\''+k+'\')" style="border:1px solid var(--gold);color:var(--gold);background:rgba(255,210,0,.08);border-radius:6px;padding:1px 7px;font:700 10px var(--sans);cursor:pointer;margin-left:4px;">'+lbl+'</button>'; }; _rn.innerHTML=_esc(_rn.textContent)+'  ·  ⚠ the 💧 floor is wide open, so these counts lean on micro-caps — measure on shares you could actually trade:'+_btn('250k','set $250k')+_btn('1m','set $1m'); } }catch(e2){}  }
           else {
             var _w=[];
             if(_fromDev)_w.push('graded from the replay saved on this device'+(window._scanGradedOn?' ('+window._scanGradedOn+')':''));
             if(_dayDev)_w.push("today's signals from the copy saved on this device");
-            _rn.textContent=_rn.textContent+'  ·  \u26a0\ufe0f '+_w.join(' \u00b7 ')+' \u2014 could not reach our server';
+            var _escD=function(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+            var _flD=(typeof _cardLiqLabel==='function')?_cardLiqLabel():'';
+            _rn.innerHTML=_escD(_rn.textContent)+'  ·  \u26a0\ufe0f '+_escD(_w.join(' \u00b7 '))+' \u2014 could not reach our server, so these counts are a DAY OLD and were measured on the 💧 '+_escD(_flD)+' universe of that run'+_evActions(true);
           }
         }
       }catch(e){}
     } else if(_rn){ _evSetNote(_rn,''); }
   }catch(e){}
-  try{ if(!_evReady&&(window._evWarming||window._apWarming))
-    _evSetNote(document.getElementById('evSkipNote'),'🧪 grading the stored year…','The signals are being replayed against your stored history — a few seconds. The ⚖️ and 🔬 tiles fill in on their own when it finishes; there is nothing to click.');
+  try{
+    var _inflight=(!_evReady&&(window._evWarming||window._apWarming))||window._warmState==='running'||window._warmState==='asking'||!!(window._gradeRetryAt&&window._gradeRetryAt>Date.now()&&!(window._auditCache&&window._auditCache.A));
+    _evPulseEnsure(_inflight); /* v585: heartbeat on while ANY in-flight state shows; off (and cleared) otherwise */
+    if(!_evReady&&(window._evWarming||window._apWarming)){
+      if(!window._evPulse0)window._evPulse0=Date.now();
+      _evSetNote(document.getElementById('evSkipNote'),'🧪 grading the stored year…'+_evElapsed(window._warmAt||window._evPulse0),'The signals are being replayed on our server against the stored year — the FIRST grade of a new day, window or floor computes fresh, usually 30\u201390 seconds (the timer on the message is live; if it stops ticking, reload). Every later look, on every device, returns instantly from the day\'s cache. The \u2696\ufe0f and \ud83d\udd2c tiles fill in on their own when it finishes; there is nothing to click.');
+    }
   }catch(e){}
   try{ _radarDim(); }catch(e){}
   try{_radarCompactSync();}catch(e){}
@@ -10817,8 +10882,57 @@ function _evSkipNote(ready,nLiq,nHist,nSeen,nThin,nNeg){
   // screen was the one state that explained nothing.
   try{
     var _noYear=(window._scanSrc==='unavailable'), _noDay=(window._scanSrc!=='unavailable'&&!_scDayGet());
+    /* v589 — "hasn't been tried yet" is NOT "tried and failed". On a fresh
+       load the day-signal answer simply hasn't ARRIVED yet, but this branch
+       used to dress that instant in the failure clothes ('try again') — a
+       false alarm on every single open. The failure note now requires a
+       CONCLUDED failure: the server latched unavailable, the warm ended in
+       'failed', or a recorded _gradeFail. Until one of those is true, the
+       gap shows an honest in-flight message with the live ticking timer. */
+    var _tried=_noYear||window._warmState==='failed'||!!window._gradeFail;
+    if((_noYear||_noDay)&&!_tried){
+      if(!window._evBootAt){
+        window._evBootAt=Date.now();
+        /* v596 — the v595 watchdog only fired by being RE-CHECKED inside
+           statsBar(), which itself only runs off the 2s heartbeat interval.
+           A backgrounded browser tab (Tony's 'second screen' — a second
+           window/tab without focus) gets that interval throttled by the
+           browser, sometimes to once a minute or less, so the recheck could
+           be starved indefinitely: the display freezes at whatever second it
+           last painted while real time keeps passing. A ONE-SHOT setTimeout
+           scheduled here, independent of any polling loop, does not depend
+           on the heartbeat ever firing again — it converts the state itself
+           the moment 150s elapses, exactly like _evAutoRetry's own retry
+           timer already does successfully. */
+        try{
+          var _bootAt=window._evBootAt;
+          setTimeout(function(){
+            try{
+              if(window._evBootAt===_bootAt&&!window._gradeFail){
+                window._gradeFail={kind:'timeout',at:Date.now(),ms:150000,msg:'no answer and no error after 150 seconds'};
+                window._warmState='failed'; window._evBootAt=null;
+                _evAutoRetry();
+                if(typeof statsBar==='function')statsBar();
+              }
+            }catch(e7){}
+          },150000);
+        }catch(e6){}
+      }
+      /* the polling recheck stays too, as a belt-and-braces path for tabs
+         that ARE getting repainted (it will simply find _gradeFail already
+         set by the timer above and skip straight to the failed branch). */
+      if(Date.now()-window._evBootAt>150000&&!window._gradeFail){
+        window._gradeFail={kind:'timeout',at:Date.now(),ms:150000,msg:'no answer and no error after 150 seconds'};
+        window._warmState='failed'; window._evBootAt=null;
+        try{ _evAutoRetry(); }catch(e8){}
+      }
+      try{ _evPulseEnsure(true); }catch(e9){}
+      _evSetNote(el,'\ud83e\uddea checking today\u2019s signals with our server\u2026'+_evElapsed(window._evBootAt),'The evidence tiles fill in when the server answers \u2014 usually a second or two once the day is warm, up to 30\u201390 seconds only if this is the very first grade of a new day or window. The timer is live: ticking means working. If it fails, this message will say so and the app will retry by itself.');
+      _evSetNote(sg,'');
+      return;
+    }
     if(_noYear||_noDay){
-      _evSetNote(el,'\u26a0\ufe0f signals not scored \u2014 could not reach our server',
+      _evSetNote(el,_gradeFailText()+_evRetryCountdown()+'<button onclick="_evRetryServer()" style="border:1px solid var(--gold);color:var(--gold);background:rgba(255,210,0,.08);border-radius:6px;padding:1px 7px;font:700 10px var(--sans);cursor:pointer;margin-left:6px;">try again</button>'+((typeof _cardLiqKey==='function'&&_cardLiqKey()==='any')?'<button onclick="_evSetFloor(\'250k\')" style="border:1px solid var(--gold);color:var(--gold);background:transparent;border-radius:6px;padding:1px 7px;font:700 10px var(--sans);cursor:pointer;margin-left:4px;">set $250k first</button>':''),
         (_noYear&&_noDay)?'Both halves of the evidence system run on our server: the year-long replay that grades each signal, and the check of which signals are firing today. Neither could be reached just now, so these tiles are blank rather than wrong. Prices, volumes, your portfolio and your watchlists are stored on your device and are unaffected. Try again in a moment, or reload.'
         :(_noYear?'The year-long replay that grades each signal runs on our server, and it could not be reached just now. Rather than show tiers we cannot stand behind, the evidence tiles stay blank. Everything stored on your device \u2014 prices, volumes, portfolio, watchlists \u2014 is unaffected. Try again in a moment, or reload.'
                  :'Which signals are firing today is worked out on our server, so the thresholds behind them are not published in the app. We could not reach it just now, so these tiles are blank rather than wrong. Everything stored on your device is unaffected. Try again in a moment, or reload.'));
@@ -10914,6 +11028,87 @@ async function _fetchTO(url,opts,ms){
 //    with a HOLE — those shares are skipped here and rescued by the normal
 //    per-share incremental path instead.
 //  · every step degrades silently: any server hiccup and the old path still runs.
+async function _srvFirstFill(exch,depth,say){
+  /* v578: build saved history for EVERY share straight from your server's
+     pantry, newest day backwards. One request per trading day (~4,300 bars,
+     about 100KB) instead of one request per SHARE through a free public relay.
+     The pantry stores full open/high/low/close/volume, so seeding from it is
+     lossless — the old "never seed from thin day-slices" guard predates that. */
+  const out={days:0,seeded:0,topped:0,shares:0,stopped:false};
+  try{
+    if(typeof _serverData!=='function'||!_serverData()){ if(say)say('\u26a0 Your server store is not switched on.'); return out; }
+    const D=Math.max(30,Math.min(760,+depth||300));
+    const jf=async(u,ms)=>{ const c=new AbortController(); const t=setTimeout(function(){try{c.abort();}catch(e){}},ms||15000);
+      try{ const r=await fetch(DATA_PROXY+u,{signal:c.signal}); if(!r.ok)return null; return await r.json(); } finally{ clearTimeout(t); } };
+    const latest=await jf('/history/latest?exch='+encodeURIComponent(exch),10000).catch(function(){return null;});
+    const latestD=(latest&&latest.ok&&latest.date)?String(latest.date).slice(0,10):null;
+    if(!latestD){ if(say)say('\u26a0 Could not read your server store.'); return out; }
+    /* v579: same trust-but-verify as the day-sync (v455). A believable pointer
+       (no older than a long weekend) lets filled shares be stamped "saved
+       today", so the per-share download pass skips them — that is the whole
+       point of filling by day. A stale pointer still merges the real bars but
+       never claims freshness, so the ordinary path fills the gap. The v455
+       backstop in fetchHistoryUpdate re-checks the claim against the newest
+       bar before honouring it. */
+    const _today=new Date().toISOString().slice(0,10);
+    const _ptrAge=Math.round((Date.now()-Date.parse(latestD+'T00:00:00Z'))/86400000);
+    const _ptrOK=isFinite(_ptrAge)&&_ptrAge<=5;
+    const _fillStamp=_ptrOK?_today:latestD;
+    const per=new Map();
+    const d=new Date(latestD+'T12:00:00Z');
+    let misses=0;
+    for(let i=0;i<Math.ceil(D*1.5)+20&&out.days<D;i++){
+      if(window._fillAbort){ out.stopped=true; break; }
+      const ds=d.toISOString().slice(0,10);
+      const dow=d.getUTCDay();
+      if(dow!==0&&dow!==6){
+        const day=await jf('/history/day/'+ds+'?exch='+encodeURIComponent(exch),20000).catch(function(){return null;});
+        if(day&&day.ok&&Array.isArray(day.rows)&&day.rows.length){
+          misses=0; out.days++;
+          for(const r of day.rows){
+            const t=String(r.t||'').toUpperCase(); if(!t)continue;
+            let a=per.get(t); if(!a){a=[];per.set(t,a);}
+            a.push({dateStamp:ds,open:(r.o!=null?r.o:r.c),high:(r.h!=null?r.h:r.c),low:(r.l!=null?r.l:r.c),close:r.c,volume:r.v||0});
+          }
+          if(say&&out.days%10===0)say('\ud83e\uddca Pulled '+out.days+' of '+D+' days from your server store...');
+        } else { misses++; if(misses>=8)break; }
+      }
+      d.setUTCDate(d.getUTCDate()-1);
+    }
+    if(!out.days){ if(say)say('\u26a0 Your server store returned no days.'); return out; }
+    const ticks=[...per.keys()];
+    out.shares=ticks.length;
+    for(let i=0;i<ticks.length;i+=150){
+      if(window._fillAbort){ out.stopped=true; break; }
+      const slice=ticks.slice(i,i+150);
+      await Promise.all(slice.map(async function(t){
+        try{
+          const rows=per.get(t).slice().sort(function(a,b){ return a.dateStamp<b.dateStamp?-1:a.dateStamp>b.dateStamp?1:0; });
+          const stored=await histGet(exch,t);
+          const have=(stored&&Array.isArray(stored.rows))?stored.rows.length:0;
+          if(have>=rows.length){ out.topped++; return; }
+          await histPut(exch,t,rows,_fillStamp);
+          if(have)out.topped++; else out.seeded++;
+        }catch(e){}
+      }));
+      if(say)say('\ud83d\udcbe Saving - '+Math.min(i+150,ticks.length)+' of '+ticks.length+' shares...');
+    }
+    try{ localStorage.setItem('BETA_asxScreener.srvDaySync.v1.'+exch,latestD); }catch(e){}
+    if(say)say('\u2705 Filled '+out.days+' days for '+out.shares.toLocaleString()+' shares from your server - '+out.seeded.toLocaleString()+' new, '+out.topped.toLocaleString()+' updated. Reload to use it.');
+    return out;
+  }catch(e){ if(say)say('\u26a0 Fill stopped: '+(e&&e.message?e.message:'unknown')); return out; }
+}
+async function _fillFromServer(){
+  try{
+    const box=document.getElementById('prepMsg')||document.getElementById('loadBox');
+    const say=function(t){ try{ if(box){box.style.display='';box.textContent=t;} }catch(e){} };
+    window._fillAbort=false;
+    const b=document.getElementById('fillSrvBtn'); if(b){ b.disabled=true; b.textContent='\u23f3 filling from your server...'; }
+    const r=await _srvFirstFill(currentExch,300,say);
+    if(b){ b.disabled=false; b.textContent='\u26a1 Fill from my server store'; }
+    return r;
+  }catch(e){ return null; }
+}
 async function _srvDaySync(exch,say){
   const out={days:0,merged:0,skippedGap:0};
   try{
@@ -11001,6 +11196,40 @@ async function _srvDaySync(exch,say){
   }catch(e){}
   return out;
 }
+async function _srvSmartSync(exch,targets,say){
+  /* v579: YOUR SERVER STORE IS THE PRIMARY ROUTE. Before the per-share download
+     loop runs, sample up to 40 evenly spaced shares and read how deep their
+     saved history is. Thin coverage (a new device, a cleared store, a
+     half-filled one) means the per-share loop would make thousands of network
+     requests for data the pantry already holds — so run the v578 whole-day
+     first-fill automatically: one request per trading DAY. Deep coverage means
+     only the newest days can be missing — the ordinary day-sync tops those up.
+     Either way the per-share pass afterwards only fetches the real holes. */
+  const out={mode:'none',sampled:0,deep:0};
+  try{
+    if(typeof _serverData!=='function'||!_serverData())return out;
+    const list=(targets&&targets.length)?targets:[];
+    if(!list.length)return out;
+    const N=Math.min(40,list.length), step=list.length/N;
+    for(let k=0;k<N;k++){
+      const s=list[Math.floor(k*step)]||{};
+      try{
+        const st=await histGet(s.exchange||exch,s.ticker);
+        if(st&&Array.isArray(st.rows)&&st.rows.length>=250)out.deep++;
+      }catch(e){}
+    }
+    out.sampled=N;
+    if(out.deep/N<0.7){
+      if(say)say('\ud83e\uddca Saved history is thin here ('+out.deep+' of '+N+' sampled shares hold a full year) \u2014 filling straight from your server store, one request per DAY instead of one per share\u2026');
+      out.mode='firstfill';
+      out.fill=await _srvFirstFill(exch,300,say);
+    }else{
+      out.mode='daysync';
+      out.sync=await _srvDaySync(exch,say);
+    }
+  }catch(e){}
+  return out;
+}
 async function fetchHistoryUpdate(exch,ticker,apiKey,fullDays){
   try{
     const stored=await histGet(exch,ticker);
@@ -11051,7 +11280,7 @@ async function _ohlcFromServer(exch,ticker,days){
     if(!DATA_PROXY)return null;
     var u=DATA_PROXY.replace(/\/+$/,'')+'/ohlc?exch='+encodeURIComponent(exch||currentExch||'ASX')
       +'&ticker='+encodeURIComponent(ticker)+'&days='+Math.max(1,Math.min(400,+days||400));
-    var r=await fetch(u);
+    var r=await _fetchTO(u,null,20000);
     if(!r||!r.ok)return null;
     var j=await r.json();
     if(!j||!j.ok||!j.held||!j.ohlc)return null;
@@ -11212,6 +11441,9 @@ async function fetchHistory(exch,ticker,apiKey,days,forceNet){
   // v474: this URL carries the customer's apiKey, so the public relays are out.
   // Worker first (it strips the key entirely), then direct to EODData.
   const proxies=_keyedRoutes(url);
+  // v579: names derive from the table itself — with two routes the first is our
+  // Worker and the second is direct; with one route only direct exists.
+  const _routeName=function(pi){ return (proxies.length>=2&&pi===0)?'your Cloudflare server':'direct EODData'; };
   // FASTEST-ROUTE RACING: on the first fetch, try ALL routes at once and keep
   // whichever answers fastest; every later fetch uses that route directly.
   // (The old logic kept the first route that merely WORKED — so a slow-but-
@@ -11233,22 +11465,25 @@ async function fetchHistory(exch,ticker,apiKey,days,forceNet){
       const ms=((performance&&performance.now)?performance.now():Date.now())-t0;
       // Track how slow the chosen route is running so we can re-race if it degrades.
       window._lastProxyMs=ms;
-      window._lastProxyName=['free relay 1 (corsproxy)','free relay 2 (allorigins)','direct EODData','free relay 3 (thingproxy)','your Cloudflare server'][pi]||'data route';
+      window._lastProxyName=_routeName(pi);
       return {out,pi,ms};
     }finally{ clearTimeout(timer); }
   }
   let got=null;
-  const _WPI=4, _haveWorker=(typeof DATA_PROXY==='string'&&!!DATA_PROXY); // 4 = our Worker route
+  // v579: the route table IS `proxies` (_keyedRoutes: our Worker first when
+  // configured, then direct EODData — the public relays left this path in v474).
+  // The old code here still raced FIVE routes by fixed index, so its first two
+  // tries hit undefined slots and threw before the real routes ran, and the
+  // status line reported "free relay" names that could no longer occur. Indices
+  // now mean position in the real table, and a remembered index from an older
+  // build (0..4) is discarded rather than trusted.
+  if(window._goodHistProxy!=null&&!(window._goodHistProxy>=0&&window._goodHistProxy<proxies.length))window._goodHistProxy=null;
   if(window._goodHistProxy==null){
-    // v373b: prefer OUR Worker (fast, edge-cached, key held server-side). If it's
-    // unreachable, try DIRECT (key stays with EODData only), then race the public
-    // relays as a last resort — the key leaves your browser only when there is no
-    // other way. The winning route is remembered so later fetches reuse it.
-    if(_haveWorker){ try{ got=await _tryProxy(_WPI); }catch(e){/* worker down — fall through */} }
-    if(!got){ try{ got=await _tryProxy(2); }catch(e){/* direct blocked — fall through to the relays */} }
-    if(!got){ try{ got=await Promise.any([_tryProxy(0),_tryProxy(1),_tryProxy(3)]); }catch(e){/* all relays failed */} }
+    // Worker first (fast, edge-cached, key held server-side); direct EODData
+    // only if the worker is unreachable. The winner is remembered.
+    for(let pi=0;pi<proxies.length&&!got;pi++){ try{ got=await _tryProxy(pi); }catch(e){/* route down — try the next */} }
   }else{
-    const order=[window._goodHistProxy,(_haveWorker?_WPI:2),2,0,1,3].filter((v,i,a)=>a.indexOf(v)===i);
+    const order=[window._goodHistProxy].concat(proxies.map((_,i)=>i)).filter((v,i,a)=>a.indexOf(v)===i);
     for(const pi of order){ try{ got=await _tryProxy(pi); break; }catch(e){/* next */} }
     // If the chosen route answered but was SLOW (>3.5s), forget it so the next
     // fetch re-races and can find a faster proxy. A slow proxy never "fails",
@@ -14029,7 +14264,7 @@ async function fetchTechnicalList(exch,apiKey){
   const tries=_keyedRoutes(url);
   for(const t of tries){
     try{
-      const r=await fetch(t(url),{headers:{'Accept':'application/json'}});
+      const r=await _fetchTO(t(url),{headers:{'Accept':'application/json'}},25000);
       if(r.ok){
         const txt=await r.text();
         if(txt&&(txt.trim()[0]==='['||txt.trim()[0]==='{')){
@@ -14428,7 +14663,7 @@ async function fetchSymbolList(exch,apiKey){
   const proxies=_safeRoutes(url,[u=>u]);   // v474: keyed → worker/direct only
   for(const p of proxies){
     try{
-      const r=await fetch(p(url),{headers:{'Accept':'application/json'}});
+      const r=await _fetchTO(p(url),{headers:{'Accept':'application/json'}},25000);
       if(r.ok){
         let t=(await r.text()).trim().replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
         let data; try{data=JSON.parse(t);}catch(e){const a=t.indexOf('['),b=t.lastIndexOf(']');if(a>=0&&b>a)data=JSON.parse(t.slice(a,b+1).replace(/,(\s*[}\]])/g,'$1'));}
@@ -14643,9 +14878,12 @@ async function downloadEverything(){
   // v416 STAGE-2: pull any days the pantry has that this device hasn't, ONCE per
   // day instead of once per share — shares brought current are skipped below.
   if(!window._forceFullDownload){
+    /* v579: the server store is the PRIMARY route — whole days first, the
+       per-share loop below only for what the store genuinely lacks. */
     try{
-      const sy=await _srvDaySync(currentExch,m=>{ if(lbl0)lbl0.innerHTML=m; });
-      if(sy&&sy.merged>0&&lbl0)lbl0.innerHTML=`<span style="color:var(--green)">🫙 ${sy.merged.toLocaleString()} shares brought up to date from your own server store (${sy.days} day${sy.days>1?'s':''} in ${sy.days} request${sy.days>1?'s':''}) — they'll skip ahead instantly.</span>`;
+      const sm=await _srvSmartSync(currentExch,targets,m=>{ if(lbl0)lbl0.innerHTML=m; });
+      if(sm&&sm.mode==='firstfill'&&sm.fill&&sm.fill.days>0&&lbl0)lbl0.innerHTML=`<span style="color:var(--green)">🫙 ${sm.fill.days} days filled for ${(sm.fill.shares||0).toLocaleString()} shares straight from your own server store (${sm.fill.days} requests, not ${(sm.fill.shares||0).toLocaleString()}) — the pass below only fetches what the store lacks.</span>`;
+      else if(sm&&sm.mode==='daysync'&&sm.sync&&sm.sync.merged>0&&lbl0)lbl0.innerHTML=`<span style="color:var(--green)">🫙 ${sm.sync.merged.toLocaleString()} shares brought up to date from your own server store (${sm.sync.days} day${sm.sync.days>1?'s':''} in ${sm.sync.days} request${sm.sync.days>1?'s':''}) — they'll skip ahead instantly.</span>`;
     }catch(e){}
   }
   const mins=Math.ceil(n/6*0.9/60);
@@ -14872,7 +15110,7 @@ async function fetchQuoteListByDate(exch,apiKey,dateStr){
   const tries=_keyedRoutes(url);   // v474: keyed → worker/direct only
   for(const t of tries){
     try{
-      const r=await fetch(t(url),{headers:{'Accept':'application/json'}});
+      const r=await _fetchTO(t(url),{headers:{'Accept':'application/json'}},25000);
       if(r.ok){
         const txt=await r.text();
         if(txt&&(txt.trim()[0]==='['||txt.trim()[0]==='{')){
@@ -15526,12 +15764,12 @@ async function loadData(userClick){
 ${symbolListUrl}
 Output the complete array. Start with [`;
     try{
-      const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      const resp=await _fetchTO('https://api.anthropic.com/v1/messages',{
         method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:16000,system:sys,
           tools:[{type:'web_search_20250305',name:'web_search'}],
           messages:[{role:'user',content:usr}]})
-      });
+      },60000);
       if(!resp.ok)throw new Error(`Proxy error ${resp.status}`);
       const env=await resp.json();
       const raw=(env.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
@@ -16298,8 +16536,8 @@ async function serverReportCheck(){
     shares:sample.map(function(s){return {ticker:s.ticker,series:s.series};})};
   var j=null;
   try{
-    var r=await fetch(DATA_PROXY.replace(/\/+$/,'')+'/reports',
-      {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var r=await _fetchTO(DATA_PROXY.replace(/\/+$/,'')+'/reports',
+      {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)},30000);
     if(r.status===404||r.status===405){ say('This server does not have the reports yet (it needs w395 or later).'); return; }
     if(!r.ok){ say('The server answered '+r.status+'.'); return; }
     j=await r.json();
@@ -18691,20 +18929,117 @@ body.tbl-tighter .tick-name{max-width:80px;}
 var _AUD={MINROWS:70};
 // Pre-compute the audit in idle time once data has loaded, so the 📋 card and the
 // bot open instantly. Once per data-day; never competes with an active load.
+function _warmRetry(){
+  /* v571: one automatic second attempt. Before this, a single failed warm left
+     the radar reading "not proven" for every share for the whole session, with
+     nothing on screen to say the grading had died. */
+  try{
+    if(window._warmRetried)return;
+    window._warmRetried=true;
+    setTimeout(function(){ try{ if(!(window._auditCache&&window._auditCache.A))_auditWarmIdle(); }catch(e){} },30000);
+  }catch(e){}
+}
+function _promLiveCheck(){
+  /* v599 — PROVE the zero instead of asserting it a third time. For every
+     building (PROMISING) line the strip counts, this computes — LIVE, from
+     the market already loaded in this browser, using the exact same flag
+     reader the bot's own combo gate uses (_liveFired) — how many shares
+     actually fire ALL of that line's signals TODAY. Same-day combos only
+     (sequences need yesterday's flags too and are labelled, not computed,
+     to avoid guessing). This turns 'why is it 0' from something only I can
+     explain into something anyone can verify themselves, on the spot. */
+  var out=[];
+  try{
+    var A=(window._auditCache&&window._auditCache.A)?window._auditCache.A:null;
+    if(!A||!A.M||!Array.isArray(allData))return out;
+    var flagCache=new Map();
+    var flagsOf=function(s){ var f=flagCache.get(s); if(!f){ f=_liveFired(s); flagCache.set(s,f); } return f; };
+    Object.keys(A.M).forEach(function(k){
+      var m=A.M[k]; if(!m||!m.n)return;
+      if(m.tier!=='promising')return;                 // exactly _evLineCounts' population
+      if(m.dirNeg||/^(vr|blk)-$/.test(k)||k==='vr'||k==='blk')return; // warnings/parents never badge
+      if(!(m.edge>=0.5))return;                        // the same money bar
+      if(k.indexOf('>')>=0){ out.push({k:k,name:(typeof nameOf==='function'?nameOf(k):k),seq:true,fires:null,near:null}); return; }
+      var parts=k.split('+');
+      var fires=[], nearMiss=0;
+      for(var i=0;i<allData.length;i++){
+        var s=allData[i]; if(!s)continue;
+        var f=flagsOf(s); var have=0, missing='';
+        for(var p=0;p<parts.length;p++){ if(f[parts[p]])have++; else missing=parts[p]; }
+        if(have===parts.length)fires.push(s.ticker);
+        else if(have===parts.length-1)nearMiss++;
+      }
+      out.push({k:k,name:(typeof nameOf==='function'?nameOf(k):k),seq:false,parts:parts,fires:fires,near:nearMiss});
+    });
+  }catch(e){}
+  return out;
+}
+function _promLiveModal(){
+  try{
+    var rows=_promLiveCheck();
+    if(!rows.length){ showModal('<div style="padding:16px;font-size:12.5px;color:var(--muted);">No building (PROMISING) lines are in today\'s graded table to check.</div>','\ud83d\udd2c Live overlap check'); return; }
+    var esc=function(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+    var body=rows.map(function(r){
+      if(r.seq)return '<div style="padding:8px 10px;border:1px solid var(--border2);border-radius:7px;margin-bottom:6px;"><b>'+esc(r.name)+'</b><div style="font-size:10.5px;color:var(--dim);margin-top:3px;">sequence — needs yesterday\'s signals too; not checked here, only same-day combos are.</div></div>';
+      var n=r.fires.length;
+      return '<div style="padding:8px 10px;border:1px solid '+(n>0?'var(--green)':'var(--border2)')+';border-radius:7px;margin-bottom:6px;">'
+        +'<b>'+esc(r.name)+'</b> <span style="color:var(--dim);font-size:10.5px;">('+esc(r.parts.join(' + '))+')</span>'
+        +'<div style="font-size:11px;margin-top:4px;color:'+(n>0?'var(--green)':'var(--muted)')+';">'+n+' share'+(n===1?'':'s')+' firing ALL parts today'+(n>0?(': '+esc(r.fires.slice(0,8).join(', '))+(n>8?' …':'')):'')+'</div>'
+        +(n===0?'<div style="font-size:10.5px;color:var(--dim);margin-top:2px;">'+r.near+' share'+(r.near===1?'':'s')+' fired all but ONE part — closest misses, not a badge</div>':'')
+        +'</div>';
+    }).join('');
+    showModal('<div style="padding:14px;font-size:12.5px;line-height:1.6;">'
+      +'<div style="color:var(--muted);margin-bottom:10px;">Computed live from the '+allData.length+' shares loaded in this browser, using the exact same signal reader the auto-pilot\'s combo gate uses. This is not a re-explanation — it is the actual count, checkable right now.</div>'
+      +body+'</div>','\ud83d\udd2c Live overlap check — today\'s building lines');
+  }catch(e){ showModal('<div style="padding:16px;font-size:12.5px;color:var(--muted);">Could not run the live check: '+String((e&&e.message)||e)+'</div>','\ud83d\udd2c Live overlap check'); }
+}
+function _gradesKey(exch,date,hold){ return (exch||'')+'|'+(date||'')+'|'+(hold||5); }
+function _gradesGet(exch,date,hold){
+  try{ var st=window._gradesStore||(window._gradesStore={}); return st[_gradesKey(exch,date,hold)]||null; }catch(e){ return null; }
+}
+function _gradesPut(exch,date,hold,A){
+  /* v598 — ONE STORE FOR ALL GRADED WINDOWS. Before today, "the graded answer"
+     lived in up to THREE independent places: _auditWarmIdle's background warm
+     and signalReportCard's own hold=5 fast path both wrote window._auditCache
+     directly; _rcAltOpen (any OTHER window, 10d/30d) wrote a wholly separate
+     object, window._auditCacheAlt, that nothing else ever read. v597 fixed the
+     symptom (the radar's own warm now asks for the right window) by adding
+     matching invalidation logic — but matching logic is exactly the kind of
+     thing that silently drifts as more call sites get added. This is the
+     structural fix: ONE keyed store (exch|date|hold), every writer uses it,
+     and whichever window is CURRENTLY selected mirrors into window._auditCache
+     so the dozen-plus existing readers across the app need zero changes. Two
+     independent fetches for the same window now also collapse into one: if
+     the card already fetched a window, the radar's own warm finds it already
+     cached and skips the duplicate server call entirely. */
+  try{
+    var st=window._gradesStore||(window._gradesStore={});
+    st[_gradesKey(exch,date,hold)]={A:A,at:Date.now()};
+    if((hold||5)===((typeof _cardHold==='function')?_cardHold():5)){
+      window._auditCache={d:date,ex:exch,liq:'250k',A:A};
+    }
+  }catch(e){}
+}
 function _auditWarmIdle(){
   try{
     if(window._prepRunning||window._auditWarming)return;
     const dd=(window._exchDataDate&&window._exchDataDate[currentExch])||(typeof _todayLocal==='function'?_todayLocal():'');
-    if(window._auditCache&&window._auditCache.A&&window._auditCache.d===dd&&window._auditCache.ex===currentExch)return; // v408: re-warm when the exchange changed
-    const _sh=(Array.isArray(allData)?allData:[]).filter(s=>Array.isArray(s.series)&&s.series.length>=_AUD.MINROWS).filter(_cardLiqPass);
+    if(window._auditCache&&window._auditCache.A&&window._auditCache.d===dd&&window._auditCache.ex===currentExch&&window._auditCache.liq===_cardLiqKey()&&(window._auditCache.A.hold||5)===((typeof _cardHold==='function')?_cardHold():5))return; /* v597 ROOT CAUSE FIX: this guard never checked hold, so a card window change could never even trigger a re-warm — added the hold==_cardHold() check. v408: re-warm when the exchange changed · v568: ALSO when the 💧 floor changed — the card and the grade fetcher already keyed on it, so the warm was the odd one out, leaving the radar on stale-floor grades and pushing a full re-grade into the next card open */
+    const _sh=(Array.isArray(allData)?allData:[]).filter(s=>Array.isArray(s.series)&&s.series.length>=_AUD.MINROWS).filter(_cardLiqPassSrv); /* v572: server-floor-aware payload */
     if(_sh.length<3)return;
     if(!(typeof DATA_PROXY==='string' && DATA_PROXY))return; // v378: grading is server-side — nothing to warm without the server
     window._auditWarming=true;
+    try{ window._warmState='running'; window._warmAt=Date.now(); window._warmN=_sh.length; if(typeof statsBar==='function')setTimeout(function(){try{statsBar();}catch(e){}},50); }catch(e){}
     const payload=_sh.map(s=>({ticker:s.ticker,series:s.series}));
-    _serverGrades(payload,dd,currentExch).then(function(A){
-      if(A&&A.M){ try{ const dd2=(window._exchDataDate&&window._exchDataDate[currentExch])||dd; window._auditCache={d:dd2,ex:currentExch,liq:_cardLiqKey(),A:A}; /* v436: keyed like the card's own write */ window._gradeSrc='server'; ; try{_evCardArrived();}catch(e2){} }catch(e){} }
+    _serverGrades(payload,dd,currentExch,(typeof _cardHold==='function')?_cardHold():5).then(function(A){ /* v597: the radar's own request follows the card's selected window */
+      if(A&&A.M){ try{ const dd2=(window._exchDataDate&&window._exchDataDate[currentExch])||dd; _gradesPut(currentExch,dd2,(typeof _cardHold==='function')?_cardHold():5,A); /* v598: through the one store */ /* v586: grades live on the fixed $250k ruler — the viewing floor is not part of their identity */ window._gradeSrc='server'; ; try{_evCardArrived();}catch(e2){} }catch(e){} }
       window._auditWarming=false;
-    }).catch(function(){ window._auditWarming=false; });
+      try{ window._warmState=(window._auditCache&&window._auditCache.A)?'done':'failed'; if(window._warmState==='failed')_warmRetry(); if(typeof statsBar==='function')statsBar(); }catch(e){}
+    }).catch(function(err){ window._auditWarming=false; try{
+      window._warmState='failed';
+      if(!window._gradeFail)window._gradeFail={kind:'network',at:Date.now(),msg:String((err&&err.message)||err||'').slice(0,120)}; /* v587: no failure goes unrecorded — the note can always name its reason */
+      _evAutoRetry(); /* v587: self-heal — a timeout usually means the server is FINISHING the compute; asking again shortly hits the warm answer */
+      _warmRetry(); if(typeof statsBar==='function')statsBar(); }catch(e){} });
   }catch(e){ window._auditWarming=false; }
 }
 // v329 — in training mode (body.training-on) turn every titled element on the
@@ -18748,7 +19083,12 @@ function _cardScore10(m){
   if(!m||!m.n)return 0;
   const e=(m.dirNeg?-m.edge:m.edge);              // edge in the flag's own direction; >0 = working
   if(!(e>0))return Math.max(0,+(0.5+e*0.5).toFixed(1)); // v368: not working → 0–0.5, CONTINUOUS with the working band's 0.5 floor (removes the old dip where a hair of edge scored below a zero edge)
-  const band=(m.tier==='solid')?[7,10]:(m.tier==='promising')?[4,7]:[0.5,4];
+  const _t10=(typeof _tierAdj==='function'&&window._cardHoldNow)?_tierAdj(m,window._cardHoldNow):m.tier; // v562: score honours the window-scaled tier
+  // v563: an edge past the plausible ceiling is a RED "check this" on the
+  // gauge — the score must not simultaneously crown it. Cap it out of the
+  // green band so the two never contradict each other.
+  const _imp=(e>3.5);
+  const band=_imp?[0.6,4.9]:(_t10==='tiny')?[0.6,3.9]:(_t10==='solid')?[7,10]:(_t10==='promising')?[4,7]:[0.5,4];
   const frac=Math.min(1,e/3);                     // a ~3% market-beating edge over the window tops the band
   return +(band[0]+(band[1]-band[0])*frac).toFixed(1);
 }
@@ -18758,11 +19098,18 @@ function _cardScore10(m){
 // (window._auditCache) no matter what you are viewing — flipping this switch
 // can never silently change what the bot trades.
 function _cardHold(){ try{ var v=+localStorage.getItem('BETA_asxScreener.cardHold.v1'); return (v===10||v===30)?v:5; }catch(e){ return 5; } }
-function setCardHold(n){ try{ localStorage.setItem('BETA_asxScreener.cardHold.v1',String((n===10||n===30)?n:5)); }catch(e){} try{ signalReportCard(); }catch(e){} }
+function setCardHold(n){ try{ localStorage.setItem('BETA_asxScreener.cardHold.v1',String((n===10||n===30)?n:5)); }catch(e){}
+  /* v588: a new hold window is a NEW question — the old answer must go, and
+     the MAIN screen must re-ask immediately, not wait for the card to close.
+     _evRetryServer is the proven kick: strip flips to ⏳ before any network. */
+  try{ window._auditCache=null; window._gradeRetryN=0; }catch(e){}
+  try{ signalReportCard(); }catch(e){}
+  try{ if(typeof _evRetryServer==='function')_evRetryServer(); }catch(e){}
+}
 function _rcAltOpen(dd,hold){
-  window._auditCacheAlt=window._auditCacheAlt||{};
+  window._auditCacheAlt=window._auditCacheAlt||{}; /* v598: kept only so nothing throws if referenced elsewhere — no longer the real store, see _gradesGet/_gradesPut */
   var key=hold+'_'+(currentExch||'ASX')+'_'+dd+'_'+_cardLiqKey(); // v408: per exchange · v434: per 💧 floor
-  var hit=window._auditCacheAlt[key];
+  var _g598=_gradesGet(currentExch,dd,hold); var hit=_g598&&_g598.A; /* v598: unified store */
   // v399: only trust a cached answer that MATCHES the window asked for. (Before the
   // server update lands, it answers with the 5d card — caching that under the 10d
   // slot made every later 10d tap silently re-render the same card: the "button
@@ -18770,14 +19117,14 @@ function _rcAltOpen(dd,hold){
   // shows a plain warning instead of silence.)
   if(hit&&hit.M&&((hit.hold||5)===hold)){ return _renderReportCard(hit); }
   var _fail=function(){ var m=document.getElementById('appModal'); if(m&&m.style.display!=='none'&&window._curModalLabel==='📋 Signal report card'){ try{ showModal('<div style="padding:16px;font-size:12.5px;line-height:1.6;color:var(--muted);text-align:center;">📡 <b style="color:var(--text)">Could not grade the '+hold+'-day view just now.</b><br>Longer windows are computed fresh on your server — give it a moment and try again, or switch back to 5d.</div>','📋 Signal report card'); }catch(e){} } };
-  var _sh=(Array.isArray(allData)?allData:[]).filter(function(s){return Array.isArray(s.series)&&s.series.length>=_AUD.MINROWS;}).filter(_cardLiqPass);
+  var _sh=(Array.isArray(allData)?allData:[]).filter(function(s){return Array.isArray(s.series)&&s.series.length>=_AUD.MINROWS;}).filter(_cardLiqPassSrv); /* v572 */
   if(!(typeof DATA_PROXY==='string'&&DATA_PROXY)||_sh.length<3){ _fail(); return; }
   try{ showModal('<div style="padding:18px;font-size:12.5px;line-height:1.6;color:var(--muted);text-align:center;">⏳ <b style="color:var(--text)">Grading every signal over '+hold+' trading days…</b><br>the '+hold+'d view is computed fresh on your server — one moment.</div>','📋 Signal report card'); }catch(e){}
   var _tok=(window._rcTok=(window._rcTok||0)+1);
   var payload=_sh.map(function(s){return {ticker:s.ticker,series:s.series};});
   _serverGrades(payload,dd,currentExch,hold).then(function(A){
     var right=(A&&A.M&&((A.hold||5)===hold));
-    if(right){ try{ window._auditCacheAlt[key]=A; }catch(e){} }   // v399: cache ONLY a matching-window answer
+    if(right){ try{ _gradesPut(currentExch,dd,hold,A); }catch(e){} }   // v399: cache ONLY a matching-window answer /* v598: through the one store */
     var m=document.getElementById('appModal');
     if(window._rcTok===_tok&&m&&m.style.display!=='none'&&window._curModalLabel==='📋 Signal report card'){
       if(A&&A.M){ try{ _renderReportCard(A); }catch(e){ _fail(); } } else { _fail(); }
@@ -18894,6 +19241,7 @@ function _nurSelect(A){
     const at=m.dirNeg?-m.tstat:m.tstat;
     const goodDir=m.dirNeg?m.edge<0:m.edge>0;
     if(m.tier==='solid')return false;
+    if(it.k==='vr'||it.k==='blk')return false; /* v594 deep-dive: parents are direction-less and never badge — a nursery slot with no graduation path */
     if(m.n<10)return false;
     if(!goodDir||!(at>0))return false;
     if(m.n>=50&&at<1)return false;
@@ -18941,8 +19289,10 @@ function _bevSelect(A){
     if(m.dirNeg)return false;                          // warnings never on a buy list
     if(it.k.indexOf('>')>=0)return false;              // sequences: can't be checked today
     if(/^(vr|blk)-$/.test(it.k))return false;          // down-day singles are warnings too
+    if(it.k==='vr'||it.k==='blk')return false;         /* v590: bare two-way PARENTS are graded both ways and never badge — showing them here while the radar refused them was Tony's 'seen 6,399 · PROMISING' contradiction */
     if(m.tier!=='solid'&&m.tier!=='promising')return false;  // the graded bar, unsoftened
     if(!(m.edge>0))return false;
+    if(!(m.edge>=0.5))return false;                    /* v590: the SAME $0.50/$100 money bar the strip and chips apply (v577/v584) — a line 'too small to trade' cannot simultaneously top a buy-side list. One rulebook on every screen. */
     return true;
   }).sort(function(a,b){ return _cardScore10(b.m)-_cardScore10(a.m); });
 }
@@ -19030,6 +19380,40 @@ function bestEvidenceScan(){
 }
 
 
+// ── v562: window-scaled tiers ─────────────────────────────────
+// The server marks tiers with fixed bars (n≥50 & t≥2 = solid, n≥30 & t≥1 =
+// promising). Fine at one window — but edge grows with the window and t grows
+// with it (≈√hold), so the SAME line drifts up a tier just for being judged
+// over more days. That is how Tony's 10d card filled with SOLIDs. We scale the
+// t bars by √(hold/5): at hold 5 the answer is bit-identical to the server's,
+// so nothing else in the app can disagree; at 10d/30d a longer window must
+// earn proportionally stronger evidence.
+function _tierAdj(m,hold){
+  try{
+    if(!m||!m.n)return (m&&m.tier)||'early';
+    var h=+hold||5;
+    var _tr;
+    if(h<=5){ _tr=m.tier; }                              /* 5d: the server's own statistical verdict */
+    else {
+      var f=Math.sqrt(h/5);
+      var t=Math.abs(+m.tstat||0);
+      _tr=(m.n>=50&&t>=2*f)?'solid':((m.n>=30&&t>=1*f)?'promising':'early');
+    }
+    /* v577: the money test. The gauge calls anything under $0.50 per $100 "too
+       small" because brokerage and spread eat it. A line can be beyond doubt
+       statistically and still be worth nothing to trade — those are reported as
+       PROVEN · TOO SMALL, never as a badge. */
+    if(_tr!=='early'){
+      var _e=(m.dirNeg?-(+m.edge||0):(+m.edge||0));
+      if(!(Math.abs(_e)>=0.5)||_e<0)return 'tiny';
+    }
+    return _tr;
+  }catch(e){ return (m&&m.tier)||'early'; }
+}
+function _tierWinTip(hold){
+  var h=+hold||5;
+  return (h<=5)?'':' · Judged over a '+h+'-day window: because a longer window accumulates a bigger edge, the pass mark is raised in proportion (t≥'+(2*Math.sqrt(h/5)).toFixed(1)+' for SOLID instead of 2). Tiers from different windows are NOT comparable.';
+}
 // ── v542: the money scale ──────────────────────────────────────────────────
 // Edge is dollars per $100 invested, and it ALWAYS ships with its yardstick:
 // a fixed 0–$3.50 scale (the realistic ceiling for end-of-day price signals),
@@ -19444,14 +19828,43 @@ function _scDayGet(){
 function _evMark(shares){
   try{
     if(_evBetaBlocked())return false;
-    var R=_apGrades(); if(!R||!Array.isArray(shares)||!shares.length)return false;
+    if(!Array.isArray(shares)||!shares.length)return false;
     var dd=_evDD();
-    // v471: the answer comes from the server. Until it arrives, leave _evD
-    // unset so _evEnsureMarked tries again once the warm lands; if the warm has
-    // FAILED, stamp the day anyway so we stop asking on every repaint.
-    var _F=_scDayGet();
-    // v474: there is no separate day request any more, so "we could not score
-    // today" is simply "the replay did not come back with an answer".
+    // v599 ROOT CAUSE FIX: the badge source is now window._auditCache.A (the
+    // bo/inf/inst/cx/vr/blk report-card engine, fed via the unified store from
+    // v598) — the SAME object the strip's sentence, the card, the nursery and
+    // Best Evidence already read. Before today, _evMark sourced BOTH "did this
+    // fire today" and "what tier is this line" from an entirely DIFFERENT
+    // server engine (the old 18 scan-button rules on /scan) — the two systems
+    // shared only their SOLID/PROMISING UI labels, never their data, which is
+    // why the strip's own claim ("those share counts come from 13 proven and
+    // 8 building lines") was never actually true and no combo from the newer
+    // vocabulary could ever badge a real share, regardless of what fired.
+    // _F is now a per-share key->fired map DERIVED locally from A.M using
+    // _nurFireToday (already correct, already used by the nursery, verified
+    // bit-for-bit against the server's own predicate thresholds).
+    var _AGrd=(window._auditCache&&window._auditCache.A&&window._auditCache.A.M)?window._auditCache.A:null;
+    var _AHold=_AGrd?(_AGrd.hold||5):5;
+    var _badgeKeys=_AGrd?Object.keys(_AGrd.M).filter(function(k){
+      var m=_AGrd.M[k]; if(!m||!m.n)return false;
+      if(m.dirNeg)return false;                          // warnings never badge a buy
+      if(k.indexOf('>')>=0)return false;                  // sequences: can't be checked live
+      if(k==='vr'||k==='blk')return false;                // bare two-way parents never badge
+      if(/^(vr|blk)-$/.test(k))return false;               // down-day splits are warnings too
+      var t=_tierAdj(m,_AHold);
+      if(t!=='solid'&&t!=='promising')return false;        // the graded bar, unsoftened (v577's 'tiny' excluded here too)
+      return true;
+    }):null;
+    var _F=null;
+    if(_badgeKeys){
+      _F={};
+      shares.forEach(function(s){
+        if(!s||!s.ticker)return;
+        var hit=[];
+        for(var bi=0;bi<_badgeKeys.length;bi++){ var k=_badgeKeys[bi]; var r=null; try{ r=_nurFireToday(s,k); }catch(e){} if(r===true)hit.push(k); }
+        _F[s.ticker]=hit;
+      });
+    }
     var _failed=(!_F&&(window._scanSrc==='unavailable'||!!window._scDayFail));
     shares.forEach(function(s){ if(s){ s._evKeys=[]; s._evD=(_F||_failed)?dd:''; s._evTier=null; s._evSolidN=0; s._evPromN=0; s._evWhy=''; s._evSkip=''; s._evThin=false; s._evNeg=false; s._evEdge=null; s._evWhyNeg=''; s._evUnp=false; s._evWhyUnp=''; s._evErly=false; s._evWhyErly=''; } });
     // Same phases as _apRuleFilter (one _scStats per share, the day's
@@ -19464,7 +19877,7 @@ function _evMark(shares){
     // today" is neither. Thin shares are TESTED and MARKED, not excluded:
     // hiding a share is not the same as warning about it.
     var pool=shares;
-    try{ if(_cardLiqNeed()>0)shares.forEach(function(s){ if(s&&!_cardLiqPass(s))s._evThin=true; }); }catch(e){}
+    try{ shares.forEach(function(s){ if(s&&!_cardLiqPassSrv(s))s._evThin=true; }); }catch(e){} /* v586: 'borrowed, not earned' = below the fixed $250k RULER the lines are measured on — true at every viewing floor, including Any */
     if(!_F){
       // Not scored yet. Ask the server, mark why the screen is quiet, and let
       // the repaint after the answer arrives fill it in.
@@ -19558,11 +19971,21 @@ function _evMark(shares){
           shares.forEach(function(s2){
             if(!s2||s2._evD!==_evDD())return;
             if(!Array.isArray(s2.series)||s2.series.length<30)return;
+            s2._evTinyN=0; s2._evTinyWhy=''; /* v584: reset the proven-but-tiny record each pass */
             var bestR=-1,bestL=null,bestE=null;
             for(var bi=0;bi<_bl.length;bi++){
               var it=_bl[bi];
               if(_nurFireToday(s2,it.k)!==true)continue;
-              var r2=(it.m.tier==='solid')?2:1;
+              var _t2=(typeof _tierAdj==='function')?_tierAdj(it.m,(_A&&_A.hold)||5):it.m.tier;
+              if(_t2!=='solid'&&_t2!=='promising'){
+                /* v577: too-small edges don't badge shares — but v584: dropping
+                   them SILENTLY made the row read "not proven", which is false.
+                   The line IS proven; at this floor its edge is under the money
+                   bar. Remember it so the chip can say the true thing. */
+                if(_t2==='tiny'){ s2._evTinyN=(s2._evTinyN||0)+1;
+                  if(!s2._evTinyWhy)s2._evTinyWhy=_nmK(it.k)+' \u2014 proven, +$'+(+it.m.edge||0).toFixed(2)+'/$100 at this floor'; }
+                continue; }
+              var r2=(_t2==='solid')?2:1;
               if(r2>bestR){ bestR=r2; bestL=it; }
               if(bestE==null||it.m.edge>bestE)bestE=it.m.edge;
             }
@@ -19652,6 +20075,15 @@ function _evRowChip(s){
     if(!s._evTier&&s._evD===_evDD()&&s._evNeg){
       var nt='⚠️ This share IS firing graded signals today — but every one of them has a record of UNDERPERFORMING the market, so it earns no tier. Firing now: '+(s._evWhyNeg||'')+'. The 🤖 auto-pilot will not act on these either. A record can be big enough to prove a signal reliably loses, and that is good evidence about a bad signal — but a small negative number inside its own margin of error proves nothing either way, and since v498 only the first of those two is called LOSING.';
       return '<span class="tag" style="border:1px solid var(--red);color:#ff9caa;font-weight:800;letter-spacing:.3px" title="'+nt.replace(/"/g,'&quot;')+'">⚠️ underperforms</span>';
+    }
+    // v584 — fired lines with a PROVEN record whose edge AT THIS FLOOR sits
+    // under the $0.50/$100 money bar. This state used to fall through to
+    // "not proven", which is the exact TOO-EARLY-vs-NOT-PROVEN class of
+    // conflation this codebase exists to prevent: the line was proven; the
+    // floor made its measured edge too small to pay for itself.
+    if(!s._evTier&&s._evD===_evDD()&&s._evTinyN){
+      var yt='\ud83d\udca4 PROVEN \u00b7 TOO SMALL AT THIS FLOOR \u2014 '+s._evTinyN+' line'+(s._evTinyN>1?'s':'')+' with a PROVEN record fired on this share today, but at your current \ud83d\udca7 floor ('+_cardLiqLabel()+') the measured edge is under $0.50 per $100 \u2014 real, and smaller than trading costs. A line\'s badge is its AVERAGE across every share at the floor, so a wide-open floor lets micro-caps shrink it: '+(s._evTinyWhy||'')+'. Raise the \ud83d\udca7 floor (set $250k / $1m on the radar) to measure on tradeable shares \u2014 the badge often returns. NOT the same as \u201cnot proven\u201d: we looked, and found an edge too small to pay for itself here.';
+      return '<span class="tag" style="border:1px solid var(--gold);color:var(--gold);font-weight:700;letter-spacing:.3px" title="'+yt.replace(/"/g,'&quot;')+'">\ud83d\udca4 proven \u00b7 too small here</span>';
     }
     // v500 — fired, but every signal firing is merely UNPROVEN rather than
     // proven to lose. That is a real state and it deserves its own words: the
@@ -19850,7 +20282,7 @@ function _apRuleFilter(pool,key){
 // Micro-caps whose whole daily turnover is a few thousand dollars produce
 // "returns" that are mostly bid-ask noise. They distort the scans AND the
 // market baseline, so every card lets you set the floor and re-run.
-var _CARD_LIQ=[['any','Any',0],['50k','$50k',5e4],['250k','$250k',2.5e5],['1m','$1m',1e6],['5m','$5m',5e6]];
+var _CARD_LIQ=[['any','Any (server $50k)',0],['50k','$50k',5e4],['250k','$250k',2.5e5],['1m','$1m',1e6],['5m','$5m',5e6]];
 function _cardLiqKey(){
   if(window._cardLiq)return window._cardLiq;
   try{ var s=localStorage.getItem('BETA_asxScreener.cardLiq.v1'); if(s)return (window._cardLiq=s); }catch(e){}
@@ -19860,10 +20292,136 @@ function _cardLiqKey(){
 }
 function _cardLiqNeed(){ var k=_cardLiqKey(); for(var i=0;i<_CARD_LIQ.length;i++)if(_CARD_LIQ[i][0]===k)return _CARD_LIQ[i][2]; return 0; }
 function _cardLiqLabel(){ var k=_cardLiqKey(); for(var i=0;i<_CARD_LIQ.length;i++)if(_CARD_LIQ[i][0]===k)return _CARD_LIQ[i][1]; return 'Any'; }
+function _evElapsed(t0){
+  /* v585: the heartbeat. In-flight messages carry a ticking elapsed time so
+     a working minute can never again look identical to a hang. */
+  try{ var x=Math.max(0,Math.round((Date.now()-(+t0||Date.now()))/1000));
+    return x>=1?(' '+(x>=60?(Math.floor(x/60)+'m '+(x%60)+'s'):(x+'s'))):''; }catch(e){ return ''; }
+}
+function _evPulseEnsure(on){
+  /* v585: while anything is in flight, repaint the strip every 2s so the
+     elapsed time ticks (statsBar is the proven-cheap repaint — v547). Clears
+     itself the moment nothing is in flight. */
+  try{
+    if(on){ if(!window._evPulseT)window._evPulseT=setInterval(function(){ try{ statsBar(); }catch(e){} },2000); }
+    else if(window._evPulseT){ clearInterval(window._evPulseT); window._evPulseT=null; window._evPulse0=null; }
+  }catch(e){}
+}
+function _evAutoRetry(){
+  /* v587: after a timeout/network failure the app retries ITSELF (twice max,
+     45s apart) with a live countdown — because on a first-of-day compute the
+     server usually finishes moments after our 120s patience runs out, and the
+     next ask returns instantly from the day's cache. 429 and 400 are excluded:
+     retrying a rate limit just burns it, and 400 is the legacy-fallback path. */
+  try{
+    var g=window._gradeFail||{}; var k=g.kind||'network';
+    if(k!=='timeout'&&k!=='network')return;
+    window._gradeRetryN=(window._gradeRetryN||0);
+    if(window._gradeRetryN>=2){ window._gradeRetryAt=null; return; }
+    window._gradeRetryN++;
+    window._gradeRetryAt=Date.now()+45000;
+    setTimeout(function(){ try{ if(window._warmState==='failed'&&!(window._auditCache&&window._auditCache.A)){ window._gradeRetryAt=null; _evRetryServer(); } }catch(e){} },45000);
+  }catch(e){}
+}
+function _evRetryCountdown(){
+  /* v587: the ticking 'asking again automatically in Ns' suffix for the failed
+     note — kept as its own helper so the render site stays quote-safe. */
+  try{ var t=window._gradeRetryAt; if(!t||t<=Date.now()||(window._auditCache&&window._auditCache.A))return '';
+    return ' \u00b7 \u23f3 asking again automatically in '+Math.max(1,Math.ceil((t-Date.now())/1000))+'s\u2026'; }catch(e){ return ''; }
+}
+function _gradeFailText(){
+  /* v583: the unreachable state names its reason. _serverGrades._post records
+     the last real failure on window._gradeFail; this turns it into the one
+     sentence the radar shows. No record = the old generic line. */
+  try{
+    var g=window._gradeFail;
+    if(!g)return '\u26a0\ufe0f signals not scored \u2014 could not reach our server';
+    if(g.kind==='timeout')return '\u26a0\ufe0f signals not scored \u2014 the server request ran past its '+Math.round((g.ms||90000)/1000)+'s time limit. The FIRST grade of a new day, window or floor computes fresh and is the slow one \u2014 a retry usually returns instantly off the finished answer';
+    if(g.kind==='http'&&g.status===429){ var _age=Math.round((Date.now()-(g.at||0))/60000); return '\u26a0\ufe0f signals not scored \u2014 the server said: '+(g.msg||'too many grade requests this hour')+(_age>0?' ('+_age+' min ago)':'')+'. That limit protects the server and resets within the hour \u2014 retrying sooner just hits it again'; }
+    if(g.kind==='http')return '\u26a0\ufe0f signals not scored \u2014 the server answered HTTP '+g.status+(g.msg?(': '+g.msg):'')+' \u2014 a server-side fault, not this device';
+    return '\u26a0\ufe0f signals not scored \u2014 no answer from the network at all (connection, Wi\u2011Fi or DNS), so the server was never reached';
+  }catch(e){ return '\u26a0\ufe0f signals not scored \u2014 could not reach our server'; }
+}
+function _evLineCounts(){
+  /* v576: how many distinct GRADED LINES are behind today's share counts.
+     v581: count what the TILES can actually use. The strip used to count
+     EVERY line in the graded table — including sequences (never on a buy
+     list), warning-direction lines, and lines the v577 costs gate demotes to
+     PROVEN·TOO SMALL — while the tile pass badges shares only from lines
+     passing _bevSelect + _tierAdj. So the strip could say "8 building lines"
+     while ZERO of them could badge a share, and 0 PROMISING looked broken
+     when it was forced. Same filters as the badging pass, and the set-aside
+     lines are counted BY REASON so the sentence can explain itself. */
+  try{
+    var A=(window._auditCache&&window._auditCache.A)?window._auditCache.A:null;
+    if(!A||!A.M)return null;
+    var h=A.hold||5, sol=0, pro=0, aSeq=0, aWarn=0, aTiny=0, aNeg=0;
+    for(var k in A.M){
+      var m=A.M[k]; if(!m||!m.n)continue;
+      var t=(typeof _tierAdj==='function')?_tierAdj(m,h):m.tier;
+      if(t!=='solid'&&t!=='promising'&&t!=='tiny')continue;      /* early/none: not a graded badge either way */
+      var _seq=(k.indexOf('>')>=0), _warn=(!!m.dirNeg)||/^(vr|blk)-$/.test(k);
+      if(k==='vr'||k==='blk')continue; /* v594 deep-dive: bare two-way parents never badge (graded both ways) — counting them inflated the strip's proven/building line counts */
+      if(_seq){ aSeq++; continue; }                              /* sequences: can't be checked today */
+      if(_warn){ aWarn++; continue; }                            /* warnings never badge a buy */
+      if(t==='tiny'){ aTiny++; continue; }                       /* v577: proven, too small to trade */
+      if(!(m.edge>0)){ aNeg++; continue; }                       /* the badging pass requires edge>0 */
+      if(t==='solid')sol++; else pro++;
+    }
+    return {sol:sol,pro:pro,aside:{seq:aSeq,warn:aWarn,tiny:aTiny,neg:aNeg},asideN:(aSeq+aWarn+aTiny+aNeg)};
+  }catch(e){ return null; }
+}
+function _evActions(withFloor){
+  /* v575: the button strip shared by every degraded evidence state. */
+  try{
+    var b=function(js,lbl,solid){ return '<button onclick="'+js+'" style="border:1px solid var(--gold);color:var(--gold);background:'+(solid?'rgba(255,210,0,.08)':'transparent')+';border-radius:6px;padding:1px 7px;font:700 10px var(--sans);cursor:pointer;margin-left:5px;">'+lbl+'</button>'; };
+    var out=b('_evRetryServer()','try again',true);
+    if(withFloor&&typeof _cardLiqKey==='function'&&_cardLiqKey()==='any')out+=b("_evSetFloor('250k')",'set \u0024250k',false);
+    return out;
+  }catch(e){ return ''; }
+}
+function _evRetryServer(){
+  /* v574: a pressable retry for the unreachable-server state. Clears the
+     session latches that stop the app asking again (_SCAN_SERVER_OFF), re-arms
+     the one-shot warm retry, and kicks both halves off immediately.
+     v583: the press ANSWERS INSTANTLY. The strip flips to ⏳ before any
+     network happens, so a retry can never again be indistinguishable from a
+     dead button; a 10s watchdog clears the transient if nothing real (the
+     warm's own running/done/failed) has replaced it by then. */
+  try{
+    try{ window._SCAN_SERVER_OFF=false; }catch(e){}
+    window._warmRetried=false; window._warmState='asking'; window._warmAskAt=Date.now();
+    try{ if(typeof statsBar==='function')statsBar(); }catch(e){}
+    setTimeout(function(){ try{ if(window._warmState==='asking'&&(Date.now()-(window._warmAskAt||0))>=9500){ window._warmState=''; if(typeof statsBar==='function')statsBar(); } }catch(e){} },10000);
+    try{ if(typeof _scanServerRefresh==='function')_scanServerRefresh(); }catch(e){}
+    try{ if(typeof prep==='function'&&!window._prepRunning){} }catch(e){}
+    if(typeof _auditWarmIdle==='function')setTimeout(function(){ try{_auditWarmIdle();}catch(e){} },60);
+    if(typeof statsBar==='function')setTimeout(function(){ try{statsBar();}catch(e){} },120);
+  }catch(e){}
+}
+function _evSetFloor(k){
+  /* v573: change the grading floor from wherever the user is standing — the
+     radar, not just the card. Same setter as the card's chips, then an
+     immediate background re-grade so the counts follow within seconds. */
+  try{
+    _cardLiqSet(k,'');
+    window._warmRetried=false; window._warmState='asking'; window._warmAskAt=Date.now(); /* v583: instant ack */
+    if(typeof statsBar==='function')statsBar();
+    if(typeof _auditWarmIdle==='function')setTimeout(function(){ try{_auditWarmIdle();}catch(e){} },60);
+  }catch(e){}
+}
 function _cardLiqSet(k,fn){
   window._cardLiq=k; try{ localStorage.setItem('BETA_asxScreener.cardLiq.v1',k); }catch(e){}
-  try{ window._scCache=null; window._t20Cache=null; window._smCache=null; window._auditCache=null; window._auditCacheAlt={}; }catch(e){}
+  /* v588 · one-ruler follow-through: the floor is a DISPLAY filter now, and the
+     grades live on the fixed $250k ruler — so the graded answer STAYS. Nuking
+     _auditCache here (the old behaviour) forced a pointless server round-trip
+     on every floor tap and was half of the 'loads then reloads' feeling. Only
+     the floor-FILTERED view caches refresh, and the main screen repaints at
+     once so the change is visible before the card even closes. */
+  try{ window._scCache=null; window._t20Cache=null; window._smCache=null; window._auditCacheAlt={}; }catch(e){}
   try{ if(typeof window[fn]==='function')window[fn](); }catch(e){}
+  try{ if(typeof render==='function')render(); }catch(e){}
+  try{ if(typeof statsBar==='function')statsBar(); }catch(e){}
 }
 function _sigNews(v){
   window._sigNewsMode=v;
@@ -19885,12 +20443,32 @@ function _cardLiqPass(s){
     return (v*p)>=need;
   }catch(e){ return true; }
 }
+function _cardLiqPassSrv(s){
+  /* v572: the grading payload's floor. The server always applies its own
+     $50k/day floor (_AUD.LIQ_FLOOR) and discards anything below it, so
+     uploading those shares costs time and changes nothing. Effective floor =
+     the stricter of the user's choice and the server's. Display/marking code
+     must keep using _cardLiqPass — this is ONLY for what we send. */
+  try{
+    /* v586 · ONE RULER: the fallback upload must measure on the SAME $250k
+       universe the pantry route uses, or a server outage would silently
+       change what the badges mean. The user's floor no longer enters here. */
+    var need=250000;
+    var v=(s.avgVol>0?s.avgVol:0), p=(s.price>0?s.price:0);
+    if(!(v>0)&&Array.isArray(s.series)&&s.series.length){
+      var n=Math.min(30,s.series.length), sum=0, k;
+      for(k=s.series.length-n;k<s.series.length;k++)sum+=(s.series[k].v>0?s.series[k].v:0);
+      v=sum/n; if(!(p>0))p=s.series[s.series.length-1].c;
+    }
+    return (v*p)>=need;
+  }catch(e){ return true; }
+}
 function _cardLiqBar(fn){
   var cur=_cardLiqKey();
   return '<div style="margin:0 0 8px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">'
     +'<span title="Skip shares whose average daily turnover (volume × price) is below this. Since v462 this governs TWO things: which shares this year-long grading replay measures, and which ones the 🤖 auto-pilot may buy. It no longer decides who gets evidence-checked on the Market Radar — that now covers every share on screen, with thin ones flagged 💧 rather than hidden. Applies to the scans AND the market they are measured against, so both sides are comparable. Thin shares move on tiny trades, which is noise rather than signal." style="cursor:help;font:700 9.5px var(--sans);color:var(--muted);margin-right:4px;">💧 tradeable shares only:</span>'
     +_CARD_LIQ.map(function(x){
-      return '<button onclick="_cardLiqSet(\''+x[0]+'\',\''+fn+'\')" title="'+(x[2]?('at least $'+(x[2]>=1e6?(x[2]/1e6)+' million':(x[2]/1e3)+'k')+' traded on an average day'):'no floor — every share, including the thinnest')+'" style="border:1px solid '+(x[0]===cur?'var(--gold)':'var(--border2)')+';color:'+(x[0]===cur?'var(--gold)':'var(--muted)')+';background:'+(x[0]===cur?'rgba(255,210,0,.08)':'transparent')+';border-radius:20px;padding:3px 9px;font:700 9.5px var(--sans);cursor:pointer;">'+x[1]+'</button>';
+      return '<button onclick="_cardLiqSet(\''+x[0]+'\',\''+fn+'\')" title="'+(x[2]?('at least $'+(x[2]>=1e6?(x[2]/1e6)+' million':(x[2]/1e3)+'k')+' traded on an average day'):'The APP stops filtering — but the server always applies its own $50k/day floor, so that is the real universe (the line under this row states it). Expect micro-caps to dominate: bigger percentage moves, huge sighting counts, and edges a buy–sell spread would eat. Use $250k or $1m for decisions.')+'" style="border:1px solid '+(x[0]===cur?'var(--gold)':'var(--border2)')+';color:'+(x[0]===cur?'var(--gold)':'var(--muted)')+';background:'+(x[0]===cur?'rgba(255,210,0,.08)':'transparent')+';border-radius:20px;padding:3px 9px;font:700 9.5px var(--sans);cursor:pointer;">'+x[1]+'</button>';
     }).join('')
     +'<span style="font:400 9px var(--sans);color:var(--dim);margin-left:4px;">changing this re-runs the report</span></div>';
 }
@@ -20074,7 +20652,7 @@ async function _scServerReplay(shares, need){
       // v470b: the probe already told us this worker cannot answer — do not
       // then upload tens of megabytes for it to refuse a second time.
       if(_SCAN_SERVER_OFF)return null;
-      var r=await fetch(base,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      var r=await _fetchTO(base,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)},90000);
       // A worker that predates w391 answers 405 (its POST handler only knows
       // /grades) or 404. That is not an error worth retrying all session.
       if(r.status===404||r.status===405){ _SCAN_SERVER_OFF=true; return null; }
@@ -20478,7 +21056,7 @@ function signalReportCard(){
   try{ showModal('<div style="padding:18px;font-size:12.5px;line-height:1.6;color:var(--muted);text-align:center;">⏳ <b style="color:var(--text)">Grading every signal…</b><br>re-running each flag over the past weeks — one moment.</div>','📋 Signal report card'); }catch(e){}
   var _tok=(window._rcTok=(window._rcTok||0)+1);
   var _show=function(A){
-    try{ if(A&&A.M){window._auditCache={d:_dd,ex:currentExch,liq:_cardLiqKey(),A:A}; try{_evCardArrived();}catch(e2){}} }catch(e){}
+    try{ if(A&&A.M){ _gradesPut(currentExch,_dd,5,A); /* v598: through the one store (this path only ever runs at hold=5) */ try{_evCardArrived();}catch(e2){}} }catch(e){}
     var m=document.getElementById('appModal');
     if(window._rcTok===_tok && A && A.M && m && m.style.display!=='none' && window._curModalLabel==='📋 Signal report card'){
       try{ _renderReportCard(A); }catch(e){ try{ showModal('<div style="padding:14px;color:var(--muted);font-size:12px;">Could not build the report card right now — try again in a moment.</div>','📋 Signal report card'); }catch(_){} }
@@ -20488,7 +21066,7 @@ function signalReportCard(){
   // say so plainly rather than grading here — the recipe is no longer in this page.
   var _fail=function(){ var m=document.getElementById('appModal'); if(window._rcTok===_tok && m && m.style.display!=='none' && window._curModalLabel==='📋 Signal report card'){ try{ showModal('<div style="padding:16px;font-size:12.5px;line-height:1.6;color:var(--muted);text-align:center;">📡 <b style="color:var(--text)">Could not reach your grading server just now.</b><br>The report card is graded on your server — give it a moment and open it again. Your prices, signals and portfolio are unaffected.</div>','📋 Signal report card'); }catch(e){} } };
   if(typeof DATA_PROXY==='string' && DATA_PROXY){
-    var _sh=(Array.isArray(allData)?allData:[]).filter(function(s){return Array.isArray(s.series)&&s.series.length>=_AUD.MINROWS;}).filter(_cardLiqPass).map(function(s){return {ticker:s.ticker,series:s.series};});
+    var _sh=(Array.isArray(allData)?allData:[]).filter(function(s){return Array.isArray(s.series)&&s.series.length>=_AUD.MINROWS;}).filter(_cardLiqPassSrv).map(function(s){return {ticker:s.ticker,series:s.series};});
     _serverGrades(_sh,_dd,currentExch).then(function(A){ if(A&&A.M){ window._gradeSrc='server'; _show(A); } else { _fail(); } }).catch(function(){ _fail(); });
   } else { _fail(); }
 }
@@ -20524,9 +21102,10 @@ function _renderReportCard(A){
     const pct=(x,n)=>n?Math.round((x/n)*100):0;
     const f1=(x)=>((x>=0?'+':'')+x.toFixed(2))+'%';
     const baseAvg=A.base.sum/A.base.n, baseUp=pct(A.base.up,A.base.n);
-    const TIER={solid:['SOLID','var(--green)'],promising:['PROMISING','var(--gold)'],early:['TOO EARLY','var(--dim)']};
-    const _tierTip={solid:'SOLID — 50+ fires with a consistent edge (t≥2). The firmest evidence on the card, though still never a guarantee.',promising:'PROMISING — 30+ fires with a decent edge (t≥1). Worth watching; not yet proven.',early:'TOO EARLY — too few fires to tell a real edge from luck yet, whatever the edge looks like.'};
-    const chip=m=>{const t=TIER[m.tier];return `<span title="${_tierTip[m.tier]||''}" style="cursor:help;border:1px solid ${t[1]};color:${t[1]};border-radius:4px;padding:0 4px;font-size:9px;font-weight:800;letter-spacing:.5px;">${t[0]}</span>`;};
+    const TIER={solid:['SOLID','var(--green)'],promising:['PROMISING','var(--gold)'],early:['TOO EARLY','var(--dim)'],tiny:['PROVEN · TOO SMALL','var(--muted)']};
+    const _tierTip={solid:'SOLID — 50+ fires with a consistent edge (t≥2). The firmest evidence on the card, though still never a guarantee.',promising:'PROMISING — 30+ fires with a decent edge (t≥1). Worth watching; not yet proven.',early:'TOO EARLY — too few fires to tell a real edge from luck yet, whatever the edge looks like.',tiny:'PROVEN \u00b7 TOO SMALL \u2014 this line has enough sightings and is statistically clear of luck, but the money is under \u00240.50 per \u0024100, which brokerage and the buy\u2013sell spread would eat. Real, and not worth trading.'};
+    try{window._cardHoldNow=A.hold;}catch(e){}
+    const chip=m=>{const _tj=_tierAdj(m,A.hold);const t=TIER[_tj];return `<span title="${(_tierTip[_tj]||'')+_tierWinTip(A.hold)}" style="cursor:help;border:1px solid ${t[1]};color:${t[1]};border-radius:4px;padding:0 4px;font-size:9px;font-weight:800;letter-spacing:.5px;">${t[0]}${(A.hold>5)?`·${A.hold}d`:``}</span>`;};
     const nameOf=k=>{
       if(A.defs[k])return A.defs[k].name;
       if(k==='vr+')return '🥇 Vol record · up day'; if(k==='vr-')return '🥇 Vol record · down day';
@@ -20641,7 +21220,7 @@ function _renderReportCard(A){
       }
       return `<div style="font-size:11px;color:var(--muted);margin-top:2px;">seen <b title="How many times this signal appeared across every share, on every day, in the graded year." style="cursor:help;color:var(--text)">${m.n.toLocaleString()}</b> times · <b title="${m.dirNeg?('How often price was LOWER '+_h+' trading days later — for a warning, lower is the whole point.'):('How often price was HIGHER '+_h+' trading days later.')}" style="cursor:help;color:var(--text)">${hitTxt}</b> after ${_h}d · <span title="EDGE = the average move AFTER this flag fired, minus the average move of ALL shares that same day, averaged over every fire. Above zero beat the market (for a warning, below zero correctly caught the fall). Subtracting the day’s market strips out lucky good-market weeks." style="cursor:help;">edge <b style="color:${(m.dirNeg?m.edge<0:m.edge>0)?'var(--green)':'#ff9caa'}">${f1(m.edge)}</b></span> ${beatTxt}${chip(m)} · <span title="Median = the MIDDLE outcome (half of fires did better, half worse). Unlike the average, one giant winner can’t inflate it.">median ${f1(m.median)}</span> · <span title="The average size of the winning fires vs the losing fires — the shape of the payoff, not just how often it wins.">wins ${f1(m.avgWin)} / losses ${f1(m.avgLoss)}</span></div>
       <div style="font-size:9.5px;color:var(--dim);margin-top:1px;">${halves(m)||' '}${tape(m)}${track(k)}${_eraRow(k,m)}
-      <div style="font-size:10.5px;color:var(--muted);margin-top:2px;">${(()=>{const g=_edgeGauge(m.dirNeg?-m.edge:m.edge,m.n);return `<span title="The Paula–Ninó Edge — this app’s money measure. Named in memory of Paula and Ninó." style="cursor:help;">PN Edge</span> — about <b style="color:${g.col}">${g.money} extra per $100 invested</b> ${g.bar} <span style="color:${g.col}">${g.word}</span> — on average, measured ${_winWords(A.hold)} after each signal, beyond the market, before costs`;})()}</div></div>`;
+      <div style="font-size:10.5px;color:var(--muted);margin-top:2px;">${(()=>{const g=_edgeGauge(m.dirNeg?-m.edge:m.edge,m.n);return `<span title="The Paula–Ninó Edge — this app’s money measure. Named in memory of Paula and Ninó." style="cursor:help;">PN Edge</span> — about <b style="color:${g.col}">${g.money} extra per $100 invested</b> ${g.bar} <span style="color:${g.col}">${g.word}</span> — on average, measured ${_winWords(A.hold)} after each signal, beyond the market, before costs${(m.median===0&&m.n>=200)?` <span title="Half of these ${m.n.toLocaleString()} sightings finished EXACTLY level — the fingerprint of shares too thin to trade, where any average edge is really the buy–sell spread. Raise the 💧 tradeable-shares floor to $250k or $1m and re-run before trusting this line." style="cursor:help;color:#ff6b6b;font-weight:700;">· half these sightings never moved — check the 💧 floor</span>`:''}`;})()}</div></div>`;
     };
     const _flagTip={
       bo:'🚀 Breakout — the share closed at its highest price of the stored year, on above-average volume: buyers pushed it into fresh territory (an estimate from price & volume).',
@@ -20769,8 +21348,8 @@ function _renderReportCard(A){
       const m=it.m, at=it.at;
       const need=[];
       need.push(it.fGap>0?`fired <b style="color:var(--text)">${m.n.toLocaleString()}×</b> — needs ~<b style="color:var(--gold)">${it.fGap}</b> more`:`fires <b style="color:var(--green)">✓ ${m.n.toLocaleString()}</b> (50+ met)`);
-      const sPct=Math.max(4,Math.min(100,Math.round((at/2)*100)));
-      need.push(`strength <b style="color:${it.sGap>0?'var(--gold)':'var(--green)'}">${at.toFixed(1)}</b> of the 2.0 required <span style="display:inline-block;width:44px;height:5px;border:1px solid var(--border);border-radius:3px;vertical-align:middle;overflow:hidden;background:var(--bg3);"><span style="display:block;width:${sPct}%;height:100%;background:${it.sGap>0?'var(--gold)':'var(--green)'};"></span></span>`);
+      const sPct=Math.max(4,Math.min(100,Math.round((at/2.5)*100))); /* v592: the bar climbs toward SOLID's 2.5, not PROMISING's already-met 2.0 */
+      need.push(`strength <b style="color:${at>=2.5?'var(--green)':'var(--gold)'}">${at.toFixed(1)}</b> ${at>=2.5?'\u2014 \u2713 SOLID-strength':'\u2014 SOLID needs 2.5'} <span style="display:inline-block;width:44px;height:5px;border:1px solid var(--border);border-radius:3px;vertical-align:middle;overflow:hidden;background:var(--bg3);"><span style="display:block;width:${sPct}%;height:100%;background:${it.sGap>0?'var(--gold)':'var(--green)'};"></span></span>`);
       return `<div style="padding:6px 8px;border:1px solid var(--border2);border-radius:7px;margin-bottom:5px;background:rgba(74,222,128,.03);">
         <div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;align-items:center;"><span title="${_flagTip[it.k]||''}" style="cursor:help;font-weight:700;color:var(--text)">${nameOf(it.k)}${m.dirNeg?' <span style="font-size:9px;color:#9fb2cc">· warning line</span>':''}</span>${chip(m)}</div>
         <div style="font-size:10.5px;color:var(--muted);margin-top:3px;">${need.join(' · ')} · edge ${f1(m.dirNeg?-m.edge:m.edge)}</div>
@@ -20795,14 +21374,14 @@ function _renderReportCard(A){
     const cMax=comboShown.length?Math.max.apply(null,comboShown.map(x=>Math.abs(x.dir))):0;
     const _ladBadge=m=>{
       const working=(m.dirNeg?m.edge<0:m.edge>0);
-      if(!working){ const t=TIER[m.tier]||['','']; const dir=m.dirNeg?'catch falls':'beat the market'; return `<span title="Measured well enough (${t[0]}) — but on your data it did NOT ${dir}, so there's no usable edge." style="border:1px solid #ff9caa;color:#ff9caa;border-radius:4px;padding:0 4px;font-size:9px;font-weight:800;letter-spacing:.5px;">NO EDGE</span>`; }
+      if(!working){ const t=TIER[_tierAdj(m,A.hold)]||['','']; const dir=m.dirNeg?'catch falls':'beat the market'; return `<span title="Measured well enough (${t[0]}) — but on your data it did NOT ${dir}, so there's no usable edge." style="border:1px solid #ff9caa;color:#ff9caa;border-radius:4px;padding:0 4px;font-size:9px;font-weight:800;letter-spacing:.5px;">NO EDGE</span>`; }
       return chip(m);
     };
-    const ladRow=(it,i,mx)=>{ const sc=_cardScore10(it.m); const scCol=sc>=7?'var(--green)':sc>=4?'var(--gold)':(it.m.dirNeg?'#9fb2cc':'#ff9caa'); const md='<b style="color:'+(i===0?'#e8b923':i===1?'#c2cbd3':i===2?'#cd8a4b':'var(--muted)')+';">'+(i+1)+'</b>'; const warn=it.m.dirNeg?' <span style="color:var(--dim);font-weight:400;font-size:9px;">· warning (predicts a fall)</span>':''; const nm=nameOf(it.k); const _dt=it.m.dirNeg?'A WARNING — it scores by how well it caught FALLS (a high score means it warned well, NOT that you buy it).':'A buy-side flag — it scores by how well price ROSE after it fired.'; const pl=(nm.replace(/<[^>]+>/g,'').replace(/"/g,''))+' — Strength '+sc+'/10. '+(TIER[it.m.tier]?TIER[it.m.tier][0]:'')+' · edge '+f1(it.m.edge)+' vs market over '+A.hold+' days · '+it.m.n.toLocaleString()+' fires. '+_dt+' Score: the badge sets the band (TOO EARLY 0-4 / PROMISING 4-7 / SOLID 7-10) and the edge size places it inside — so a proven small edge outscores a big unproven one.';
+    const ladRow=(it,i,mx)=>{ const sc=_cardScore10(it.m); const _scCap=((it.m.dirNeg?-it.m.edge:it.m.edge)>3.5); /* v563: implausible money caps the score, v565: block comment — this is a ONE-LINE function */ const scCol=sc>=7?'var(--green)':sc>=4?'var(--gold)':(it.m.dirNeg?'#9fb2cc':'#ff9caa'); const md='<b style="color:'+(i===0?'#e8b923':i===1?'#c2cbd3':i===2?'#cd8a4b':'var(--muted)')+';">'+(i+1)+'</b>'; const warn=it.m.dirNeg?' <span style="color:var(--dim);font-weight:400;font-size:9px;">· warning (predicts a fall)</span>':''; const nm=nameOf(it.k); const _dt=it.m.dirNeg?'A WARNING — it scores by how well it caught FALLS (a high score means it warned well, NOT that you buy it).':'A buy-side flag — it scores by how well price ROSE after it fired.'; const pl=(nm.replace(/<[^>]+>/g,'').replace(/"/g,''))+' — Strength '+sc+'/10. '+(TIER[it.m.tier]?TIER[it.m.tier][0]:'')+' · edge '+f1(it.m.edge)+' vs market over '+A.hold+' days · '+it.m.n.toLocaleString()+' fires. '+_dt+' Score: the badge sets the band (TOO EARLY 0-4 / PROMISING 4-7 / SOLID 7-10) and the edge size places it inside — so a proven small edge outscores a big unproven one.';
       return `<div style="display:flex;align-items:center;gap:8px;padding:4px 2px;border-bottom:1px solid var(--border);font-size:11px;">
         <span style="flex:0 0 20px;text-align:center;font-weight:700;color:var(--muted);">${md}</span>
         <span title="${pl}" style="flex:1 1 auto;min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nm}${warn}</span>
-        <span title="Strength /10 — how strong AND how proven, in one number (see 📖 How to read this card below)" style="flex:0 0 46px;text-align:right;font-weight:800;font-family:var(--mono);color:${scCol};cursor:help;">${sc}/10</span>
+        <span title="Strength /10 — how strong AND how proven, in one number (see 📖 How to read this card below)" style="flex:0 0 46px;text-align:right;font-weight:800;font-family:var(--mono);color:${scCol};cursor:help;">${_scCap?`<span title="This line's money is past the plausible ceiling for an end-of-day signal, so its score is capped — the app will not rank a figure it is also warning you about. Check the sighting count and the earlier years before believing it." style="cursor:help;color:#ff6b6b;">⚠</span>`:``}${sc}/10</span>
         <span title="The Paula–Ninó Edge (PN Edge): money made per $100 invested, on average, over the ${_winWords(A.hold)} after each signal — beyond what the market did, before costs. ${_edgeGauge(it.m.dirNeg?-it.m.edge:it.m.edge,it.m.n).tip}" style="flex:0 0 96px;text-align:right;font-size:9px;font-family:var(--mono);color:${_edgeGauge(it.m.dirNeg?-it.m.edge:it.m.edge,it.m.n).col};cursor:help;">${_edgeGauge(it.m.dirNeg?-it.m.edge:it.m.edge,it.m.n).money}<span style="color:var(--dim)">/$100</span></span>
         <span style="flex:0 0 46px;text-align:right;">${_edgeGauge(it.m.dirNeg?-it.m.edge:it.m.edge,it.m.n).bar}</span>
         <span style="flex:0 0 auto;">${_ladBadge(it.m)}</span>
