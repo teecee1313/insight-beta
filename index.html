@@ -827,7 +827,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
     <span>Insight<span style="color:var(--gold)"> Trading</span></span>
     <span style="font-size:9px;font-weight:600;letter-spacing:2px;color:var(--muted);">MARKET ANALYSER</span>
     <span id="appVer" style="font-size:9px;color:var(--dim);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;"></span>
-    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.04-677" style="color:#ff9142;">✉ feedback</a></span>
+    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.04-678" style="color:#ff9142;">✉ feedback</a></span>
   </div>
   <div class="hbadge" id="exchBadge">🌐 Multi-Exchange Screener</div>
   <div class="notice" id="notice" style="display:none">—</div>
@@ -1718,7 +1718,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
 // source into IndexedDB (first run of each version), keeping the last 8, so any
 // previous version can be re-downloaded as a working .html file ("versions"
 // link in Setup). Captured here, before scripts modify the page.
-const APP_VERSION='2026.08.04-677-beta';
+const APP_VERSION='2026.08.04-678-beta';
 // ── Make the app installable (PWA) without needing a separate manifest file ──
 // We build the manifest in-memory and attach it as a Blob URL, so the whole app
 // stays a single HTML file you can upload as-is. Phones/desktops then offer
@@ -6219,7 +6219,40 @@ function _rulesSave(r){
     apSignals:(Array.isArray(r.apSignals)?r.apSignals.filter(k=>['bo','inf','inst','cx','dir','vr','blk'].indexOf(k)>=0):[]),
     plan:(typeof _sanText==='function'?_sanText(r.plan,600):String(r.plan||'')) };
   try{ localStorage.setItem(RULES_KEY,JSON.stringify(clean)); }catch(e){}
+  try{ _botRulesMirror(clean); }catch(e){}
   return clean;
+}
+// ═══ v678 — the saved rules travel to the server (w505 /bot/rules) ═════════
+// The worker's nightly saved-rules lane decides with whatever blob it holds,
+// so every successful save mirrors the bot-relevant numbers up. apOn ON =
+// mirror the rules; apOn OFF = clear the blob, so the server lane never
+// keeps deciding for a bot the person has switched off. Fire-and-forget,
+// 8s timeout, all failures silent - an old worker (pre-w505) 404s and
+// nothing changes anywhere. The access key rides the global fetch wrapper.
+function _botRulesMirror(r){
+  try{
+    const b=_gateBase(); if(!b)return;
+    const ctl=(typeof AbortController==='function')?new AbortController():null;
+    const t=setTimeout(function(){ try{ if(ctl)ctl.abort(); }catch(e){} },8000);
+    let body;
+    if(r&&r.apOn===true&&r.enabled!==false){
+      const num=function(v){ const x=+v; return isFinite(x)?x:0; };
+      const amt=num(r.apAmt);
+      body={
+        trailPct:num(r.trailPct), targetPct:num(r.targetPct), stopPct:num(r.stopPct),
+        dipPct:(r.apEntry==='dip'?Math.min(15,num(r.apDipPct)):0),
+        minScore:Math.min(10,num(r.apMinScore)), topN:Math.max(1,Math.min(6,Math.round(num(r.apMaxBuys)||1))),
+        minPrice:(num(r.apMinPrice)>=0.01?num(r.apMinPrice):0.01),
+        maxPrice:(num(r.apMaxPrice)>0.01?Math.min(50,num(r.apMaxPrice)):50),
+        amount:(amt>=100?Math.min(5000,amt):500)
+      };
+    } else body={clear:true};
+    fetch(b+'/bot/rules',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body),signal:(ctl?ctl.signal:undefined)})
+      .then(function(res){ clearTimeout(t); return res&&res.ok?res.json():null; })
+      .then(function(j){ try{ window._botRulesMirrorLast=(j&&j.ok)?(j.cleared?'cleared':'saved'):'unsupported'; }catch(e){} })
+      .catch(function(){ clearTimeout(t); });
+  }catch(e){}
 }
 // ═══ v304 — three ready-made rule sets (fill the form; the user still saves) ═══
 // Updated per the 31 Jul 2026 evidence session: target/stop/trail/breakeven/hold

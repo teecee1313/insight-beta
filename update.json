@@ -1,5 +1,5 @@
 {
-  "version": "2026.08.04-677",
+  "version": "2026.08.04-678",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta build 2026.08.04-677 - change the liquidity floor and the bot now adjusts on its own: a stand-aside caused by a floor-mismatched report card keeps the day open and retries once the re-grade at your current floor lands, instead of writing the day off. Please test the exact case from today: floor Any, open Portfolio, wait ~a minute, reopen - the bot should have re-run by itself. Practice money only. Hard-refresh."
+  "notes": "Beta build 2026.08.04-678 - your saved rules now travel to the server. Every time rules are saved with the bot ON (a preset tap, the tested-rules button, or a manual Save), the app quietly mirrors the bot numbers to the worker, and the nightly server run decides picks with YOUR rules - even on days the app never opens. Switching the bot OFF clears the server copy. Requires worker w505 (paste staged); on an older worker the mirror silently does nothing and the app behaves exactly as before. View the lane at /picks?mode=mine or the admin page once w505 is live. Practice money only. Hard-refresh (Ctrl+F5)."
 }
