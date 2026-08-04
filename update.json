@@ -1,5 +1,5 @@
 {
-  "version": "2026.08.04-676",
+  "version": "2026.08.04-677",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta build 2026.08.04-676 - tap Defender, All-rounder or Hunter and that set is LIVE: applied, saved, bot ON, in one tap. Manual edits after a preset stay live too. Fresh installs now truly default to All-rounder. Please test: tap each preset, check the confirmation message, edit a number, Save, and confirm the bot still runs. Practice money only. Hard-refresh (Ctrl+F5)."
+  "notes": "Beta build 2026.08.04-677 - change the liquidity floor and the bot now adjusts on its own: a stand-aside caused by a floor-mismatched report card keeps the day open and retries once the re-grade at your current floor lands, instead of writing the day off. Please test the exact case from today: floor Any, open Portfolio, wait ~a minute, reopen - the bot should have re-run by itself. Practice money only. Hard-refresh."
 }
