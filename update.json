@@ -1,5 +1,5 @@
 {
-  "version": "2026.08.04-673",
+  "version": "2026.08.04-674",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta build 2026.08.04-673 - the auto-pilot fix your testing found: the minimum-score gate was judging shares by whether certain screens had been visited first, not by the data. A fresh session that went straight to \u25b6 Run scored everything 0 and bought nothing, whatever your settings. The gate now computes each share's score itself (same as the table's \u2b50 column), so the bot behaves identically on beta, customer, and a fresh device. The diary also now says when scores read 0 because history has not loaded yet, so you know to let the download finish and Run again. Practice money only. Hard-refresh (Ctrl+F5)."
+  "notes": "Beta build 2026.08.04-674 - the auto-pilot now computes ALL of its own evidence (streaks, volume stats, RSI, signal flags) from each share's saved history the moment it needs it - same formulas as the table. Which screens you visited first no longer changes what the bot buys, on any copy or device. The diary also now warns when your minimum watch score removes every share a proven scan picked, and explains the conflict. Please re-test the exact path that failed before: fresh open \\u2192 straight to \\u25b6 Run. Practice money only. Hard-refresh (Ctrl+F5)."
 }
