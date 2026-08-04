@@ -827,7 +827,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
     <span>Insight<span style="color:var(--gold)"> Trading</span></span>
     <span style="font-size:9px;font-weight:600;letter-spacing:2px;color:var(--muted);">MARKET ANALYSER</span>
     <span id="appVer" style="font-size:9px;color:var(--dim);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;"></span>
-    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.04-680" style="color:#ff9142;">✉ feedback</a></span>
+    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.04-681" style="color:#ff9142;">✉ feedback</a></span>
   </div>
   <div class="hbadge" id="exchBadge">🌐 Multi-Exchange Screener</div>
   <div class="notice" id="notice" style="display:none">—</div>
@@ -1718,7 +1718,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
 // source into IndexedDB (first run of each version), keeping the last 8, so any
 // previous version can be re-downloaded as a working .html file ("versions"
 // link in Setup). Captured here, before scripts modify the page.
-const APP_VERSION='2026.08.04-680-beta';
+const APP_VERSION='2026.08.04-681-beta';
 // ── Make the app installable (PWA) without needing a separate manifest file ──
 // We build the manifest in-memory and attach it as a Blob URL, so the whole app
 // stays a single HTML file you can upload as-is. Phones/desktops then offer
@@ -2920,7 +2920,7 @@ window._picksOpen = function(ticker){
   }catch(e){}
   if(typeof printShareReport==='function') printShareReport(ticker);
 };
-window._picksMode = 'trail';   // the tested rules; 'fixed' is the 15/15 control
+window._picksMode = 'trail';   // 'mine' = your saved rules · 'trail' = tested rules · 'fixed' = 15/15 control
 async function showDailyPicks(mode){
   if(mode) window._picksMode = mode;
   const M = window._picksMode;
@@ -2928,7 +2928,7 @@ async function showDailyPicks(mode){
     '<div style="text-align:center;padding:40px 10px;color:var(--muted);font-size:13px;">Loading today\u2019s picks\u2026</div>'); }
   let j=null, err=null;
   try{
-    const r = await fetch(DATA_PROXY+'/picks?exch='+encodeURIComponent(currentExch||'ASX')+(M==='trail'?'&mode=trail':''));
+    const r = await fetch(DATA_PROXY+'/picks?exch='+encodeURIComponent(currentExch||'ASX')+(M==='mine'?'&mode=mine':(M==='trail'?'&mode=trail':'')));
     j = await r.json();
     if(!r.ok || !j || j.error) err = (j&&j.error) ? j.error : ('the server replied '+r.status);
   }catch(e){ err = String(e&&e.message||e); }
@@ -2945,7 +2945,16 @@ async function showDailyPicks(mode){
   } else {
     const R=j.rules||{}, rows=(j.rows||[]).filter(x=>x.status!=='queued'||true);
     const trail=(j.mode==='trail');
-    const ruleLine = trail
+    const mine=(j.mode==='mine');
+    const noRules=mine && !!R.note;   // the worker says 'no saved rules on the server yet'
+    const ruleLine = noRules
+      ? 'No rules saved on the server yet.'
+      : mine
+      ? ((+R.targetPct>0)
+          ? R.targetPct+'% target \u00b7 '+R.stopPct+'% stop'
+          : (R.trailPct||20)+'% trailing stop \u00b7 no take-profit')
+        +' \u00b7 '+(R.dipPct>0?(R.dipPct+'% dip entry'):'buys the open')+' \u00b7 score '+(R.minScore||7)+'+ \u00b7 $'+(R.minPrice)+'\u2013$'+(R.maxPrice)+' \u00b7 top '+(R.topN||4)+'/day'
+      : trail
       ? (R.trailPct||20)+'% trailing stop \u00b7 no take-profit \u00b7 '+(R.dipPct||5)+'% dip entry \u00b7 score '+(R.minScore||7)+'+ \u00b7 $'+(R.minPrice)+'\u2013$'+(R.maxPrice)
       : (R.targetPct||15)+'% target \u00b7 '+(R.stopPct||15)+'% stop \u00b7 '+(R.dipPct||5)+'% dip entry \u00b7 score '+(R.minScore||7)+'+ \u00b7 $'+(R.minPrice)+'\u2013$'+(R.maxPrice);
 
@@ -2959,19 +2968,31 @@ async function showDailyPicks(mode){
     }
 
     const tabs='<div style="display:flex;gap:6px;margin:10px 0 4px;">'
-      +['trail','fixed'].map(m=>'<button onclick="showDailyPicks(\''+m+'\')" style="flex:1;padding:7px;border-radius:6px;font:700 11px var(--sans);cursor:pointer;'
+      +['mine','trail','fixed'].map(m=>'<button onclick="showDailyPicks(\''+m+'\')" style="flex:1;padding:7px;border-radius:6px;font:700 11px var(--sans);cursor:pointer;'
         +'border:1px solid '+(M===m?'var(--gold)':'var(--border2)')+';background:'+(M===m?'rgba(217,164,65,.15)':'var(--bg3)')+';color:'+(M===m?'var(--gold)':'var(--text)')+';">'
-        +(m==='trail'?'\u26a1 The tested rules':'\u2696 15/15 comparison')+'</button>').join('')+'</div>';
+        +(m==='mine'?'\ud83c\udf10 My rules':m==='trail'?'\u26a1 The tested rules':'\u2696 15/15 comparison')+'</button>').join('')+'</div>';
 
     let body;
     if(!rows.length){
-      body='<div style="text-align:center;padding:26px 10px;color:var(--muted);font-size:13px;">'
+      body = noRules
+        ? '<div style="text-align:center;padding:26px 10px;color:var(--muted);font-size:13px;">'
+          +'<div style="font-size:32px;margin-bottom:8px;">\ud83c\udf10</div>'
+          +'<b style="color:var(--text);">No rules on the server yet</b><br>'
+          +'<span style="font-size:12px;">Tap a preset \u2014 or \ud83d\udcbe Save your rules with the \ud83e\udd16 bot ON \u2014 and they mirror to the server automatically. From the next market close this lane fills with picks decided by YOUR rules.</span></div>'
+        : mine
+        ? '<div style="text-align:center;padding:26px 10px;color:var(--muted);font-size:13px;">'
+          +'<div style="font-size:32px;margin-bottom:8px;">\ud83c\udf10</div>'
+          +'<b style="color:var(--text);">Nothing picked under your rules yet</b><br>'
+          +'<span style="font-size:12px;">Your rules are saved on the server and run at each market close. An empty day is normal \u2014 the gates are choosy \u2014 and the first run after saving happens at the next close.</span></div>'
+        : '<div style="text-align:center;padding:26px 10px;color:var(--muted);font-size:13px;">'
         +'<div style="font-size:32px;margin-bottom:8px;">\ud83c\udfaf</div>'
         +'<b style="color:var(--text);">Nothing met the rules</b><br>'
         +'<span style="font-size:12px;">Four gates in a row \u2014 the price band, the score, the signal and the daily cap \u2014 often leave nothing on a given day. '
         +'That is the rules being choosy, not a fault.</span></div>';
     } else {
       body=rows.map(r=>{
+        const tr = mine ? !(+r.target_price>0) : trail;           // this row's exit style
+        const sv = trail ? r.initial_stop : r.stop_price;          // trail control stores initial_stop; mine/fixed store stop_price
         const oob=(R.minPrice!=null && !(r.ref_close>R.minPrice && r.ref_close<=R.maxPrice));
         const age=(j.latestBar && r.first_seen_day && r.first_seen_day<j.latestBar)
           ? ' <span style="color:var(--gold);font-size:10px;">(from '+esc(r.first_seen_day)+')</span>' : '';
@@ -2984,15 +3005,15 @@ async function showDailyPicks(mode){
           +'<div style="font-size:11px;color:var(--muted);margin:3px 0 7px;">'+esc(r.evidence_key||'')+' \u00b7 score '+(r.score==null?'\u2014':(+r.score).toFixed(1))+(r.tier?(' \u00b7 '+esc(r.tier)):'')+'</div>'
           +'<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;">'
           +'<div><span style="color:var(--muted);font-size:10px;display:block;">Buy under</span><b>'+money(r.limit_price)+'</b></div>'
-          +(trail
+          +(tr
             ? '<div><span style="color:var(--muted);font-size:10px;display:block;">Trail</span><b>'+((r.trail_pct||20)+'%')+'</b></div>'
-              +'<div><span style="color:var(--muted);font-size:10px;display:block;">Stop starts</span><b>'+money(r.initial_stop)+'</b></div>'
+              +'<div><span style="color:var(--muted);font-size:10px;display:block;">Stop starts</span><b>'+money(sv)+'</b></div>'
             : '<div><span style="color:var(--muted);font-size:10px;display:block;">Target</span><b>'+money(r.target_price)+'</b></div>'
-              +'<div><span style="color:var(--muted);font-size:10px;display:block;">Stop</span><b>'+money(r.stop_price)+'</b></div>')
+              +'<div><span style="color:var(--muted);font-size:10px;display:block;">Stop</span><b>'+money(sv)+'</b></div>')
           +'<div><span style="color:var(--muted);font-size:10px;display:block;">Last close</span><b>'+money(r.ref_close)+'</b></div>'
           +'</div>'
           +'<div style="display:flex;gap:6px;margin-top:8px;">'
-          +'<button onclick="_picksBuy(\''+esc(r.ticker)+'\','+(+r.limit_price||0)+','+(trail?0:(+r.target_price||0))+','+(trail?(+r.initial_stop||0):(+r.stop_price||0))+')" style="flex:2;padding:7px;border-radius:6px;border:1px solid var(--green);background:rgba(63,185,80,.15);color:var(--green);font:700 11px var(--sans);cursor:pointer;">\ud83d\uded2 Practice buy</button>'
+          +'<button onclick="_picksBuy(\''+esc(r.ticker)+'\','+(+r.limit_price||0)+','+(tr?0:(+r.target_price||0))+','+(+sv||0)+')" style="flex:2;padding:7px;border-radius:6px;border:1px solid var(--green);background:rgba(63,185,80,.15);color:var(--green);font:700 11px var(--sans);cursor:pointer;">\ud83d\uded2 Practice buy</button>'
           +'<button onclick="_picksOpen(\''+esc(r.ticker)+'\')" style="flex:2;padding:7px;border-radius:6px;border:1px solid var(--gold);background:rgba(217,164,65,.15);color:var(--gold);font:700 11px var(--sans);cursor:pointer;">\ud83d\udcca Open '+esc(r.ticker)+'</button>'
           +'<button onclick="printShareReport(\''+esc(r.ticker)+'\')" style="flex:1;padding:7px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font:600 11px var(--sans);cursor:pointer;">\ud83d\udcc4 Report</button>'
           +'</div>'
@@ -3003,7 +3024,8 @@ async function showDailyPicks(mode){
     html='<div style="font-size:12px;color:var(--muted);line-height:1.55;">'+esc(ruleLine)+'</div>'
       +'<div style="font-size:11px;margin-top:5px;">'+fresh+'</div>'
       +tabs
-      +(trail?'<div style="font-size:11px;color:var(--muted);margin:6px 0 10px;line-height:1.5;">The stop shown is where the trail <b>starts</b>. It only ever moves up as the price rises, and never down \u2014 there is no take-profit, so a winner runs until it gives back '+((R.trailPct||20))+'% from its best close.</div>'
+      +(mine?'<div style="font-size:11px;color:var(--muted);margin:6px 0 10px;line-height:1.5;">These are the picks <b>your saved rules</b> chose on the server at end-of-day \u2014 the same decisions the \ud83e\udd16 bot places as dated practice orders. This page is that list, human-readable, running beside the two control sets so all three are judged forward from the same nights.</div>'
+              :trail?'<div style="font-size:11px;color:var(--muted);margin:6px 0 10px;line-height:1.5;">The stop shown is where the trail <b>starts</b>. It only ever moves up as the price rises, and never down \u2014 there is no take-profit, so a winner runs until it gives back '+((R.trailPct||20))+'% from its best close.</div>'
               :'<div style="font-size:11px;color:var(--muted);margin:6px 0 10px;line-height:1.5;">This is the older fixed target/stop set, kept running side by side as a comparison.</div>')
       +body
       +'<div style="font-size:10px;color:var(--muted);margin-top:10px;line-height:1.5;border-top:1px solid var(--border2);padding-top:8px;">'
