@@ -1,5 +1,5 @@
 {
-  "version": "2026.08.04-672",
+  "version": "2026.08.04-673",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta build 2026.08.04-672 — catch-up from 654 (eighteen releases). Highlights: 🧗 Climbers strength labels now name their threshold · 📡 radar label no longer paints over the evidence line on desktop · 🔍 funnel diagnostic names the FIRST gate that emptied the pool, not the last · ✅ list quality gate fixed (shares-only downloads no longer blocked as 'too small') · 🤖 auto-pilot evidence gate rebuilt: ladder runs before the pool empties, checks combination evidence, and no longer trusts a stale graded card when your floor setting has changed · 🧪 new backtest buttons: small margins (3–7%), market-vs-dip entry, pullback entry · 📖 user manual PDF from the owner tools. Please poke hardest at auto-pilot and the Climbers view — that's where this push lives. Hard-refresh (Ctrl+F5)."
+  "notes": "Beta build 2026.08.04-673 - the auto-pilot fix your testing found: the minimum-score gate was judging shares by whether certain screens had been visited first, not by the data. A fresh session that went straight to \u25b6 Run scored everything 0 and bought nothing, whatever your settings. The gate now computes each share's score itself (same as the table's \u2b50 column), so the bot behaves identically on beta, customer, and a fresh device. The diary also now says when scores read 0 because history has not loaded yet, so you know to let the download finish and Run again. Practice money only. Hard-refresh (Ctrl+F5)."
 }
