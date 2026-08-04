@@ -1,5 +1,5 @@
 {
-  "version": "2026.08.04-678",
+  "version": "2026.08.04-679",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta build 2026.08.04-678 - your saved rules now travel to the server. Every time rules are saved with the bot ON (a preset tap, the tested-rules button, or a manual Save), the app quietly mirrors the bot numbers to the worker, and the nightly server run decides picks with YOUR rules - even on days the app never opens. Switching the bot OFF clears the server copy. Requires worker w505 (paste staged); on an older worker the mirror silently does nothing and the app behaves exactly as before. View the lane at /picks?mode=mine or the admin page once w505 is live. Practice money only. Hard-refresh (Ctrl+F5)."
+  "notes": "Beta build 2026.08.04-679 - the bot now EXECUTES the server's decisions. With w505 pasted and your rules mirrored (v678), the nightly server run decides picks with your rules; on your next open the bot places them as DATED practice limit orders - a Thursday open back-fills Monday-to-Wednesday's decisions, and the fill engine replays each one honestly from its decision day. The diary marks these \ud83c\udf10 with the evidence key. Caps still bind at placement (max positions, cash, never doubling into a held share), each decision is placed exactly once, and when the server decided today the local funnel stands down so the bot never decides one day twice. No server or old worker: everything behaves exactly as v677. Practice money only. Hard-refresh (Ctrl+F5)."
 }

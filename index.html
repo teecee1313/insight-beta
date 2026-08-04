@@ -827,7 +827,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
     <span>Insight<span style="color:var(--gold)"> Trading</span></span>
     <span style="font-size:9px;font-weight:600;letter-spacing:2px;color:var(--muted);">MARKET ANALYSER</span>
     <span id="appVer" style="font-size:9px;color:var(--dim);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;"></span>
-    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.04-678" style="color:#ff9142;">✉ feedback</a></span>
+    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.04-679" style="color:#ff9142;">✉ feedback</a></span>
   </div>
   <div class="hbadge" id="exchBadge">🌐 Multi-Exchange Screener</div>
   <div class="notice" id="notice" style="display:none">—</div>
@@ -1718,7 +1718,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
 // source into IndexedDB (first run of each version), keeping the last 8, so any
 // previous version can be re-downloaded as a working .html file ("versions"
 // link in Setup). Captured here, before scripts modify the page.
-const APP_VERSION='2026.08.04-678-beta';
+const APP_VERSION='2026.08.04-679-beta';
 // ── Make the app installable (PWA) without needing a separate manifest file ──
 // We build the manifest in-memory and attach it as a Blob URL, so the whole app
 // stays a single HTML file you can upload as-is. Phones/desktops then offer
@@ -7755,7 +7755,89 @@ function runAutoPilotNow(){
   const box=document.getElementById('apLogBox'); if(box)box.innerHTML=_apLogHtml();
 }
 // auto-run: once per fresh data day, only while opted in (same gentle pattern as the briefing)
-(function _apAuto(){ setInterval(function(){ try{ _autoPilotRun(false); }catch(e){} },11000); })();
+// ═══ v679 — THE APP EXECUTES THE SERVER'S DECISIONS ═══════════════════════
+// w505's nightly saved-rules lane decides picks with the mirrored rules even
+// on days the app never opens. On each load (and each new data day) the bot
+// pulls those decisions and places them as DATED practice limit orders in its
+// own account: placedDate/checkedDate carry the decision day, so the existing
+// buy-checker replays fills honestly from the next session after the decision
+// - a Thursday open back-fills Monday-to-Wednesday exactly as they would have
+// filled. Dedup is by exch|ticker|decision-day; caps (max positions, cash,
+// never doubling into a held ticker) still bind at placement; every action
+// and every skip lands in the diary. When the server decided TODAY, the local
+// funnel's day is claimed so the bot never decides the same day twice - and
+// when the server is unreachable or pre-w505, the local funnel proceeds
+// untouched after one 11-second beat. Practice money only, always.
+window._apSrvSeenKey='BETA_asxScreener.apSrvSeen.v1';
+function _apSrvSeen(){ try{ const v=JSON.parse(localStorage.getItem(_apSrvSeenKey)||'[]'); return Array.isArray(v)?v:[]; }catch(e){ return []; } }
+window._apSrvDone=false;
+window._apSrvConsume=function(){
+  if(window._apSrvBusy)return;
+  try{
+    const r=_rules();
+    if(!(r&&r.enabled&&r.apOn===true)){ window._apSrvDone=true; return; }
+    const b=_gateBase(); if(!b){ window._apSrvDone=true; return; }
+    const ex=String(currentExch||'ASX').toUpperCase();
+    const dd=_pfMktDate(ex);
+    window._apSrvBusy=true;
+    const ctl=(typeof AbortController==='function')?new AbortController():null;
+    const t=setTimeout(function(){ try{ if(ctl)ctl.abort(); }catch(e){} },8000);
+    fetch(b+'/picks?mode=mine&exch='+encodeURIComponent(ex),{signal:(ctl?ctl.signal:undefined)})
+    .then(function(res){ clearTimeout(t); return (res&&res.ok)?res.json():null; })
+    .then(function(j){
+      window._apSrvBusy=false; window._apSrvDone=true;
+      if(!j||j.ok!==true||!Array.isArray(j.rows))return;
+      const seen=_apSrvSeen(); const seenSet=new Set(seen);
+      const rows=j.rows.filter(function(x){ return x&&x.status==='suggested'&&String(x.exch||'').toUpperCase()===ex&&x.ticker&&(+x.limit_price>0)&&(Math.floor(+x.qty)>0)&&x.first_seen_day&&String(x.first_seen_day)<=String(dd)&&!seenSet.has(ex+'|'+x.ticker+'|'+x.first_seen_day); });
+      if(!rows.length)return;
+      const _pfc=window._pfCtx; window._pfCtx='auto';
+      try{
+        const p=_paper(); const fee=brokerageFee();
+        p.orders=p.orders||[]; p.holdings=p.holdings||[];
+        const held=new Set(); p.holdings.forEach(function(h){held.add(h.ticker);}); p.orders.forEach(function(o){held.add(o.ticker);});
+        const maxN=(+r.maxPositions>0)?+r.maxPositions:10;
+        let openN=p.holdings.length+p.orders.length;
+        const ent={d:dd,ts:Date.now(),srv:true,buys:[],skips:[]};
+        let todaysDecision=false;
+        for(const x of rows){
+          const k=ex+'|'+x.ticker+'|'+x.first_seen_day;
+          if(String(x.first_seen_day)===String(dd))todaysDecision=true;
+          if(held.has(x.ticker)){ seen.push(k); ent.skips.push(x.ticker+': already held or on order'); continue; }
+          if(openN>=maxN){ ent.skips.push(x.ticker+': would exceed '+maxN+' open positions - will retry when a slot frees'); continue; }
+          const lim=+x.limit_price, q=Math.floor(+x.qty);
+          const cost=+(q*lim).toFixed(2);
+          if(cost+fee>p.cash+0.005){ ent.skips.push(x.ticker+': not enough practice cash - will retry'); continue; }
+          const tgt=(+x.target_price>0)?+x.target_price:0;
+          const stp=(+x.stop_price>0)?+x.stop_price:0;
+          p.cash=+(p.cash-cost).toFixed(2); _chargeFee(p);
+          p.orders.push({id:'o'+Date.now()+'s'+Math.floor(Math.random()*1000),ticker:x.ticker,exchange:ex,name:'',currency:undefined,
+            limit:lim,qty:q,reserved:cost,placedDate:x.first_seen_day,checkedDate:x.first_seen_day,preOpen:_orderPreOpen(ex),expiry:_orderExpiry(x.first_seen_day),
+            target:tgt>0?tgt:null,stop:stp>0?stp:null,note:'\ud83c\udf10 server decision \u00b7 '+String(x.evidence_key||'')+' \u00b7 decided '+x.first_seen_day+' (practice)',fee:fee||0,
+            tgtLog:tgt>0?[{d:_pfMktDate(ex),ts:_pfStamp(),from:null,to:tgt}]:[],stopLog:stp>0?[{d:_pfMktDate(ex),ts:_pfStamp(),from:null,to:stp}]:[]});
+          held.add(x.ticker); openN++; seen.push(k);
+          ent.buys.push({tk:x.ticker,ex:ex,qty:q,cost:cost,px:lim,srv:true,score:(x.score!=null?x.score:null)});
+        }
+        _paperSave(p);
+        while(seen.length>400)seen.shift();
+        try{ localStorage.setItem(_apSrvSeenKey,JSON.stringify(seen)); }catch(e){}
+        if(ent.buys.length||ent.skips.length){
+          ent.skips.unshift('\ud83c\udf10 decided on the SERVER by your saved rules \u2014 placed here as dated practice limit orders; fills replay honestly from each decision day.');
+          _apLogAdd(ent);
+        }
+        if(todaysDecision){ try{ localStorage.setItem(_apRunKey(),dd); }catch(e){} }
+      }finally{ window._pfCtx=_pfc; }
+    })
+    .catch(function(){ clearTimeout(t); window._apSrvBusy=false; window._apSrvDone=true; });
+  }catch(e){ window._apSrvDone=true; }
+};
+// v679 - the auto ticker now gives the server one 11-second beat per data day:
+// fetch decisions first, then let the local funnel run with whatever remains.
+(function _apAuto(){ setInterval(function(){ try{
+  var dd=''; try{ dd=_pfMktDate(currentExch); }catch(e){}
+  if(window._apSrvFetchedFor!==dd){ window._apSrvFetchedFor=dd; window._apSrvDone=false; _apSrvConsume(); return; }
+  if(!window._apSrvDone)return;
+  _autoPilotRun(false);
+}catch(e){} },11000); })();
 function _ensureCash(p){
   // Migration for accounts created before the cash balance existed: rebuild the
   // balance as if the $10k account had been there from the first trade.
