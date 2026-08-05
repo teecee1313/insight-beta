@@ -827,7 +827,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
     <span>Insight<span style="color:var(--gold)"> Trading</span></span>
     <span style="font-size:9px;font-weight:600;letter-spacing:2px;color:var(--muted);">MARKET ANALYSER</span>
     <span id="appVer" style="font-size:9px;color:var(--dim);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;"></span>
-    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.05-687" style="color:#ff9142;">✉ feedback</a></span>
+    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.05-688" style="color:#ff9142;">✉ feedback</a></span>
   </div>
   <div class="hbadge" id="exchBadge">🌐 Multi-Exchange Screener</div>
   <div class="notice" id="notice" style="display:none">—</div>
@@ -1718,7 +1718,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
 // source into IndexedDB (first run of each version), keeping the last 8, so any
 // previous version can be re-downloaded as a working .html file ("versions"
 // link in Setup). Captured here, before scripts modify the page.
-const APP_VERSION='2026.08.05-687-beta';
+const APP_VERSION='2026.08.05-688-beta';
 // ── Make the app installable (PWA) without needing a separate manifest file ──
 // We build the manifest in-memory and attach it as a Blob URL, so the whole app
 // stays a single HTML file you can upload as-is. Phones/desktops then offer
@@ -15924,7 +15924,13 @@ async function histCount(){
 // This is the fast path for "I have data saved, just show it": it skips the
 // direct→proxy→AI-proxy chain entirely (which can crawl for a minute on slow-
 // proxy days) and reads the share list from the on-device history store.
-async function loadOfflineNow(){
+function loadOfflineNow(){ // v688 single-flight: boot + wake + watchdog + taps share ONE load - concurrent walks of the 4,400-share store made phones crawl
+  if(window._oflBusy) return window._oflBusy;
+  const _p=_loadOfflineNowInner();
+  window._oflBusy=_p; _p.then(function(){window._oflBusy=null;},function(){window._oflBusy=null;});
+  return _p;
+}
+async function _loadOfflineNowInner(){
   const exch=document.getElementById('exchSel').value;
   currentExch=exch;
   const btn=document.getElementById('offlineLoadBtn');
@@ -15944,6 +15950,10 @@ async function loadOfflineNow(){
     }
     allData=offlineRows;
     window._offlineMode=true;
+    try{ if(typeof _refreshSimpleLoad==='function')_refreshSimpleLoad();
+      const sst=document.getElementById('simpleStatus');
+      if(sst&&document.body.classList.contains('simple-mode')) sst.textContent=offlineRows.length.toLocaleString()+' shares loaded \u2014 preparing signals in the background\u2026';
+    }catch(_){} // v688: cards lit as soon as the list exists - prep continues behind them
     if(progFill)progFill.style.width='100%';
     document.getElementById('emptyState').style.display='none';
     const notice=document.getElementById('notice');
