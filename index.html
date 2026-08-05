@@ -827,7 +827,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
     <span>Insight<span style="color:var(--gold)"> Trading</span></span>
     <span style="font-size:9px;font-weight:600;letter-spacing:2px;color:var(--muted);">MARKET ANALYSER</span>
     <span id="appVer" style="font-size:9px;color:var(--dim);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;"></span>
-    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.05-689" style="color:#ff9142;">✉ feedback</a></span>
+    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.05-690" style="color:#ff9142;">✉ feedback</a></span>
   </div>
   <div class="hbadge" id="exchBadge">🌐 Multi-Exchange Screener</div>
   <div class="notice" id="notice" style="display:none">—</div>
@@ -1599,7 +1599,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
 
 <div class="right">
   <div class="stats" id="statsBar" style="display:none">
-    <div class="radar-label" title="Market Radar — your market at a glance. Tap any tile to filter the whole app to just those shares.">📡 <span>Market Radar</span> <span class="rl-sub">tap to filter</span><button id="radarMoreBtn" onclick="_radarMore()" title="Show or hide the detailed tiles">▾ details</button><span id="radarFloorRow" style="margin-left:8px;"></span><span id="radarHoldRow" style="margin-left:6px;"></span></div>
+    <div class="radar-label" title="Market Radar — your market at a glance. Tap any tile to filter the whole app to just those shares.">📡 <span>Market Radar</span> <span class="rl-sub">tap to filter</span><span class="rl-sub" id="radarPrep" style="display:none;margin-left:6px;"></span><button id="radarMoreBtn" onclick="_radarMore()" title="Show or hide the detailed tiles">▾ details</button><span id="radarFloorRow" style="margin-left:8px;"></span><span id="radarHoldRow" style="margin-left:6px;"></span></div>
     <div id="radarCompact">
       <div class="stat statclick" onclick="statFilter('all')" title="Show all — clear these quick filters"><div class="sv gold" id="cTot">0</div><div class="sl">Showing</div></div>
       <div class="stat statclick" onclick="statFilter('gainers')" title="Show only shares up today"><div class="sv g" id="cG">0</div><div class="sl">Gainers</div></div>
@@ -1723,7 +1723,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
 // source into IndexedDB (first run of each version), keeping the last 8, so any
 // previous version can be re-downloaded as a working .html file ("versions"
 // link in Setup). Captured here, before scripts modify the page.
-const APP_VERSION='2026.08.05-689-beta';
+const APP_VERSION='2026.08.05-690-beta';
 // ── Make the app installable (PWA) without needing a separate manifest file ──
 // We build the manifest in-memory and attach it as a Blob URL, so the whole app
 // stays a single HTML file you can upload as-is. Phones/desktops then offer
@@ -18742,6 +18742,21 @@ function setAutoLoad(on){
       if(!exs.some(e=>e.exch===sel.value)) sel.value=exs[0].exch;
     }catch(_){}
   }
+  // v690 — the six SIGNALS tiles are the slow tail of signal preparation and
+  // sit at a dash until it reaches them. Say so while it runs; if data is
+  // loaded, the pass is idle and they are still dashes, offer a one-tap run.
+  function _radarPrepTick(){ try{
+    var el=document.getElementById('radarPrep'); if(!el) return;
+    var ids=['sgHi52','sgGold','sgRsi','sgSqz','sgRsl','sgNews'];
+    var empty=0; for(var i=0;i<ids.length;i++){ var e=document.getElementById(ids[i]); if(e && /^[\u2013\u2014-]$/.test((e.textContent||'').trim())) empty++; }
+    if(window._prepRunning && empty){ el.style.display='inline'; el.textContent='\u23f3 signal counts still preparing \u2014 they fill in as each finishes'; return; }
+    if(empty && Array.isArray(allData)&&allData.length && !window._prepRunning){
+      el.style.display='inline';
+      el.innerHTML='signal counts not prepared \u2014 <a href="#" onclick="try{prepareAllSignals(true);}catch(_){};return false;" style="color:var(--gold);">prepare now</a>';
+      return; }
+    el.style.display='none';
+  }catch(_){} }
+  setInterval(_radarPrepTick, 2500);
   async function _wakeLoad(why){
     try{
       if(window._wakeLoading) return; 
