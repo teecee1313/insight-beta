@@ -590,6 +590,11 @@ body.pf-hideprofit .pf-pl{filter:blur(8px)!important;-webkit-filter:blur(8px)!im
      instead (built in JS). Each card shows the share, the numbers as labelled
      rows, and the action buttons full-width — nothing gets cut off. */
   .pf-tablewrap{display:none!important;}
+  /* v750: the weekly diary is six narrow columns and DOES fit a phone, so it
+     keeps its own wrapper and stays visible where pf-tablewrap is hidden. */
+  .wk-wrap{display:block!important;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .wk-table th,.wk-table td{padding:5px 3px!important;font-size:10px!important;}
+  .wk-table th:nth-child(3),.wk-table td:nth-child(3){display:none;} /* 'Open moved' folds into the Week total on narrow screens */
   .pf-cards{display:block!important;}
   .shd-sec{display:none!important;} /* v264: hide History table's secondary columns on phones so Date/Close/Change/Volume fit */
   .shd-table td,.shd-table th{padding:7px 5px!important;font-size:11px!important;}
@@ -827,7 +832,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
     <span>Insight<span style="color:var(--gold)"> Trading</span></span>
     <span style="font-size:9px;font-weight:600;letter-spacing:2px;color:var(--muted);">MARKET ANALYSER</span>
     <span id="appVer" style="font-size:9px;color:var(--dim);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;"></span>
-    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.13-747" style="color:#ff9142;">✉ feedback</a></span>
+    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.14-751" style="color:#ff9142;">✉ feedback</a></span>
   </div>
   <div class="hbadge" id="exchBadge">🌐 Multi-Exchange Screener</div>
   <div class="notice" id="notice" style="display:none">—</div>
@@ -1740,7 +1745,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
 // source into IndexedDB (first run of each version), keeping the last 8, so any
 // previous version can be re-downloaded as a working .html file ("versions"
 // link in Setup). Captured here, before scripts modify the page.
-const APP_VERSION='2026.08.13-747-beta';
+const APP_VERSION='2026.08.14-751-beta';
 // ── Make the app installable (PWA) without needing a separate manifest file ──
 // We build the manifest in-memory and attach it as a Blob URL, so the whole app
 // stays a single HTML file you can upload as-is. Phones/desktops then offer
@@ -2479,6 +2484,18 @@ function _serverData(){ return (typeof DATA_PROXY==='string' && !!DATA_PROXY); }
 // single unlock covers BOTH the customer and beta copies (same origin, same Worker).
 // This client code is NOT the security — the server withholding the data is.
 const _GATE_STORE='insightGate.v1';
+/* v748 — this browser's device id. A trial key allows a small number of
+   devices (2 by default), so a shared code runs out of slots on the SHARER's
+   own phone. Not namespaced by the beta kit (same id across both copies, same
+   worker). Random, meaningless on its own, never leaves this origin. */
+const _DEV_STORE='insightDevice.v1';
+function _devId(){
+  try{
+    let d=localStorage.getItem(_DEV_STORE);
+    if(!d){ d=(crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now().toString(36)+Math.random().toString(36).slice(2,10)); localStorage.setItem(_DEV_STORE,d); }
+    return d;
+  }catch(e){ return ''; }
+}
 function _gateKey(){ try{ return localStorage.getItem(_GATE_STORE)||''; }catch(e){ return ''; } }
 function _gateSet(k){ try{ if(k) localStorage.setItem(_GATE_STORE,String(k)); else localStorage.removeItem(_GATE_STORE); }catch(e){} }
 function _gateBase(){ return (typeof DATA_PROXY==='string'&&DATA_PROXY)?DATA_PROXY.replace(/\/+$/,''):''; }
@@ -2503,7 +2520,7 @@ function _gateBase(){ return (typeof DATA_PROXY==='string'&&DATA_PROXY)?DATA_PRO
     // The unlock attempt sends the password you TYPED; this line used to replace
     // it with the stale stored key, so a device holding an old password could
     // never be unlocked with the new one no matter what you entered.
-    if(k){ try{ const h=new Headers((init&&init.headers)||{}); if(!h.get('X-Insight-Access'))h.set('X-Insight-Access',k); init.headers=h; }catch(e){} }
+    if(k){ try{ const h=new Headers((init&&init.headers)||{}); if(!h.get('X-Insight-Access'))h.set('X-Insight-Access',k); const _d=_devId(); if(_d&&!h.get('X-Insight-Device'))h.set('X-Insight-Device',_d); init.headers=h; }catch(e){} }
     return _raw(input,init).then(function(r){ try{ if(r&&r.status===401)_gateLock(); }catch(e){} return r; });
   };
 })();
@@ -2561,18 +2578,32 @@ function _gateTry(){
   say('Checking…','var(--muted)'); if(btn)btn.disabled=true;
   const b=_gateBase();
   const _f=(window._gateRawFetch||window.fetch);
-  _f(b+'/gate',{headers:{'X-Insight-Access':key}}).then(function(r){
+  _f(b+'/gate',{headers:{'X-Insight-Access':key,'X-Insight-Device':_devId()}}).then(function(r){
     if(r&&r.ok){ _gateSet(key); say('Unlocked ✓','var(--green)'); setTimeout(function(){ try{ location.reload(); }catch(e){} },250); return; }
     // v520: tell the truth about WHY. After 12 wrong tries in 15 minutes the
     // server pauses this connection and refuses to even CHECK the password —
     // showing "didn't work" for that made a correct password look wrong.
     if(r&&r.status===429){ say('⏳ Too many attempts — the lock is paused for up to 15 minutes and is not checking passwords right now. Wait it out (or switch between Wi‑Fi and mobile data), then try ONCE.','var(--orange)'); if(btn)btn.disabled=false; return; }
     if(r&&r.status===401){
+      // v748 — the server now says WHY. An expired trial and a full device
+      // list are not "wrong password", and telling someone to check their
+      // typing when their trial ended is the kind of small lie that erodes
+      // trust in everything else the app says.
+      try{ r.clone().json().then(function(j){
+        const why=j&&j.reason;
+        if(why==='expired'){ say('⌛ This 30-day trial has ended. Contact us to keep going — your saved rules and practice portfolio stay exactly as they are.','var(--gold)'); if(btn)btn.disabled=false; return; }
+        if(why==='devices'){ say('📱 This code is already in use on its allowed devices. If you have a new phone or cleared your browser, ask for a device reset.','var(--gold)'); if(btn)btn.disabled=false; return; }
+        _gateSay401();
+      }).catch(function(){ _gateSay401(); }); }catch(e){ _gateSay401(); }
+      return;
+    }
+    function _gateSay401(){
       // v529: on a phone the box is usually filled by AUTOFILL with an old
       // saved password — so \"check your typing\" is the wrong advice.
       say((_cl.repaired?'Your keyboard had added hidden characters — those were removed and it still didn\u2019t work. ':'')
         +'That password didn\u2019t work. On a phone, tap \uD83D\uDC41 show to SEE what is really in the box — it is often an old password your browser filled in. Clear it, type the new one by hand, then Unlock.');
-      if(btn)btn.disabled=false; return; }
+      if(btn)btn.disabled=false;
+    }
     say('The server answered unexpectedly ('+((r&&r.status)||'no reply')+'). Try again in a moment.'); if(btn)btn.disabled=false;
   }).catch(function(){ say('Couldn’t reach the server. Check your connection and try again.'); if(btn)btn.disabled=false; });
 }
@@ -10368,9 +10399,129 @@ function paperAcceptBalance(){
 // v263: flip the portfolio between its two pages without a full re-render.
 function _pfHideProfit(){ try{return localStorage.getItem('BETA_asxScreener.pfHideProfit.v1')==='1';}catch(e){return false;} }
 function _pfToggleProfit(){ const on=!_pfHideProfit(); try{localStorage.setItem('BETA_asxScreener.pfHideProfit.v1',on?'1':'0');}catch(e){} try{document.body.classList.toggle('pf-hideprofit',on);}catch(e){} const b=document.getElementById('pfHideBtn'); if(b)b.textContent=on?'🙈 Show P/L':'👁 Hide P/L'; }
+// ── v749 · WEEKLY DIARY ────────────────────────────────────────────────────
+// Answers a question the rest of the portfolio can't: not "what am I worth"
+// but "how did this week go, and am I getting better?"
+// Two columns on purpose. CLOSED is realised P&L — unarguable, but with ~9-week
+// holds most weeks would read $0 on its own. OPEN MOVED is the mark-to-market
+// change on positions still held, taken from the daily value snapshots. Neither
+// alone is honest: closed-only hides the eight positions doing the work, and
+// total-only makes paper wobble look like performance. Both, side by side, and
+// the gap between them is itself the lesson.
+function _wkKey(dstr){
+  // Monday-anchored week key. Dates in the ledger are plain YYYY-MM-DD local
+  // trading dates, so parse as local — never as UTC, which shifts Adelaide
+  // Mondays into the previous week.
+  const p2=String(dstr||'').slice(0,10).split('-');
+  if(p2.length<3) return null;
+  const d=new Date(+p2[0],+p2[1]-1,+p2[2]);
+  if(isNaN(d)) return null;
+  const dow=(d.getDay()+6)%7;            // Mon=0 … Sun=6
+  d.setDate(d.getDate()-dow);
+  const mm=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
+  return d.getFullYear()+'-'+mm+'-'+dd;
+}
+function _wkLabel(key){
+  const p2=key.split('-'); const mon=new Date(+p2[0],+p2[1]-1,+p2[2]);
+  const fri=new Date(mon); fri.setDate(fri.getDate()+4);
+  const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const sameMonth=mon.getMonth()===fri.getMonth();
+  return mon.getDate()+(sameMonth?'':' '+M[mon.getMonth()])+'–'+fri.getDate()+' '+M[fri.getMonth()];
+}
+function _wkNotes(){ try{ return JSON.parse(localStorage.getItem('BETA_asxScreenerWeekNotes')||'{}'); }catch(e){ return {}; } }
+function _wkNoteSet(key,txt){
+  try{ const all=_wkNotes(); if(txt&&txt.trim())all[key]=txt.trim().slice(0,280); else delete all[key];
+    localStorage.setItem('BETA_asxScreenerWeekNotes',JSON.stringify(all)); }catch(e){}
+}
+window._wkEditNote=function(key){
+  const all=_wkNotes();
+  const cur=all[key]||'';
+  const t=prompt('Note for the week of '+_wkLabel(key)+'\n\nWhat happened, what you changed, what you learned:',cur);
+  if(t===null)return;                    // cancelled — leave it alone
+  _wkNoteSet(key,t);
+  try{ showPortfolio(); _setPfView('diary'); }catch(e){}
+};
+// Builds the week rows from the ledger + daily snapshots. Nothing is stored:
+// the diary is derived, so it works retroactively over your whole history and
+// can never drift out of sync with the trades it describes.
+function _wkBuild(hist,vh){
+  const weeks={};
+  const touch=(k)=>{ if(!weeks[k])weeks[k]={key:k,closed:0,fees:0,opened:0,shut:0,wins:0,losses:0,openMoved:null}; return weeks[k]; };
+  (hist||[]).forEach(function(h){
+    const k=_wkKey(h.sellDate); if(!k)return;
+    const w=touch(k);
+    w.closed+=(+h.plAbs||0); w.fees+=(+h.fees||0); w.shut++;
+    if((+h.plAbs||0)>0)w.wins++; else if((+h.plAbs||0)<0)w.losses++;
+    const bk=_wkKey(h.buyDate); if(bk)touch(bk).opened++;
+  });
+  // open-position movement: last snapshot of the week minus the last snapshot
+  // BEFORE it, then strip out the part explained by closed trades and by money
+  // moving in or out, so this column is genuinely "the shares moved".
+  // v751 — WHICH NUMBER MEANS "WHAT THE SHARES DID" depends on the snapshot.
+  // The whole-account series carries `eq` (cash + reserved + holdings). The
+  // PER-EXCHANGE series (vhByEx, what you get on an ASX or NYSE tab) carries
+  // only {d, inv, val} — no eq at all. v750 read eq blindly, got 0 on an
+  // exchange tab, and printed "open moved" as exactly minus the closed figure
+  // every week, zeroing the total. Now the field is chosen per snapshot, and
+  // when neither is usable the week honestly shows a dash.
+  //
+  // On the per-exchange series the right measure is val MINUS inv: `val` is
+  // what the holdings are worth and `inv` is what was paid for them, so their
+  // difference is unrealised profit, and its week-on-week change is exactly
+  // what the still-held shares did — unaffected by buying or selling, which
+  // move val and inv together. No closed-trade subtraction is needed there.
+  const eqOf=(x)=>{
+    if(!x) return null;
+    if(isFinite(+x.eq)&&+x.eq!==0) return {v:+x.eq, kind:'eq'};
+    if(isFinite(+x.val)&&isFinite(+x.inv)) return {v:+x.val-+x.inv, kind:'unreal'};
+    return null;
+  };
+  const snaps=(vh||[]).slice().filter(x=>x&&x.d).sort((a,b)=>a.d<b.d?-1:1);
+  const lastOf={};
+  snaps.forEach(function(x){ const k=_wkKey(x.d); if(k)lastOf[k]=x; });
+  const keys=Object.keys(lastOf).sort();
+  keys.forEach(function(k,i){
+    const w=touch(k);
+    const cur=eqOf(lastOf[k]), prev=i>0?eqOf(lastOf[keys[i-1]]):null;
+    if(!cur||!prev||cur.kind!==prev.kind){ w.openMoved=null; return; }
+    const d=cur.v-prev.v;
+    // 'eq' is the whole account, so realised profit is already inside it and
+    // has to come out; 'unreal' is already only the open positions.
+    w.openMoved=+((cur.kind==='eq'?d-(w.closed||0):d)).toFixed(2);
+  });
+  return Object.keys(weeks).sort().reverse().map(k=>weeks[k]);
+}
+function _wkTable(hist,vh){
+  const rows=_wkBuild(hist,vh);
+  if(!rows.length) return '<div style="font-size:11px;color:var(--muted);padding:10px 2px;">No weeks yet — the diary fills in as trades close and the days tick over.</div>';
+  const notes=_wkNotes();
+  const money=(v)=>{ const n2=Math.abs(v)<0.005?0:v;   // kill -$0.00 from float dust
+    return (n2>=0?'+$':'-$')+Math.abs(n2).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); };
+  const col=(v)=>Math.abs(v)<0.005?'var(--muted)':(v>0?'var(--green)':'var(--red)');
+  let out='<div class="wk-wrap"><table class="wk-table" style="width:100%;border-collapse:collapse;font-size:11px;">'
+    +'<tr style="color:var(--muted);text-align:left;"><th style="padding:5px 4px;">Week</th>'
+    +'<th style="text-align:right;">Closed</th><th style="text-align:right;">Open moved</th>'
+    +'<th style="text-align:right;">Week</th><th style="text-align:center;">Trades</th><th></th></tr>';
+  rows.forEach(function(w){
+    const net=(w.closed||0)+(w.openMoved||0);
+    const thin=w.shut>0&&w.shut<5;
+    const note=notes[w.key]||'';
+    out+='<tr style="border-top:1px solid var(--border);">'
+      +'<td style="padding:6px 4px;font-weight:700;">'+_wkLabel(w.key)+'</td>'
+      +'<td style="text-align:right;color:'+col(w.closed)+';">'+(w.shut?money(w.closed):'—')+'</td>'
+      +'<td style="text-align:right;color:'+(w.openMoved===null?'var(--muted)':col(w.openMoved))+';">'+(w.openMoved===null?'—':money(w.openMoved))+'</td>'
+      +'<td style="text-align:right;font-weight:700;color:'+col(net)+';">'+((w.shut||w.openMoved!==null)?money(net):'—')+'</td>'
+      +'<td style="text-align:center;color:var(--muted);">'+(w.opened?'▲'+w.opened+' ':'')+(w.shut?('▼'+w.shut+' · '+w.wins+'W/'+w.losses+'L'):(w.opened?'':'—'))+'</td>'
+      +'<td style="text-align:right;"><button onclick="_wkEditNote(\''+w.key+'\')" style="padding:3px 7px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-size:10px;cursor:pointer;">'+(note?'✎ note':'+ note')+'</button></td>'
+      +'</tr>';
+    if(note) out+='<tr><td colspan="6" style="padding:0 4px 7px 4px;color:var(--text);font-size:11px;font-style:italic;opacity:.85;">“'+note.replace(/</g,'&lt;')+'”</td></tr>';
+    if(thin) out+='<tr><td colspan="6" style="padding:0 4px 7px 4px;color:var(--muted);font-size:10px;">'+w.shut+' closed trade'+(w.shut===1?'':'s')+' — too few to read as skill either way (lesson 55).</td></tr>';
+  });
+  return out+'</table></div>';
+}
 function _setPfView(v){
   try{
-    const views=['holdings','pending','history','performance'];
+    const views=['holdings','pending','history','performance','diary'];
     window._pfView=views.indexOf(v)>=0?v:'holdings';
     views.forEach(function(k){
       const el=document.getElementById('pf'+k.charAt(0).toUpperCase()+k.slice(1)+'View');
@@ -10616,6 +10767,7 @@ ${_undoOn()?`<div class="pf-card-actions">
       <button onclick="_setPfView('pending')" id="pfTab_pending" style="flex:1;min-width:110px;padding:8px;border-radius:7px;border:1px solid ${pv==='pending'?'var(--gold)':'var(--border)'};background:${pv==='pending'?'rgba(255,210,0,.14)':'var(--bg3)'};color:${pv==='pending'?'var(--gold)':'var(--muted)'};font-weight:700;font-size:11px;font-family:var(--sans);cursor:pointer;">⏳ Pending (${_ordN})</button>
       <button onclick="_setPfView('history')" id="pfTab_history" style="flex:1;min-width:110px;padding:8px;border-radius:7px;border:1px solid ${pv==='history'?'var(--gold)':'var(--border)'};background:${pv==='history'?'rgba(255,210,0,.14)':'var(--bg3)'};color:${pv==='history'?'var(--gold)':'var(--muted)'};font-weight:700;font-size:11px;font-family:var(--sans);cursor:pointer;">📜 History (${hist.length})</button>
       <button onclick="_setPfView('performance')" id="pfTab_performance" style="flex:1;min-width:110px;padding:8px;border-radius:7px;border:1px solid ${pv==='performance'?'var(--gold)':'var(--border)'};background:${pv==='performance'?'rgba(255,210,0,.14)':'var(--bg3)'};color:${pv==='performance'?'var(--gold)':'var(--muted)'};font-weight:700;font-size:11px;font-family:var(--sans);cursor:pointer;">📈 Performance</button>
+      <button onclick="_setPfView('diary')" id="pfTab_diary" style="flex:1;min-width:110px;padding:8px;border-radius:7px;border:1px solid ${pv==='diary'?'var(--gold)':'var(--border)'};background:${pv==='diary'?'rgba(255,210,0,.14)':'var(--bg3)'};color:${pv==='diary'?'var(--gold)':'var(--muted)'};font-weight:700;font-size:11px;font-family:var(--sans);cursor:pointer;">🗓 Weekly</button>
     </div>
     <div id="pfHoldingsView" style="display:${pv==='holdings'?'block':'none'};">
     ${hold.length?_pfSortControl:''}
@@ -10645,6 +10797,15 @@ ${_undoOn()?`<div class="pf-card-actions">
       return `<div style="margin:10px 0 4px;font-size:10px;color:var(--blue);font-weight:700;">⏳ Pending orders (${ords.length})</div>${rows}<div style="font-size:9px;color:var(--dim);margin-bottom:4px;">Limit orders fill when a day's low reaches your limit · market buys AND sells fill at the next day's open. Reserved cash (buys) returns — and queued shares (sells) unlock — on fill, cancel or expiry (${ORDER_EXPIRY_DAYS} days).</div>`;
     })()}
 
+    </div>
+    <div id="pfDiaryView" style="display:${pv==='diary'?'block':'none'};">
+    <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:2px;">Week by week${ex==='ALL'?'':' · '+ex}</div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:7px;line-height:1.5;">
+      <b>Closed</b> is realised profit on trades that finished that week, after fees.
+      <b>Open moved</b> is what your still-held shares did — real money, but only on paper until you sell.
+      Weeks run Monday to Friday (on a phone the two columns fold into the week total — turn sideways to see them split). Tap <b>+ note</b> to write yourself a line about the week: what you changed, what you learned. That is the part worth keeping.
+    </div>
+    ${_wkTable(histAll&&histAll.length?hist:hist,vh)}
     </div>
     <div id="pfPerformanceView" style="display:${pv==='performance'?'block':'none'};">
     ${(hold.length||hist.length)?(function(){
