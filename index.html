@@ -832,7 +832,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
     <span>Insight<span style="color:var(--gold)"> Trading</span></span>
     <span style="font-size:9px;font-weight:600;letter-spacing:2px;color:var(--muted);">MARKET ANALYSER</span>
     <span id="appVer" style="font-size:9px;color:var(--dim);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;"></span>
-    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.15-762" style="color:#ff9142;">✉ feedback</a></span>
+    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.15-763" style="color:#ff9142;">✉ feedback</a></span>
   </div>
   <div class="hbadge" id="exchBadge">🌐 Multi-Exchange Screener</div>
   <div class="notice" id="notice" style="display:none">—</div>
@@ -1745,7 +1745,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
 // source into IndexedDB (first run of each version), keeping the last 8, so any
 // previous version can be re-downloaded as a working .html file ("versions"
 // link in Setup). Captured here, before scripts modify the page.
-const APP_VERSION='2026.08.15-762-beta';
+const APP_VERSION='2026.08.15-763-beta';
 // ── Make the app installable (PWA) without needing a separate manifest file ──
 // We build the manifest in-memory and attach it as a Blob URL, so the whole app
 // stays a single HTML file you can upload as-is. Phones/desktops then offer
@@ -14840,7 +14840,7 @@ async function technicalScan(){
     if(document.body.classList.contains('simple-mode')){ _planResultsModal('\ud83d\udcd0 Technical-ranked'); }
     else{ setTimeout(function(){ try{ closeOverlay();
       var b=document.getElementById('activeScanBanner');
-      if(b){ b.innerHTML='<div style="margin:8px 0;padding:9px 12px;border:1.5px solid #58a6ff;border-radius:10px;background:var(--bg2);font-weight:600;font-size:13px;font-family:var(--sans);">\ud83d\udcd0 Technical-ranked \u00b7 <b>'+filtered.length.toLocaleString()+'</b> shares, strongest first <button onclick="doReset()" style="float:right;padding:3px 9px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;font-weight:600;font-size:11px;font-family:var(--sans);">\u2715 Clear</button></div>'; }
+      if(b){ b.innerHTML='<div style="margin:8px 0;padding:9px 12px;border:1.5px solid #58a6ff;border-radius:10px;background:var(--bg2);font-weight:600;font-size:13px;font-family:var(--sans);">\ud83d\udcd0 Technical-ranked \u00b7 <b>'+filtered.length.toLocaleString()+'</b> shares, strongest first <div style="font-weight:400;font-size:10.5px;color:var(--dim);margin-top:3px;">Ranked by chart signals \u2014 golden cross, near 52-wk high, above 200-day, oversold RSI, rising money-flow, gap up. A pattern search, not graded evidence: nothing here has a proven edge.</div> <button onclick="doReset()" style="float:right;padding:3px 9px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;font-weight:600;font-size:11px;font-family:var(--sans);">\u2715 Clear</button></div>'; }
       var t=document.getElementById('tblwrap'); if(t&&t.scrollIntoView)t.scrollIntoView({behavior:'smooth',block:'start'});
     }catch(_){}} ,650); }
   }catch(_){}
