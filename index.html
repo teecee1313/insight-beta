@@ -832,7 +832,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
     <span>Insight<span style="color:var(--gold)"> Trading</span></span>
     <span style="font-size:9px;font-weight:600;letter-spacing:2px;color:var(--muted);">MARKET ANALYSER</span>
     <span id="appVer" style="font-size:9px;color:var(--dim);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;"></span>
-    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.15-758" style="color:#ff9142;">✉ feedback</a></span>
+    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.15-759" style="color:#ff9142;">✉ feedback</a></span>
   </div>
   <div class="hbadge" id="exchBadge">🌐 Multi-Exchange Screener</div>
   <div class="notice" id="notice" style="display:none">—</div>
@@ -1745,7 +1745,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
 // source into IndexedDB (first run of each version), keeping the last 8, so any
 // previous version can be re-downloaded as a working .html file ("versions"
 // link in Setup). Captured here, before scripts modify the page.
-const APP_VERSION='2026.08.15-758-beta';
+const APP_VERSION='2026.08.15-759-beta';
 // ── Make the app installable (PWA) without needing a separate manifest file ──
 // We build the manifest in-memory and attach it as a Blob URL, so the whole app
 // stays a single HTML file you can upload as-is. Phones/desktops then offer
@@ -18173,7 +18173,8 @@ function mapRecord(r,exch,currency,today){
   // Only applied when the name gave no signal (still 'Ordinary'), so real ETFs
   // with 4-letter codes (whose names contain "ETF") are unaffected.
   if(type==='Ordinary'&&exch==='ASX'&&ticker.length>=4&&ticker.length<=6){
-    if(/O[A-G]?$/.test(ticker.slice(3)))type='Option';              // XYZO, XYZOA…  listed options
+    if(/^KO[A-Z]?$/.test(ticker.slice(3)))type='Option';            // v759: XYZKOx  knock-out warrants (~700 on ASX: BHPKO*, TLSKO*, TWEKO*…)
+    else if(/O[A-G]?$/.test(ticker.slice(3)))type='Option';              // XYZO, XYZOA…  listed options
     else if(/^R[A-C]?$/.test(ticker.slice(3)))type='Option';        // XYZR, XYZRA   rights (options bucket)
     else if(/^P[A-Z]$/.test(ticker.slice(3)))type='Preference';     // XYZPA, XYZPB  preference shares
     else if(/^G[A-Z]?$/.test(ticker.slice(3)))type='Bond';          // XYZG, XYZGA   notes/bonds
@@ -19022,7 +19023,11 @@ function simpleMarketPulse(){
     if(typeof _refreshSimpleLoad==='function')_refreshSimpleLoad();
     return;
   }
-  const all=allData.filter(s=>s.price>0);
+  // v759: Tony's screenshot — the movers lists were all knock-outs and options.
+  // The pulse now counts the same kinds of lines the app trades: options,
+  // notes/bonds and preference shares are out. The exclusion is by TYPE, so it
+  // follows the classifier (including the new KO rule) rather than a second list.
+  const all=allData.filter(s=>s.price>0&&s.type!=='Option'&&s.type!=='Preference'&&s.type!=='Bond');
   const up=all.filter(s=>s.chgPct>0.1);
   const dn=all.filter(s=>s.chgPct<-0.1);
   const fl=all.filter(s=>Math.abs(s.chgPct)<=0.1);
@@ -19061,7 +19066,7 @@ function simpleMarketPulse(){
     :'';
   const html=''
     +'<div style="font-size:13px;font-weight:700;color:'+moodC+';margin-bottom:10px;line-height:1.3;">'+mood+'</div>'
-    +'<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:3px;">Market breadth — '+all.length.toLocaleString()+' shares</div>'
+    +'<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:3px;">Market breadth — '+all.length.toLocaleString()+' shares <span style="font-weight:400;color:var(--muted)">(options, notes &amp; prefs excluded)</span></div>'
     +bar
     +'<div style="display:flex;gap:10px;font-size:11px;margin-bottom:10px;">'
     +'<span style="color:var(--green);">▲ '+up.length+' up ('+pctUp+'%)</span>'
