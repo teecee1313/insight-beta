@@ -832,7 +832,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
     <span>Insight<span style="color:var(--gold)"> Trading</span></span>
     <span style="font-size:9px;font-weight:600;letter-spacing:2px;color:var(--muted);">MARKET ANALYSER</span>
     <span id="appVer" style="font-size:9px;color:var(--dim);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;"></span>
-    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.15-770" style="color:#ff9142;">✉ feedback</a></span>
+    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.15-777" style="color:#ff9142;">✉ feedback</a></span>
   </div>
   <div class="hbadge" id="exchBadge">🌐 Multi-Exchange Screener</div>
   <div class="notice" id="notice" style="display:none">—</div>
@@ -1745,7 +1745,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
 // source into IndexedDB (first run of each version), keeping the last 8, so any
 // previous version can be re-downloaded as a working .html file ("versions"
 // link in Setup). Captured here, before scripts modify the page.
-const APP_VERSION='2026.08.15-770-beta';
+const APP_VERSION='2026.08.15-777-beta';
 // ── Make the app installable (PWA) without needing a separate manifest file ──
 // We build the manifest in-memory and attach it as a Blob URL, so the whole app
 // stays a single HTML file you can upload as-is. Phones/desktops then offer
@@ -11033,7 +11033,11 @@ function toggleStar(ticker){
   else{
     const s=allData.find(x=>x.ticker===ticker)||filtered.find(x=>x.ticker===ticker);
     if(s)wl[ticker]=JSON.parse(JSON.stringify(s)); // snapshot so it persists & shows regardless of filters
-    if(s&&wl[ticker]){ wl[ticker]._starPrice=s.price; wl[ticker]._starred=new Date().toISOString().slice(0,10); }
+    if(s&&wl[ticker]){ wl[ticker]._starPrice=s.price; wl[ticker]._starred=new Date().toISOString().slice(0,10);
+      // v771: record WHERE the star happened — the report open at the time, or the
+      // table/watch view. Three weeks later "why is this here?" has an answer.
+      try{ wl[ticker]._starFrom=_sanText((window._curModalLabel||''),48)||(watchViewOn?'watchlist view':'main table'); }catch(e){}
+    }
   }
   saveWatchlists();
   updateWatchBtn();
@@ -11157,6 +11161,7 @@ function openWatchManager(){
     <div style="display:flex;gap:6px;margin-bottom:8px;">
       <select id="wlSel" onchange="switchWatch(this.value)" style="flex:1;padding:7px;border-radius:5px;background:var(--bg3);color:var(--text);border:1px solid var(--border);font-size:12px;font-family:var(--sans);">${opts}</select>
       <button onclick="viewActiveWatch()" style="padding:7px 10px;border-radius:5px;border:1px solid var(--gold);background:rgba(210,153,34,.12);color:var(--gold);font-weight:600;font-size:11px;font-family:var(--sans);cursor:pointer;">View</button>
+      <button onclick="wlScorecard()" title="How has your starring actually done? Measures every star with a recorded ⭐ price against today's data — the same honesty the signals get." style="padding:7px 10px;border-radius:5px;border:1px solid var(--blue);background:rgba(56,139,253,.10);color:var(--blue);font-weight:600;font-size:11px;font-family:var(--sans);cursor:pointer;">📊 How's my eye?</button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:8px;">
       <input id="wlNew" placeholder="New list name…" style="flex:1;padding:7px;border-radius:5px;background:var(--bg3);color:var(--text);border:1px solid var(--border);font-size:12px;font-family:var(--sans);">
@@ -11166,6 +11171,7 @@ function openWatchManager(){
       <button onclick="printWatch()" style="padding:6px 10px;border-radius:5px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-weight:600;font-size:11px;font-family:var(--sans);cursor:pointer;">🖨 Print this list</button>
       <button onclick="shareWatchCSV()" style="padding:6px 10px;border-radius:5px;border:1px solid var(--green);background:rgba(63,185,80,.1);color:var(--green);font-weight:600;font-size:11px;font-family:var(--sans);cursor:pointer;">⬇️ CSV</button>
       <button onclick="shareWatchEmail()" style="padding:6px 10px;border-radius:5px;border:1px solid var(--blue);background:rgba(56,139,253,.1);color:var(--blue);font-weight:600;font-size:11px;font-family:var(--sans);cursor:pointer;">✉️ Email</button>
+      <button onclick="wlSweep()" title="Finds stars 60+ days old that have barely moved since you starred them, and offers to move them to a 📦 Archive list. Your list stays a working set, not a museum." style="padding:6px 10px;border-radius:5px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-weight:600;font-size:11px;font-family:var(--sans);cursor:pointer;">🧹 Sweep stale</button>
       <button onclick="renameWatch()" style="padding:6px 10px;border-radius:5px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-weight:600;font-size:11px;font-family:var(--sans);cursor:pointer;">Rename</button>
       <button onclick="deleteWatch()" style="padding:6px 10px;border-radius:5px;border:1px solid var(--red);background:rgba(248,81,73,.1);color:var(--red);font-weight:600;font-size:11px;font-family:var(--sans);cursor:pointer;">Delete</button>
     </div>
@@ -11200,6 +11206,180 @@ function deleteWatch(){
   if(watchViewOn)renderWatch();
 }
 
+// ── v772: watchlist scorecard — grade YOUR starring the way we grade signals ──
+// Uses only what the star recorded (_starPrice, _starred) against today's loaded
+// data. Every exclusion is counted and disclosed, never silently dropped.
+window.wlScorecard=function(){
+  try{
+    const seen={}; let noPrice=0, noLive=0;
+    Object.keys(watchlists||{}).forEach(nm=>{
+      const wl=watchlists[nm]||{};
+      Object.keys(wl).forEach(tk=>{
+        const w=wl[tk]; if(!w)return;
+        if(seen[tk]){ if(w._starred&&(!seen[tk]._starred||w._starred<seen[tk]._starred))seen[tk]=w; return; }
+        seen[tk]=w;
+      });
+    });
+    const rows=[];
+    Object.keys(seen).forEach(tk=>{
+      const w=seen[tk];
+      const sp=(w._starPrice!=null&&w._starPrice>0)?w._starPrice:null;
+      if(!sp){ noPrice++; return; }
+      const live=(typeof allData!=='undefined'&&Array.isArray(allData))?allData.find(x=>x.ticker===tk):null;
+      if(!live||!(live.price>0)){ noLive++; return; }
+      const chg=((live.price-sp)/sp)*100;
+      let days=null;
+      if(w._starred){ const d=(Date.now()-new Date(w._starred+'T00:00:00').getTime())/86400000; if(isFinite(d)&&d>=0)days=Math.round(d); }
+      rows.push({tk:tk,chg:chg,days:days,from:w._starFrom||''});
+    });
+    const n=rows.length;
+    const lbl='📊 Watchlist scorecard';
+    if(!n){
+      showModal('<div style="padding:16px;font-size:12.5px;line-height:1.6;color:var(--muted);">No stars can be measured yet. A star records its price the day you tap ⭐ — stars made before that feature, or shares on an exchange that isn\'t loaded right now, can\'t be graded. ('+noPrice+' without a recorded ⭐ price, '+noLive+' not in today\'s loaded data.)</div>',lbl);
+      return;
+    }
+    rows.sort((a,b)=>b.chg-a.chg);
+    const med=(arr=>{const s2=arr.slice().sort((x,y)=>x-y);const m=Math.floor(s2.length/2);return s2.length%2?s2[m]:(s2[m-1]+s2[m])/2;})(rows.map(r=>r.chg));
+    const bucket=[0,0,0,0,0]; // ≥+10, +2..10, ±2, -2..-10, ≤-10
+    rows.forEach(r=>{ if(r.chg>=10)bucket[0]++; else if(r.chg>=2)bucket[1]++; else if(r.chg>-2)bucket[2]++; else if(r.chg>-10)bucket[3]++; else bucket[4]++; });
+    const dayVals=rows.filter(r=>r.days!=null).map(r=>r.days);
+    const medDays=dayVals.length?(arr=>{const s2=arr.slice().sort((x,y)=>x-y);const m=Math.floor(s2.length/2);return s2.length%2?s2[m]:(s2[m-1]+s2[m])/2;})(dayVals):null;
+    const fmt=v=>(v>=0?'+':'')+v.toFixed(1)+'%';
+    const best=rows[0], worst=rows[n-1];
+    const rowLine=r=>'<tr><td style="padding:3px 8px;font-family:var(--mono);font-weight:700;">'+_wlEsc(r.tk)+'</td><td style="padding:3px 8px;color:'+(r.chg>=0?'var(--green)':'#ff9caa')+';font-family:var(--mono);">'+fmt(r.chg)+'</td><td style="padding:3px 8px;color:var(--muted);">'+(r.days!=null?r.days+'d':'—')+'</td><td style="padding:3px 8px;color:var(--dim);font-size:10px;">'+_wlEsc(r.from)+'</td></tr>';
+    const html='<div style="font-size:12.5px;line-height:1.6;">'
+      +'<div style="font-weight:700;color:var(--text);margin-bottom:6px;">Your starring, measured — '+n+' star'+(n===1?'':'s')+' with a recorded ⭐ price</div>'
+      +'<div style="margin-bottom:8px;">Median move since ⭐: <b style="color:'+(med>=0?'var(--green)':'#ff9caa')+';font-family:var(--mono);">'+fmt(med)+'</b>'+(medDays!=null?' · median age '+medDays+' days':'')+'</div>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;font-size:11px;font-family:var(--mono);">'
+      +'<span style="color:var(--green);">▲10%+: '+bucket[0]+'</span><span style="color:#7ee2a8;">+2–10%: '+bucket[1]+'</span><span style="color:var(--muted);">±2%: '+bucket[2]+'</span><span style="color:#ffb02e;">−2–10%: '+bucket[3]+'</span><span style="color:#ff9caa;">▼10%+: '+bucket[4]+'</span></div>'
+      +'<div style="max-height:220px;overflow:auto;border:1px solid var(--border);border-radius:6px;margin-bottom:10px;"><table style="width:100%;border-collapse:collapse;font-size:11px;"><tr style="color:var(--dim);"><td style="padding:3px 8px;">Share</td><td style="padding:3px 8px;">Since ⭐</td><td style="padding:3px 8px;">Age</td><td style="padding:3px 8px;">Starred from</td></tr>'+rows.map(rowLine).join('')+'</table></div>'
+      +'<div style="font-size:10.5px;color:var(--muted);line-height:1.6;border-top:1px solid var(--border);padding-top:8px;">'
+      +'<b style="color:var(--dim);">What this is NOT.</b> Not a trading record — no entry rule, no stop, no exit was applied; it is the raw drift of everything you starred, including shares you would never have bought. '
+      +'There is <b>no market baseline</b> here: a rising market lifts every list, so a positive median is not by itself skill. '
+      +(n<10?'<b style="color:var(--gold);">Only '+n+' measurable stars — far too few to call a pattern.</b> ':'')
+      +((noPrice+noLive)>0?('Excluded: '+noPrice+' star'+(noPrice===1?'':'s')+' without a recorded ⭐ price, '+noLive+' not in today\'s loaded data.'):'')
+      +'</div></div>';
+    showModal(html,lbl);
+  }catch(e){ try{ showModal('<div style="padding:16px;color:var(--muted);">The scorecard hit an error: '+_wlEsc(e&&e.message||e)+'</div>','📊 Watchlist scorecard'); }catch(_){} }
+};
+
+// ── v773: the "could I act on this tonight?" chip ─────────────────────────
+// Shows the limit price a DIP-entry order would sit at under YOUR saved rules
+// (the same entry every preset was measured under), or says plainly that the
+// share is outside your price band. Mirrors the form; changes nothing.
+function _wlEntryRules(){
+  try{
+    const sv=id=>{const el=document.getElementById(id);return el?String(el.value):'';};
+    const sel=sv('rApEntrySel');
+    let dip=+sv('rApDip'); if(!(dip>0&&dip<=15))dip=2;
+    if(sel&&sel!=='dip')dip=0;
+    let lo=+sv('rApMinPx'), hi=+sv('rApMaxPx');
+    if(!(lo>0))lo=0.20; if(!(hi>0))hi=1.99;
+    return {dip:dip,lo:lo,hi:hi};
+  }catch(e){ return {dip:2,lo:0.20,hi:1.99}; }
+}
+function _wlPxFmt(v){ return '$'+(v<1?v.toFixed(3):v.toFixed(2)); }
+function _wlEntryChip(s){
+  try{
+    if(!s||!(s.price>0))return '';
+    const R=_wlEntryRules();
+    if(s.price<R.lo||s.price>R.hi){
+      return '<span class="wsince" style="color:var(--dim);" title="Your saved rules only buy between '+_wlPxFmt(R.lo)+' and '+_wlPxFmt(R.hi)+' — the band the presets were measured on. This share closed at '+_wlPxFmt(s.price)+', outside it, so the bot would not touch it. Watching it is fine; the rules just would not buy it.">outside '+_wlPxFmt(R.lo)+'–'+_wlPxFmt(R.hi)+' band</span>';
+    }
+    if(!(R.dip>0)){
+      return '<span class="wsince" style="color:var(--dim);" title="Your entry rule is set to buy the open, not a dip — so there is no dip price to show. This chip mirrors your saved rules; change the entry in 🤖 rules to see a dip level here.">buys the open</span>';
+    }
+    const entry=s.price*(1-R.dip/100);
+    return '<span class="wsince" style="color:var(--blue);" title="A '+R.dip+'% dip from today\'s close ('+_wlPxFmt(s.price)+') = '+_wlPxFmt(entry)+' — the level a dip-entry limit order would sit at under your saved rules, the same entry the presets were measured under. It only fills if tomorrow actually dips there. A level, not advice.">🎯 '+R.dip+'% dip = '+_wlPxFmt(entry)+'</span>';
+  }catch(e){ return ''; }
+}
+
+// ── v774: stale-star sweep — the watchlist is a to-do list, not a museum ──
+// A candidate = starred 60+ days ago AND moved less than ±5% since (or has no
+// live price to judge by). Nothing is deleted: archiving moves the star to a
+// 📦 Archive list, keeping its ⭐ price, date, source and note intact.
+const _WL_ARCHIVE='📦 Archive';
+window._wlArchiveOne=function(tk){
+  try{
+    const wl=curWL(); if(!wl[tk])return;
+    if(activeWatch===_WL_ARCHIVE)return;
+    if(!watchlists[_WL_ARCHIVE])watchlists[_WL_ARCHIVE]={};
+    watchlists[_WL_ARCHIVE][tk]=wl[tk]; delete wl[tk];
+    saveWatchlists(); updateWatchBtn(); wlSweep();
+    if(watchViewOn)renderWatch();
+  }catch(e){}
+};
+window._wlArchiveAll=function(tks){
+  try{
+    const list=String(tks||'').split(',').filter(Boolean);
+    if(!list.length)return;
+    if(!confirm('Move '+list.length+' share'+(list.length===1?'':'s')+' from “'+activeWatch+'” to 📦 Archive? Nothing is deleted — stars keep their price, date and note.'))return;
+    const wl=curWL();
+    if(!watchlists[_WL_ARCHIVE])watchlists[_WL_ARCHIVE]={};
+    list.forEach(tk=>{ if(wl[tk]){ watchlists[_WL_ARCHIVE][tk]=wl[tk]; delete wl[tk]; } });
+    saveWatchlists(); updateWatchBtn(); wlSweep();
+    if(watchViewOn)renderWatch();
+  }catch(e){}
+};
+window.wlSweep=function(){
+  try{
+    const lbl='🧹 Stale stars — '+activeWatch;
+    if(activeWatch===_WL_ARCHIVE){
+      showModal('<div style="padding:16px;font-size:12.5px;color:var(--muted);line-height:1.6;">This IS the archive — nothing to sweep here. Switch to another list first.</div>',lbl);
+      return;
+    }
+    const wl=curWL(); const cands=[]; const now=Date.now();
+    Object.keys(wl).forEach(tk=>{
+      const w=wl[tk]; if(!w||!w._starred)return;
+      const days=(now-new Date(w._starred+'T00:00:00').getTime())/86400000;
+      if(!(isFinite(days)&&days>=60))return;
+      const sp=(w._starPrice!=null&&w._starPrice>0)?w._starPrice:null;
+      const live=(typeof allData!=='undefined'&&Array.isArray(allData))?allData.find(x=>x.ticker===tk):null;
+      let chg=null;
+      if(sp&&live&&live.price>0)chg=((live.price-sp)/sp)*100;
+      if(chg===null||Math.abs(chg)<5)cands.push({tk:tk,days:Math.round(days),chg:chg,note:w._starNote||'',from:w._starFrom||''});
+    });
+    if(!cands.length){
+      showModal('<div style="padding:16px;font-size:12.5px;color:var(--muted);line-height:1.6;">Nothing stale in “'+_wlEsc(activeWatch)+'” — no star is both 60+ days old and stuck within ±5% of its ⭐ price. A young or moving list needs no sweep.</div>',lbl);
+      return;
+    }
+    cands.sort((a,b)=>b.days-a.days);
+    const fmt=v=>v==null?'—':((v>=0?'+':'')+v.toFixed(1)+'%');
+    const rows=cands.map(c=>'<tr><td style="padding:4px 8px;font-family:var(--mono);font-weight:700;">'+_wlEsc(c.tk)+'</td><td style="padding:4px 8px;color:var(--muted);">'+c.days+'d</td><td style="padding:4px 8px;font-family:var(--mono);color:var(--muted);">'+fmt(c.chg)+'</td><td style="padding:4px 8px;color:var(--dim);font-size:10px;">'+_wlEsc(c.note||c.from)+'</td><td style="padding:4px 8px;"><button onclick="_wlArchiveOne(\''+_wlEsc(c.tk)+'\')" style="padding:4px 8px;border-radius:5px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:10px;font-family:var(--sans);cursor:pointer;">📦 Archive</button></td></tr>').join('');
+    const all=cands.map(c=>c.tk).join(',');
+    const html='<div style="font-size:12.5px;line-height:1.6;">'
+      +'<div style="font-weight:700;color:var(--text);margin-bottom:6px;">'+cands.length+' stale star'+(cands.length===1?'':'s')+' in “'+_wlEsc(activeWatch)+'”</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Starred 60+ days ago and still within ±5% of the ⭐ price (or unmeasurable today). <b>Not a sell signal</b> — a flat 60 days just means the reason you starred it hasn\'t shown up yet. Archiving moves it to 📦 Archive with its price, date and note intact; nothing is deleted.</div>'
+      +'<div style="max-height:240px;overflow:auto;border:1px solid var(--border);border-radius:6px;margin-bottom:10px;"><table style="width:100%;border-collapse:collapse;font-size:11px;"><tr style="color:var(--dim);"><td style="padding:4px 8px;">Share</td><td style="padding:4px 8px;">Age</td><td style="padding:4px 8px;">Since ⭐</td><td style="padding:4px 8px;">Note / from</td><td></td></tr>'+rows+'</table></div>'
+      +'<button onclick="_wlArchiveAll(\''+all+'\')" style="padding:8px 12px;border-radius:6px;border:1px solid var(--gold);background:rgba(210,153,34,.12);color:var(--gold);font-weight:700;font-size:11px;font-family:var(--sans);cursor:pointer;">📦 Archive all '+cands.length+'</button>'
+      +'</div>';
+    showModal(html,lbl);
+  }catch(e){}
+};
+
+// ── v775: 🎼 aligned — a PRESENTATION tag, never a score ──────────────────
+// Three independent lenses already paint this row: today's evidence tier, the
+// 📊 days-like-today base rate, and the watch-trend estimate. When 2 of the 3
+// agree favourably, this tag names the agreement. It reads the lenses as they
+// were rendered — nothing is blended, weighted or fed back into any score, so
+// each lens stays separately auditable. If a lens changes shape upstream, this
+// tag silently drops rather than guess.
+function _wlAlignedTag(m){
+  try{
+    if(!m)return '';
+    const chips=String(m._trendChip||'');
+    const lenses=[];
+    // Lens 1 — evidence: a SOLID line fired on this share on the CURRENT data day.
+    try{ if(m._evTier==='SOLID' && typeof _evDD==='function' && m._evD===_evDD())lenses.push('a SOLID-tier line fired today'); }catch(e){}
+    // Lens 2 — lookalike base rate: the rendered 📊 chip shows 60+/100.
+    try{ const la=chips.match(/la-chip[^>]*>[^<]*?(\d+)\/100/); if(la&&+la[1]>=60)lenses.push('lookalike days finished higher '+la[1]+'% of the time'); }catch(e){}
+    // Lens 3 — the watch-trend estimate reads ▲▲ strengthening.
+    try{ if(chips.indexOf('▲▲')>=0)lenses.push('the price/volume trend reads strengthening'); }catch(e){}
+    if(lenses.length<2)return '';
+    return '<span class="wsince" style="color:var(--gold);border:1px solid var(--gold);border-radius:9px;padding:1px 6px;font-weight:700;" title="'+lenses.length+' independent lenses agree on this share today: '+_wlEsc(lenses.join(' · '))+'. Presentation only — nothing is blended into any score, each lens keeps its own audit trail, and agreement between lenses is NOT a prediction.">🎼 aligned</span>';
+  }catch(e){ return ''; }
+}
+
 // Render the active watchlist INDEPENDENTLY of current filters.
 function renderWatch(){
   let rows=Object.values(curWL());
@@ -11222,8 +11402,11 @@ function renderWatch(){
       const live=(typeof allData!=='undefined'&&Array.isArray(allData)&&allData.find(x=>x.ticker===w.ticker&&(!w.exchange||!x.exchange||x.exchange===w.exchange)))||w;
       const m=Object.assign({},live);
       const sp=(w._starPrice!=null&&w._starPrice>0)?w._starPrice:((w.price>0)?w.price:null);
-      try{ if(typeof _watchTrendChip==='function')m._trendChip=_watchTrendChip(m,sp,w._starred||null); }catch(e){}
+      try{ if(typeof _watchTrendChip==='function')m._trendChip=_watchTrendChip(m,sp,w._starred||null,w); }catch(e){} // v771: w carries _starFrom/_starNote
+      try{ m._wlDipPct=(sp&&m.price>0&&isFinite(sp))?((sp-m.price)/sp*100):null; }catch(e){} // v776: for the header count
       try{ m._trendChip=(m._trendChip||'')+_laChip(m); }catch(e){} // v726: 🎲 odds join watch rows
+      try{ m._trendChip=(m._trendChip||'')+_wlEntryChip(m); }catch(e){} // v773: distance to the bot's dip entry
+      try{ m._trendChip=(m._trendChip||'')+_wlAlignedTag(m); }catch(e){} // v775: 🎼 aligned — lenses agreeing, presentation only
       return m;
     });
   }catch(e){}
@@ -11238,7 +11421,8 @@ function renderWatch(){
   document.getElementById('tblwrap').style.display='block';
   document.getElementById('noResults').style.display='none';
   document.getElementById('emptyState').style.display='none';
-  document.getElementById('rcount').textContent=(_statNarrow?`${rows.length} of ${_wlBase} in ${activeWatch} · quick filters on`:`${rows.length} in ${activeWatch}`)+(hiddenOther>0?` · ${hiddenOther} on other exchanges hidden`:'');
+  const _nDip=rows.filter(r=>r._wlDipPct!=null&&r._wlDipPct>=2).length; // v776
+  document.getElementById('rcount').textContent=(_statNarrow?`${rows.length} of ${_wlBase} in ${activeWatch} · quick filters on`:`${rows.length} in ${activeWatch}`)+(hiddenOther>0?` · ${hiddenOther} on other exchanges hidden`:'')+(_nDip>0?` · ${_nDip} below your ⭐ price`:'');
   if(!rows.length){
     const msg = (_statNarrow&&_wlBase>0)
       ? `No shares in “${activeWatch}” match the active quick filters. Tap <b>Showing</b> in the stats bar to clear them.`
@@ -14683,7 +14867,9 @@ function _popupToggleStar(ticker){
       const s=(Array.isArray(allData)?allData.find(x=>x.ticker===ticker):null)
         ||((window._lastTop10||[]).map(p=>p&&p.s).find(x=>x&&x.ticker===ticker))
         ||((window._simpleModalLastRows||[]).find(x=>x&&x.ticker===ticker));
-      if(s){ wl[ticker]=JSON.parse(JSON.stringify(s)); wl[ticker]._starPrice=s.price; wl[ticker]._starred=new Date().toISOString().slice(0,10); }
+      if(s){ wl[ticker]=JSON.parse(JSON.stringify(s)); wl[ticker]._starPrice=s.price; wl[ticker]._starred=new Date().toISOString().slice(0,10);
+        try{ wl[ticker]._starFrom=_sanText((window._curModalLabel||''),48)||'report popup'; }catch(e){} // v771
+      }
     }
     saveWatchlists(); if(typeof updateWatchBtn==='function')updateWatchBtn();
     _reRenderScanPopup();
@@ -21841,7 +22027,7 @@ function _auditWarmIdle(){
     if(window._prepRunning||window._auditWarming)return;
     const dd=(window._exchDataDate&&window._exchDataDate[currentExch])||(typeof _todayLocal==='function'?_todayLocal():'');
     if(window._auditCache&&window._auditCache.A&&window._auditCache.d===dd&&window._auditCache.ex===currentExch&&window._auditCache.liq===_cardLiqKey()&&(window._auditCache.A.hold||5)===((typeof _cardHold==='function')?_cardHold():5))return; /* v597 ROOT CAUSE FIX: this guard never checked hold, so a card window change could never even trigger a re-warm — added the hold==_cardHold() check. v408: re-warm when the exchange changed · v568: ALSO when the 💧 floor changed — the card and the grade fetcher already keyed on it, so the warm was the odd one out, leaving the radar on stale-floor grades and pushing a full re-grade into the next card open */
-    const _sh=(Array.isArray(allData)?allData:[]).filter(s=>Array.isArray(s.series)&&s.series.length>=_AUD.MINROWS).filter(_cardLiqPassSrv); /* v572: server-floor-aware payload */
+    const _sh=(Array.isArray(allData)?allData:[]).filter(s=>Array.isArray(s.series)&&s.series.length>=_AUD.MINROWS).filter(_gradeTypeOk).filter(_cardLiqPassSrv); /* v572: server-floor-aware payload · v777: investable types only */
     if(_sh.length<3)return;
     if(!(typeof DATA_PROXY==='string' && DATA_PROXY))return; // v378: grading is server-side — nothing to warm without the server
     window._auditWarming=true;
@@ -21961,7 +22147,7 @@ function _rcAltOpen(dd,hold){
   // shows a plain warning instead of silence.)
   if(hit&&hit.M&&((hit.hold||5)===hold)){ return _renderReportCard(hit); }
   var _fail=function(){ var m=document.getElementById('appModal'); if(m&&m.style.display!=='none'&&window._curModalLabel==='📋 Signal report card'){ try{ showModal('<div style="padding:16px;font-size:12.5px;line-height:1.6;color:var(--muted);text-align:center;">📡 <b style="color:var(--text)">Could not grade the '+hold+'-day view just now.</b><br>Longer windows are computed fresh on your server — give it a moment and try again, or switch back to 5d.</div>','📋 Signal report card'); }catch(e){} } };
-  var _sh=(Array.isArray(allData)?allData:[]).filter(function(s){return Array.isArray(s.series)&&s.series.length>=_AUD.MINROWS;}).filter(_cardLiqPassSrv); /* v572 */
+  var _sh=(Array.isArray(allData)?allData:[]).filter(function(s){return Array.isArray(s.series)&&s.series.length>=_AUD.MINROWS;}).filter(_gradeTypeOk).filter(_cardLiqPassSrv); /* v572 · v777 types */
   if(!(typeof DATA_PROXY==='string'&&DATA_PROXY)||_sh.length<3){ _fail(); return; }
   try{ showModal('<div style="padding:18px;font-size:12.5px;line-height:1.6;color:var(--muted);text-align:center;">⏳ <b style="color:var(--text)">Grading every signal over '+hold+' trading days…</b><br>the '+hold+'d view is computed fresh on your server — one moment.</div>','📋 Signal report card'); }catch(e){}
   var _tok=(window._rcTok=(window._rcTok||0)+1);
@@ -23377,6 +23563,14 @@ function _cardLiqPass(s){
     return (v*p)>=need;
   }catch(e){ return true; }
 }
+function _gradeTypeOk(s){
+  /* v777: grading is for investable lines. Warrant series, notes and bonds
+     (typed by the v766 census classifier) are excluded from the gradeable set —
+     Tony's store grew 2,906→4,395 when Download-all pulled the derivative codes,
+     which bloated the /grades upload ~50% and made the in-browser fallback grind
+     the UI. Their bars stay on the device; they just never enter grading. */
+  try{ var t=s&&s.type; return t!=='Option'&&t!=='Preference'&&t!=='Bond'; }catch(e){ return true; }
+}
 function _cardLiqPassSrv(s){
   /* v572: the grading payload's floor. The server always applies its own
      $50k/day floor (_AUD.LIQ_FLOOR) and discards anything below it, so
@@ -24010,7 +24204,7 @@ function signalReportCard(){
   // say so plainly rather than grading here — the recipe is no longer in this page.
   var _fail=function(){ var m=document.getElementById('appModal'); if(window._rcTok===_tok && m && m.style.display!=='none' && window._curModalLabel==='📋 Signal report card'){ try{ showModal('<div style="padding:16px;font-size:12.5px;line-height:1.6;color:var(--muted);text-align:center;">📡 <b style="color:var(--text)">Could not reach your grading server just now.</b><br>The report card is graded on your server — give it a moment and open it again. Your prices, signals and portfolio are unaffected.</div>','📋 Signal report card'); }catch(e){} } };
   if(typeof DATA_PROXY==='string' && DATA_PROXY){
-    var _sh=(Array.isArray(allData)?allData:[]).filter(function(s){return Array.isArray(s.series)&&s.series.length>=_AUD.MINROWS;}).filter(_cardLiqPassSrv).map(function(s){return {ticker:s.ticker,series:s.series};});
+    var _sh=(Array.isArray(allData)?allData:[]).filter(function(s){return Array.isArray(s.series)&&s.series.length>=_AUD.MINROWS;}).filter(_gradeTypeOk).filter(_cardLiqPassSrv).map(function(s){return {ticker:s.ticker,series:s.series};});
     _serverGrades(_sh,_dd,currentExch).then(function(A){ if(A&&A.M){ window._gradeSrc='server'; _show(A); } else { _fail(); } }).catch(function(){ _fail(); });
   } else { _fail(); }
 }
@@ -24404,10 +24598,22 @@ body.tbl-tight .wtrendline{font-size:9px;gap:6px;}
 </style>
 <script id="wtrendJs">
 /* ═══ v252 — watch-trend chip: direction now + change since you starred it ═══ */
-function _watchTrendChip(s,starPrice,starDate){
+function _wlEsc(t){ return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+window._wlEditNote=function(tk){
+  try{
+    const wl=curWL(); if(!wl[tk])return;
+    const cur=wl[tk]._starNote||'';
+    const v=prompt('Note for '+tk+' — why is it on your watchlist?',cur);
+    if(v==null)return;
+    wl[tk]._starNote=_sanText(v,140);
+    if(!wl[tk]._starNote)delete wl[tk]._starNote;
+    saveWatchlists(); if(typeof renderWatch==='function'&&watchViewOn)renderWatch();
+  }catch(e){}
+};
+function _watchTrendChip(s,starPrice,starDate,w){
   try{
     const r=Array.isArray(s.series)?s.series:null;
-    let chip;
+    let chip, trendT=null; // v776: the dip-below-⭐ chip needs the trend score
     if(r&&r.length>=25){
       const n=r.length,c=i=>r[i].c,v=i=>r[i].v||0;
       const last=c(n-1);
@@ -24426,6 +24632,7 @@ function _watchTrendChip(s,starPrice,starDate){
       const volUp=a20>0&&a5/a20>1.15;
       if(volUp)t+=(p5>=0?8:-8);
       t=Math.max(-100,Math.min(100,t));
+      trendT=t; // v776
       let lbl,col;
       if(t>=40){lbl='▲▲ strengthening';col='var(--green)';}
       else if(t>=15){lbl='▲ improving';col='#7ee2a8';}
@@ -24437,14 +24644,41 @@ function _watchTrendChip(s,starPrice,starDate){
     } else {
       chip='<span class="wtrend" style="color:var(--dim);font-weight:600;" title="The trend chip appears once this share\'s history and signals are prepared.">trend pending…</span>';
     }
-    let star='';
+    let star='', dipStrong=false;
     if(starPrice&&s.price>0&&isFinite(starPrice)){
       const d=((s.price-starPrice)/starPrice)*100;
-      if(Math.abs(d)>=0.05){
+      const dip=-d; // positive when the share now sits BELOW your ⭐ price
+      if(dip>=2){
+        // v776: cheaper than when you decided you liked it. The ⭐ price is YOUR
+        // anchor, not evidence — the tested entry is a 2% dip from the previous
+        // close, never "N% under a weeks-old anchor". So this is a highlight to
+        // look closer, and it reads the trend chip before dressing up as one.
+        const falling=(trendT!=null&&trendT<=-40);
+        const band=dip>=5?'5%+':'2%+';
+        dipStrong=(dip>=5&&!falling);
+        if(falling){
+          star='<span class="wsince" style="color:var(--dim);border:1px solid var(--border);border-radius:9px;padding:1px 6px;" title="'+dip.toFixed(1)+'% below your ⭐ price, but the trend chip reads falling — cheaper AND still falling is a knife, not a discount. A discount is only a discount if what you liked is intact: re-read your 📝 note and what changed before treating a markdown as a gift. Never a buy signal.">🔻 '+band+' under ⭐ · still falling</span>';
+        } else {
+          star='<span class="wsince" style="color:var(--gold);border:1px solid var(--gold);border-radius:9px;padding:1px 6px;'+(dipStrong?'font-weight:700;':'')+'" title="This share now sits '+dip.toFixed(1)+'% below the price it had when you starred it'+(starDate?' on '+starDate:'')+(trendT!=null?', and the trend chip does not read falling':'')+'. A highlight to look closer, NOT a signal — your ⭐ price is an anchor you chose, not evidence, and this anchor entry has never been backtested here (the tested entry is a 2% dip from the previous close). Check your 📝 note and recent news first.">🔻 '+band+' under ⭐ ('+(d).toFixed(1)+'%)</span>';
+        }
+      } else if(Math.abs(d)>=0.05){
         star='<span class="wsince" style="color:'+(d>=0?'var(--green)':'#ff9caa')+';" title="Change since you starred it'+(starDate?' on '+starDate:'')+'.">'+(d>=0?'+':'')+d.toFixed(1)+'% since ⭐</span>';
       }
     }
-    return '<div class="wtrendline">'+chip+star+'</div>';
+    // v771: provenance — where the star happened — and a tap-to-edit note.
+    let prov='';
+    try{
+      if(w&&w._starFrom){
+        prov='<span class="wsince" style="color:var(--dim);" title="Where you starred it'+(starDate?' ('+starDate+')':'')+'. Recorded automatically so the list can answer &quot;why is this here?&quot;">⭐ from '+_wlEsc(w._starFrom)+'</span>';
+      }
+      const tk=_wlEsc(s.ticker||'');
+      if(w&&w._starNote){
+        prov+='<span class="wsince" style="color:var(--gold);cursor:pointer;" onclick="event.stopPropagation();_wlEditNote(\''+tk+'\')" title="Your note (tap to edit): '+_wlEsc(w._starNote)+'">📝 '+_wlEsc(w._starNote.length>36?w._starNote.slice(0,34)+'…':w._starNote)+'</span>';
+      } else if(w){
+        prov+='<span class="wsince" style="color:var(--dim);cursor:pointer;" onclick="event.stopPropagation();_wlEditNote(\''+tk+'\')" title="Write yourself one line on why you starred this — the thesis you\'ll want when reviewing later.">📝 add note</span>';
+      }
+    }catch(e){}
+    return '<div class="wtrendline"'+(dipStrong?' style="border-left:3px solid var(--gold);padding-left:6px;"':'')+'>'+chip+star+prov+'</div>';
   }catch(e){ return ''; }
 }
 </script>
