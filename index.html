@@ -832,7 +832,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
     <span>Insight<span style="color:var(--gold)"> Trading</span></span>
     <span style="font-size:9px;font-weight:600;letter-spacing:2px;color:var(--muted);">MARKET ANALYSER</span>
     <span id="appVer" style="font-size:9px;color:var(--dim);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;"></span>
-    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.15-760" style="color:#ff9142;">✉ feedback</a></span>
+    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.15-761" style="color:#ff9142;">✉ feedback</a></span>
   </div>
   <div class="hbadge" id="exchBadge">🌐 Multi-Exchange Screener</div>
   <div class="notice" id="notice" style="display:none">—</div>
@@ -1745,7 +1745,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
 // source into IndexedDB (first run of each version), keeping the last 8, so any
 // previous version can be re-downloaded as a working .html file ("versions"
 // link in Setup). Captured here, before scripts modify the page.
-const APP_VERSION='2026.08.15-760-beta';
+const APP_VERSION='2026.08.15-761-beta';
 // ── Make the app installable (PWA) without needing a separate manifest file ──
 // We build the manifest in-memory and attach it as a Blob URL, so the whole app
 // stays a single HTML file you can upload as-is. Phones/desktops then offer
@@ -22348,8 +22348,8 @@ function gradingCheckReport(){
       +tbl(proven,'\u2705 had earned a badge')+tbl(unprov,'\u2014 had not (TOO EARLY)')
       +'</table>'
       +decayTxt
-      +(best.length?'<div style="margin-top:10px;font-weight:700;color:var(--text);font-size:11.5px;">Badges that kept delivering</div>'+lst(best):'')
-      +(worst.length?'<div style="margin-top:8px;font-weight:700;color:var(--text);font-size:11.5px;">Badges that let you down</div>'+lst(worst):'')
+      +(best.length?'<div style="margin-top:10px;font-weight:700;color:var(--text);font-size:11.5px;">Strongest in the NEXT window</div>'+lst(best):'')
+      +(worst.length?'<div style="margin-top:8px;font-weight:700;color:var(--text);font-size:11.5px;">Weakest in the NEXT window <span style="font-weight:400;color:var(--dim);font-size:10px;">(weakest \u2260 negative \u2014 a badge can fade and still be up)</span></div>'+lst(worst):'')
       +'<div style="margin-top:11px;font-size:10px;color:var(--dim);line-height:1.5;border-top:1px solid var(--border);padding-top:7px;">'
       +'<b>What this cannot tell you.</b> There are only ~'+Object.keys(A.M).length+' lines and they overlap heavily (a triple contains its pairs), so these are not '+rows.length+' independent tests. It is one market, over three years that included one particular set of conditions. The windows are per-share relative years, not calendar years. And the thresholds being tested (30 fires / strength 1, 50 / 2) were chosen by us, not discovered \u2014 this measures whether they held up, not whether they are optimal. Treat it as the best evidence available about the app\u2019s own premise, not as proof.'
       +'</div></div>','\u2696 Does the grading actually work?');
