@@ -832,7 +832,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
     <span>Insight<span style="color:var(--gold)"> Trading</span></span>
     <span style="font-size:9px;font-weight:600;letter-spacing:2px;color:var(--muted);">MARKET ANALYSER</span>
     <span id="appVer" style="font-size:9px;color:var(--dim);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;"></span>
-    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.16-784" style="color:#ff9142;">✉ feedback</a></span>
+    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.16-785" style="color:#ff9142;">✉ feedback</a></span>
   </div>
   <div class="hbadge" id="exchBadge">🌐 Multi-Exchange Screener</div>
   <div class="notice" id="notice" style="display:none">—</div>
@@ -1745,7 +1745,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
 // source into IndexedDB (first run of each version), keeping the last 8, so any
 // previous version can be re-downloaded as a working .html file ("versions"
 // link in Setup). Captured here, before scripts modify the page.
-const APP_VERSION='2026.08.16-784-beta';
+const APP_VERSION='2026.08.16-785-beta';
 // ── Make the app installable (PWA) without needing a separate manifest file ──
 // We build the manifest in-memory and attach it as a Blob URL, so the whole app
 // stays a single HTML file you can upload as-is. Phones/desktops then offer
@@ -12526,7 +12526,9 @@ function _radarCompactSync(){
     var dash=(vs==='–'||vs==='-')&&(vp==='–'||vp==='-');
     ev.innerHTML=dash
       ? '🧪 evidence not checked for this view yet — open ▸ full radar and tap a tier tile to check it'
-      : ('🧪 evidence: <b onclick="statFilter(\'tsolid\')" title="Tap to show only shares whose strongest proven line today is SOLID" style="color:var(--green);cursor:pointer;text-decoration:underline dotted;">'+(vs||'0')+' solid</b> · <b onclick="statFilter(\'tprom\')" title="Tap to show only shares firing a PROMISING line today" style="color:var(--gold);cursor:pointer;text-decoration:underline dotted;">'+(vp||'0')+' promising</b> · <b onclick="statFilter(\'tearly\')" title="Tap to show shares whose firing signals hold no badge" style="color:var(--dim);cursor:pointer;text-decoration:underline dotted;">'+(vn||'0')+' not proven</b> — tap a count to filter · detail in ▸ full radar');
+      : ('🧪 evidence: <b onclick="statFilter(\'tsolid\')" title="Tap to show only shares whose strongest proven line today is SOLID" style="color:var(--green);cursor:pointer;text-decoration:underline dotted;">'+(vs||'0')+' solid</b> · <b onclick="statFilter(\'tprom\')" title="Tap to show only shares firing a PROMISING line today" style="color:var(--gold);cursor:pointer;text-decoration:underline dotted;">'+(vp||'0')+' promising</b> · <b onclick="statFilter(\'tearly\')" title="Tap to show shares whose firing signals hold no badge" style="color:var(--dim);cursor:pointer;text-decoration:underline dotted;">'+(vn||'0')+' not proven</b> · '
+      +(function(){ var a=parseInt(vs,10)||0, b=parseInt(vp,10)||0; return '<b onclick="statFilter(\'tedge\')" title="⚡ PN EDGE — tap to show only shares whose strongest firing line holds a PROVEN positive edge (SOLID or PROMISING): a record good enough, across enough firings, that luck is unlikely to explain it" style="color:var(--gold);cursor:pointer;text-decoration:underline dotted;font-weight:800;">⚡ '+(a+b)+' with edge</b>'; })()
+      +' — tap a count to filter · detail in ▸ full radar');
     var rn=document.getElementById('evRuleNote');
     var tip=rn?String(rn.textContent||'').trim():'';
     if(tip)ev.setAttribute('title',tip); else ev.removeAttribute('title');
