@@ -854,7 +854,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
     <span>Insight<span style="color:var(--gold)"> Trading</span></span>
     <span style="font-size:9px;font-weight:600;letter-spacing:2px;color:var(--muted);">MARKET ANALYSER</span>
     <span id="appVer" style="font-size:9px;color:var(--dim);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;"></span>
-    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.16-799" style="color:#ff9142;">✉ feedback</a></span>
+    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.08.17-810" style="color:#ff9142;">✉ feedback</a></span>
   </div>
   <div class="hbadge" id="exchBadge">🌐 Multi-Exchange Screener</div>
   <div class="notice" id="notice" style="display:none">—</div>
@@ -869,6 +869,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
 
     <button id="wlNavBtn" onclick="_wlNavOpen()" title="⭐ Watchlist — the shares you've starred. In Starter it opens as a list; in Advanced it filters the table to your stars." style="padding:6px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--gold);font-weight:600;font-size:10px;font-family:var(--sans);cursor:pointer;white-space:nowrap;">⭐ Watchlist</button>
     <button id="pfBtn" onclick="showPortfolio()" title="Paper trading portfolio — simulated buys/sells at end-of-day closes. Practice only, not advice." style="padding:6px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--muted);font-weight:600;font-size:10px;font-family:var(--sans);cursor:pointer;white-space:nowrap;">💼 Portfolio</button>
+    <button id="calcToolsBtn" onclick="_calcTools()" title="🧮 Trade Calculator — work out your real costs, profit and break-even on any trade using your own numbers. Pure arithmetic, no predictions." style="padding:6px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--muted);font-weight:600;font-size:10px;font-family:var(--sans);cursor:pointer;white-space:nowrap;">🧮 Tools</button>
     <!-- v482 — the 49 lessons used to be reachable only after unlocking
          training mode with a secret code, which made one of the better reasons
          to own this product invisible to the people who own it. -->
@@ -1653,10 +1654,10 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
       <div class="stat statclick" onclick="statFilter('vol')" title="Show only shares with volume ≥200% of average"><div class="sv gold" id="cV">0</div><div class="sl">Vol ≥200%</div></div>
       <div class="stat statclick" onclick="statFilter('brk')" title="🚀 Breakout — closed above its highest stored close on above-average volume. An estimate, not advice."><div class="sv" id="cBrk">0</div><div class="sl">Breakout</div></div>
       <div class="stat statclick" onclick="statFilter('sgrsl')" title="🏁 Relative-Strength Leader — the strongest slice of the WHOLE market by recent return, caught on a breather. Counts shares firing it TODAY; reads – until this view has been evidence-checked (tapping runs the check). Research, not advice."><div class="sv" id="cRsl">–</div><div class="sl">🏁 RS Leader</div></div>
-      <div class="stat statclick" onclick="statFilter('sc7')" title="Watch score 7/10 or higher — the same accumulation-weighted score as the ⭐ Score column. A data summary, not advice."><div class="sv gold" id="cS7">0</div><div class="sl">Score 7+</div></div>
+      <div class="stat statclick" onclick="statFilter('sc7')" title="Watch score 7/10 or higher — the same accumulation-weighted score as the ⭐ Score column: how strongly a share is accumulating TODAY. This is a different measure from the 🧪 Evidence tiles below (🟢 SOLID / ⚡ PN Edge), which grade whether a share's signal has a proven track record — so a share can be SOLID without scoring 7+ today, and vice versa. A data summary, not advice."><div class="sv gold" id="cS7">0</div><div class="sl">Score 7+</div></div>
     </div>
     <div id="evCompact"></div>
-    <div class="radar-grp"><div class="rg-l">Market</div><div class="rg-t"><div class="stat statclick" onclick="statFilter('all')" title="Show all — clear these quick filters"><div class="sv gold" id="sTot">0</div><div class="sl">Showing</div></div><div class="stat statclick" onclick="statFilter('gainers')" title="Show only shares up today"><div class="sv g"    id="sG">0</div><div class="sl">Gainers</div></div><div class="stat statclick" onclick="statFilter('losers')" title="Show only shares down today"><div class="sv r"    id="sL">0</div><div class="sl">Losers</div></div><div class="stat statclick" onclick="statFilter('sc7')" title="Watch score 7/10 or higher — the same accumulation-weighted score as Top 20 to Watch and the ⭐ Score column. A data summary, not advice."><div class="sv gold" id="sS7">0</div><div class="sl">Score 7+</div></div></div></div>
+    <div class="radar-grp"><div class="rg-l">Market</div><div class="rg-t"><div class="stat statclick" onclick="statFilter('all')" title="Show all — clear these quick filters"><div class="sv gold" id="sTot">0</div><div class="sl">Showing</div></div><div class="stat statclick" onclick="statFilter('gainers')" title="Show only shares up today"><div class="sv g"    id="sG">0</div><div class="sl">Gainers</div></div><div class="stat statclick" onclick="statFilter('losers')" title="Show only shares down today"><div class="sv r"    id="sL">0</div><div class="sl">Losers</div></div><div class="stat statclick" onclick="statFilter('sc7')" title="Watch score 7/10 or higher — the same accumulation-weighted score as Top 20 to Watch and the ⭐ Score column: how strongly a share is accumulating TODAY. This is a different measure from the 🧪 Evidence tiles below (🟢 SOLID / ⚡ PN Edge), which grade whether a share's signal has a proven track record — so a share can be SOLID without scoring 7+ today, and vice versa. A data summary, not advice."><div class="sv gold" id="sS7">0</div><div class="sl">Score 7+</div></div></div></div>
     <div class="radar-grp rg-ev" id="evGrp"><div class="rg-l">🧪 Evidence</div><div class="rg-t"><div class="stat statclick" onclick="statFilter('tsolid')" title="Shares whose STRONGEST signal firing today has a SOLID record — strong and steady across so many firings that luck is practically ruled out (its edge over the replayed year is at least 2.5 times its own margin of error), counted one observation per DAY rather than one per firing, and measured against a market you could actually buy. Some days this shows nothing: an honest &quot;no strong evidence today&quot;, not a fault. Tap tiles to combine buckets. Shows – until this view has been evidence-checked — tapping checks it. A share below your 💧 grading floor is never tested at all — when that happens the line underneath says so, because a skipped share is not the same as an honest zero."><div class="sv g" id="sEvS">–</div><div class="sl">🟢 SOLID</div></div><div class="stat statclick" onclick="statFilter('tprom')" title="Shares whose strongest signal firing today is PROMISING — it looks real, but the evidence is thinner: fewer firings or bumpier results, so luck is not yet ruled out (edge at least 1.5 times its own margin of error over the replayed year). Worth watching, not proven. Tap tiles to combine buckets. Shows – until this view has been evidence-checked — tapping checks it."><div class="sv gold" id="sEvP">–</div><div class="sl">🟡 PROMISING</div></div><div class="stat statclick" onclick="statFilter('tearly')" title="Shares firing graded signals today where NOT ONE of them has a record worth standing behind — over the replayed year, luck could still explain everything seen (their edge was smaller than its own margin of error). This is not 'too little data' and it is not 'a bad record': we looked properly and found nothing either way, which on one year of history is the honest answer for almost every scan. Shares whose only signals are too NEW to have a record are NOT counted here — that is a missing test, not a finding, and they carry a ⏳ too early mark on their own row instead. Curiosity, not evidence. Tap tiles to combine buckets. Shows – until this view has been evidence-checked — tapping checks it. Research, not advice."><div class="sv" id="sEvE">–</div><div class="sl">⚪ NOT PROVEN</div></div><div class="stat statclick" onclick="statFilter('tedge')" title="Shares carrying a PN Edge today — their strongest firing line holds a SOLID or PROMISING badge — a record good enough, across enough firings, that luck is unlikely to explain it — and a badge is only awarded when the edge is POSITIVE. This is the same gate 🎯 Best Evidence Today uses, as one tap. Tap tiles to combine buckets. Shows – until this view has been evidence-checked — tapping checks it. Research, not advice."><div class="sv g" id="sEvEdge">–</div><div class="sl">⚡ PN EDGE</div></div><div id="evSkipNote" style="display:none;font-size:9.5px;color:var(--dim);padding:2px 4px 0;letter-spacing:.2px;cursor:help;"></div><div id="evShort" style="display:none;font-size:9.5px;color:var(--dim);padding:2px 4px 0;letter-spacing:.2px;"></div><div id="evRuleNote" style="display:none;font-size:9.5px;color:var(--dim);padding:2px 4px 0;letter-spacing:.2px;cursor:help;"></div></div></div>
     <div class="radar-grp rg-more" id="sigGrp"><div class="rg-l">🔬 Signals</div><div class="rg-t"><div class="stat statclick" onclick="statFilter('sghi52')" title="Closed above every close of the past year, on volume — no trapped sellers overhead from the last 250 days. Counts shares firing it TODAY. Reads – until this view has been evidence-checked; tapping does the check. Its record so far is on the 🧪 All-scans card — these six are graded from birth and most are still TOO EARLY, so treat them as somewhere to look, not a reason to act. Research, not advice."><div class="sv" id="sgHi52">–</div><div class="sl">📏 52wk High</div></div><div class="stat statclick" onclick="statFilter('sggold')" title="The 50-day average crossed UP through the 200-day TODAY — fires on the cross day only, so it is rare by design. Counts shares firing it TODAY. Reads – until this view has been evidence-checked; tapping does the check. Its record so far is on the 🧪 All-scans card — these six are graded from birth and most are still TOO EARLY, so treat them as somewhere to look, not a reason to act. Research, not advice."><div class="sv" id="sgGold">–</div><div class="sl">✝️ Golden Cross</div></div><div class="stat statclick" onclick="statFilter('sgrsirec')" title="RSI crossed back UP through 30 — the bounce beginning, not merely "oversold" (which can stay oversold for months). Counts shares firing it TODAY. Reads – until this view has been evidence-checked; tapping does the check. Its record so far is on the 🧪 All-scans card — these six are graded from birth and most are still TOO EARLY, so treat them as somewhere to look, not a reason to act. Research, not advice."><div class="sv" id="sgRsi">–</div><div class="sl">🌀 RSI Recovery</div></div><div class="stat statclick" onclick="statFilter('sgsqueeze')" title="Tightest 10-day range in about three months on dry volume — a coiled spring. Direction unknown: it can break either way. Counts shares firing it TODAY. Reads – until this view has been evidence-checked; tapping does the check. Its record so far is on the 🧪 All-scans card — these six are graded from birth and most are still TOO EARLY, so treat them as somewhere to look, not a reason to act. Research, not advice."><div class="sv" id="sgSqz">–</div><div class="sl">🤏 Squeeze</div></div><div class="stat statclick" onclick="statFilter('sgrsl')" title="The strongest slice of the WHOLE market by recent return, caught on a breather — beating the market, not just rising with it. Counts shares firing it TODAY. Reads – until this view has been evidence-checked; tapping does the check. Its record so far is on the 🧪 All-scans card — these six are graded from birth and most are still TOO EARLY, so treat them as somewhere to look, not a reason to act. Research, not advice."><div class="sv" id="sgRsl">–</div><div class="sl">🏁 Rel-Strength</div></div><div class="stat statclick" onclick="statFilter('sgnewsvol')" title="A CONFIRMED material headline landing on a day of unusually heavy volume. Fail-closed: where there is no news coverage it never fires. Counts shares firing it TODAY. Reads – until this view has been evidence-checked; tapping does the check. Its record so far is on the 🧪 All-scans card — these six are graded from birth and most are still TOO EARLY, so treat them as somewhere to look, not a reason to act. Research, not advice."><div class="sv" id="sgNews">–</div><div class="sl">📰 News + Vol</div></div><div id="sigSkipNote" style="display:none;font-size:9.5px;color:var(--dim);padding:2px 4px 0;letter-spacing:.2px;cursor:help;"></div></div></div>
     <div class="radar-grp rg-more"><div class="rg-l">Volume</div><div class="rg-t"><div class="stat statclick" onclick="statFilter('vol')" title="Show only shares with volume ≥200% of average"><div class="sv gold" id="sV">0</div><div class="sl">Vol ≥200%</div></div><div class="stat statclick" onclick="statFilter('vol50')" title="Show shares with volume moderately above their average — an early pick-up in interest, below the big ≥200% surge."><div class="sv" id="sV50">0</div><div class="sl">Vol 50–100%</div></div><div class="stat statclick" onclick="statFilter('vs2')" title="Volume above its own average 2+ days in a row — persistent interest, not a one-day spike."><div class="sv" id="sVS">0</div><div class="sl">Vol Streak 2+</div></div><div class="stat statclick" onclick="statFilter('vrec')" title="🥇 Volume record — today’s volume is the highest in its stored history. An estimate, not advice. Fills in as technical data is prepared during load."><div class="sv gold" id="sVR">0</div><div class="sl">🥇 Vol Record</div></div><div class="stat statclick" onclick="statFilter('blk')" title="🔷 Block day — today’s volume is more than double its average (a possible large / block trade). An estimate, not advice."><div class="sv gold" id="sBlk">0</div><div class="sl">🔷 Block Day</div></div><div class="stat statclick" onclick="statFilter('qm')" title="Quiet movers: up 3%+ today on volume at least double its average, with NO likely news in 5 days — a possible 'someone may know something' pattern. An estimate from price/volume, not advice."><div class="sv gold" id="sQM">0</div><div class="sl">🤫 Quiet Mover</div></div><div class="stat statclick" onclick="statFilter('t250k')" title="Liquidity floor — at least $250,000 of value changed hands today (today’s close × today’s volume), in the exchange’s own currency. Below this a share can be hard to sell without moving the price against you. NOTE this measures TODAY — the 🧪 Evidence floor measures a share's THREE-MONTH AVERAGE turnover, so a share that just woke up can light this tile and still be skipped by the evidence check. A liquidity measure, not advice."><div class="sv" id="sT250">0</div><div class="sl">$250k+ Traded</div></div><div class="stat statclick" onclick="statFilter('t1m')" title="Liquidity floor — at least $1,000,000 of value changed hands today (today’s close × today’s volume), in the exchange’s own currency. The stricter of the two turnover tiles: every $1M day is also a $250k day, so tapping both is the same as tapping this one. NOTE this is TODAY's turnover; the 🧪 Evidence floor uses the THREE-MONTH AVERAGE, so the two can disagree about the same share on the same day. A liquidity measure, not advice."><div class="sv gold" id="sT1M">0</div><div class="sl">$1M+ Traded</div></div></div></div>
@@ -1768,7 +1769,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
 // source into IndexedDB (first run of each version), keeping the last 8, so any
 // previous version can be re-downloaded as a working .html file ("versions"
 // link in Setup). Captured here, before scripts modify the page.
-const APP_VERSION='2026.08.16-799-beta';
+const APP_VERSION='2026.08.17-810-beta';
 // ── Make the app installable (PWA) without needing a separate manifest file ──
 // We build the manifest in-memory and attach it as a Blob URL, so the whole app
 // stays a single HTML file you can upload as-is. Phones/desktops then offer
@@ -3184,6 +3185,7 @@ async function showDailyPicks(mode){
     })); }catch(_ce){}
     const trail=(j.mode==='trail');
     const mine=(j.mode==='mine');
+    const _pp=v=>{const n=+v; return isFinite(n)?(n<1?n.toFixed(2):(''+n)):v;}; // v800: price band shows 2dp under $1 ($0.2 -> $0.20)
     const noRules=mine && !!R.note;   // the worker says 'no saved rules on the server yet'
     const ruleLine = noRules
       ? 'No rules saved on the server yet.'
@@ -3191,10 +3193,10 @@ async function showDailyPicks(mode){
       ? ((+R.targetPct>0)
           ? R.targetPct+'% target \u00b7 '+R.stopPct+'% stop'
           : (R.trailPct||20)+'% trailing stop \u00b7 no take-profit')
-        +' \u00b7 '+(R.dipPct>0?(R.dipPct+'% dip entry'):'buys the open')+' \u00b7 score '+(R.minScore||7)+'+ \u00b7 $'+(R.minPrice)+'\u2013$'+(R.maxPrice)+' \u00b7 top '+(R.topN||4)+'/day'
+        +' \u00b7 '+(R.dipPct>0?(R.dipPct+'% dip entry'):'buys the open')+' \u00b7 score '+(R.minScore||7)+'+ \u00b7 $'+_pp(R.minPrice)+'\u2013$'+_pp(R.maxPrice)+' \u00b7 top '+(R.topN||4)+'/day'
       : trail
-      ? (R.trailPct||20)+'% trailing stop \u00b7 no take-profit \u00b7 '+(R.dipPct||5)+'% dip entry \u00b7 score '+(R.minScore||7)+'+ \u00b7 $'+(R.minPrice)+'\u2013$'+(R.maxPrice)
-      : (R.targetPct||15)+'% target \u00b7 '+(R.stopPct||15)+'% stop \u00b7 '+(R.dipPct||5)+'% dip entry \u00b7 score '+(R.minScore||7)+'+ \u00b7 $'+(R.minPrice)+'\u2013$'+(R.maxPrice);
+      ? (R.trailPct||20)+'% trailing stop \u00b7 no take-profit \u00b7 '+(R.dipPct||5)+'% dip entry \u00b7 score '+(R.minScore||7)+'+ \u00b7 $'+_pp(R.minPrice)+'\u2013$'+_pp(R.maxPrice)
+      : (R.targetPct||15)+'% target \u00b7 '+(R.stopPct||15)+'% stop \u00b7 '+(R.dipPct||5)+'% dip entry \u00b7 score '+(R.minScore||7)+'+ \u00b7 $'+_pp(R.minPrice)+'\u2013$'+_pp(R.maxPrice);
 
     // freshness, stated rather than assumed — a pick from last week looks
     // identical to one from this morning unless the page says otherwise
@@ -3268,7 +3270,9 @@ async function showDailyPicks(mode){
              2–9× above $1 — this line now says which cost is binding, per share. Visibility only:
              the behavioural gate still waits for Monday's clean-maths baseline. */
             try{ var _px=+r.limit_price||+r.ref_close||0; if(!(_px>0))return '';
-              var _amt=+(r.amount_dollars||r.parcel||0)||1000;
+              var _qtyN=+r.qty||0;
+              var _sized=(_qtyN>0&&_px>0)?(_qtyN*_px):0;
+              var _amt=_sized>0?_sized:(+(r.amount_dollars||r.parcel||0)||1000);
               var _tick=_px<0.10?0.001:(_px<2?0.005:0.01);
               var _tickPct=_tick/_px*100;
               var _cs=(_csMap[r.ticker]!=null)?_csMap[r.ticker]*100:null;
@@ -3276,10 +3280,11 @@ async function showDailyPicks(mode){
               var _cross=_sprBinds?_cs:_tickPct;
               var _fr=(6/_amt)*100+_cross;
               var _lbl=_sprBinds?('est. spread '+_cs.toFixed(2)+'%'):'one tick';
-              var _tip='Round trip = $6 brokerage on the parcel + the larger of one ASX tick and this share\u2019s own estimated spread (from ~100 days of its stored daily highs and lows). A 16-Aug check across 1,946 ordinaries: below 50c the exchange\u2019s minimum tick is almost always the larger cost, so the old one-tick line was already right there \u2014 but above $1 the real spread usually exceeds one tick, so the line now uses whichever is binding for THIS share. An estimate, not a quote \u2014 the live spread on the day can differ.';
+              var _amtLbl=(_sized>0?'$'+Math.round(_sized).toLocaleString():'an assumed $'+Math.round(_amt).toLocaleString());
+              var _tip='Round trip = $6 brokerage on the parcel the server actually sized this suggestion at (its share count times the buy-under price). Brokerage is a FIXED $6, so it bites harder on a small parcel, which is why the parcel is named here rather than assumed. Then plus the larger of one ASX tick and this share\u2019s own estimated spread (from ~100 days of its stored daily highs and lows). A 16-Aug check across 1,946 ordinaries: below 50c the exchange\u2019s minimum tick is almost always the larger cost, so the old one-tick line was already right there \u2014 but above $1 the real spread usually exceeds one tick, so the line now uses whichever is binding for THIS share. An estimate, not a quote \u2014 the live spread on the day can differ.';
               var _ed=(r.edge!=null&&isFinite(+r.edge))?+r.edge:null;
               var _ok=(_ed!=null)?(_ed>=2*_fr):null;
-              return '<div title="'+_tip+'" style="flex-basis:100%;font-size:10px;cursor:help;color:'+(_ok===false?'#ff9caa':'var(--dim)')+';margin-top:2px;">\ud83d\udcb8 friction \u2248 '+_fr.toFixed(2)+'% round trip ($6 + '+_lbl+')'+(_ed!=null?(' \u00b7 line edge '+_ed.toFixed(2)+'% \u2014 '+(_ok?'clears 2\u00d7 friction \u2713':'does NOT clear 2\u00d7 friction')):'')+'</div>';
+              return '<div title="'+_tip+'" style="flex-basis:100%;font-size:10px;cursor:help;color:'+(_ok===false?'#ff9caa':'var(--dim)')+';margin-top:2px;">\ud83d\udcb8 friction \u2248 '+_fr.toFixed(2)+'% round trip on '+_amtLbl+' ($6 + '+_lbl+')'+(_ed!=null?(' \u00b7 line edge '+_ed.toFixed(2)+'% \u2014 '+(_ok?'clears 2\u00d7 friction \u2713':'does NOT clear 2\u00d7 friction')):'')+'</div>';
             }catch(_fe){ return ''; } })()
           +'</div>'
           +'<div style="display:flex;gap:6px;margin-top:8px;">'
@@ -4210,6 +4215,106 @@ function _wizExch(){
   const sel=document.getElementById('exchSel');
   if(!sel)return '<option value="ASX">ASX — Australian Securities Exchange</option>';
   return sel.innerHTML; // reuse the app's full exchange list
+}
+function _calcTools(){
+  var ov=document.getElementById('calcToolsOv');
+  if(ov){ ov.remove(); return; } // toggle: tapping the button again closes it
+  ov=document.createElement('div'); ov.id='calcToolsOv';
+  ov.style.cssText='position:fixed;inset:0;z-index:9500;background:rgba(3,10,22,.82);display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;';
+  ov.addEventListener('click',function(e){ if(e.target===ov) ov.remove(); }); // tap backdrop to close
+  var C={bg2:'var(--bg2)',bd:'var(--border)',bd2:'var(--border2)',tx:'var(--text)',dim:'var(--dim)',grn:'var(--green,#1f9d57)',red:'var(--red,#d64550)',acc:'var(--purple,#6a4bd0)'};
+  ov.innerHTML=''
+   +'<div style="background:'+C.bg2+';border:1px solid '+C.bd+';border-radius:16px;max-width:440px;width:100%;padding:18px 16px 20px;font-family:var(--sans);box-shadow:0 10px 40px rgba(0,0,0,.4);margin:auto;">'
+   +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">'
+   +'<div style="font-size:17px;font-weight:700;color:'+C.tx+';">🧮 Trade Calculator</div>'
+   +'<button onclick="document.getElementById(\'calcToolsOv\').remove()" style="border:none;background:none;font-size:20px;color:'+C.dim+';cursor:pointer;line-height:1;padding:2px 6px;">✕</button>'
+   +'</div>'
+   +'<div style="font-size:12.5px;color:'+C.dim+';margin-bottom:14px;">Your numbers, your costs, your profit. Nothing is assumed.</div>'
+   +'<div style="display:grid;gap:10px;">'
+   +_calcField('Entry price','$','_cEntry','1.00')
+   +_calcField('How much are you putting in?','$','_cParcel','2000')
+   +'<div><div style="font-size:12.5px;font-weight:600;color:'+C.tx+';margin-bottom:5px;">Exit</div>'
+   +'<div style="display:flex;gap:6px;margin-bottom:6px;"><button id="_cMp" onclick="_calcMode(\'pct\')" style="flex:1;border:1.5px solid '+C.acc+';background:var(--purplebg,#efeafc);color:'+C.acc+';border-radius:9px;padding:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);">% gain</button>'
+   +'<button id="_cMs" onclick="_calcMode(\'price\')" style="flex:1;border:1.5px solid '+C.bd2+';background:'+C.bg2+';color:'+C.dim+';border-radius:9px;padding:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);">Sell price</button></div>'
+   +'<div id="_cPctRow">'+_calcInputBare('+','_cExitPct','10','%')+'</div>'
+   +'<div id="_cPriceRow" style="display:none;">'+_calcInputBare('$','_cExitPrice','1.10','')+'</div>'
+   +'</div>'
+   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
+   +_calcField('Brokerage (per side)','$','_cBrok','3')
+   +_calcField('Slippage (optional)','','_cSlip','0','%')
+   +'</div>'
+   +'</div>'
+   +'<div id="_cOut" style="margin-top:14px;"></div>'
+   +'<div style="text-align:center;color:var(--faint,#97a1b2);font-size:11px;margin-top:14px;line-height:1.55;">Just arithmetic on the numbers you entered — it makes no prediction about whether a trade will win.<br>Practice-money research tool. Not advice.</div>'
+   +'</div>';
+  document.body.appendChild(ov);
+  ['_cEntry','_cParcel','_cExitPct','_cExitPrice','_cBrok','_cSlip'].forEach(function(id){ var el=document.getElementById(id); if(el) el.addEventListener('input',_calcRun); });
+  window._calcModeV='pct'; _calcRun();
+}
+function _calcField(label,pre,id,val,post){
+  return '<div><div style="font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:5px;">'+label+'</div>'+_calcInputBare(pre,id,val,post||'')+'</div>';
+}
+function _calcInputBare(pre,id,val,post){
+  return '<div style="display:flex;align-items:center;border:1.5px solid var(--border2);border-radius:10px;overflow:hidden;background:var(--bg2);">'
+    +(pre?'<span style="padding:0 4px 0 12px;color:var(--dim);font-family:var(--mono,monospace);font-size:15px;">'+pre+'</span>':'')
+    +'<input id="'+id+'" type="text" inputmode="decimal" value="'+val+'" style="flex:1;border:0;outline:0;padding:11px 12px 11px '+(pre?'4px':'12px')+';font-size:16px;font-family:var(--mono,monospace);background:transparent;color:var(--text);width:100%;min-width:0;">'
+    +(post?'<span style="padding:0 12px;color:var(--dim);font-size:13px;">'+post+'</span>':'')
+    +'</div>';
+}
+function _calcMode(m){
+  window._calcModeV=m;
+  var mp=document.getElementById('_cMp'), ms=document.getElementById('_cMs');
+  var on='1.5px solid var(--purple,#6a4bd0)',onbg='var(--purplebg,#efeafc)',onc='var(--purple,#6a4bd0)';
+  var off='1.5px solid var(--border2)',offbg='var(--bg2)',offc='var(--dim)';
+  if(mp&&ms){ mp.style.border=(m==='pct'?on:off);mp.style.background=(m==='pct'?onbg:offbg);mp.style.color=(m==='pct'?onc:offc);
+    ms.style.border=(m==='price'?on:off);ms.style.background=(m==='price'?onbg:offbg);ms.style.color=(m==='price'?onc:offc); }
+  var pr=document.getElementById('_cPctRow'), ps=document.getElementById('_cPriceRow');
+  if(pr&&ps){ pr.style.display=(m==='pct'?'block':'none'); ps.style.display=(m==='price'?'block':'none'); }
+  _calcRun();
+}
+function _calcNum(id){ var el=document.getElementById(id); if(!el)return 0; var v=parseFloat((el.value||'').replace(/[^0-9.\-]/g,'')); return isFinite(v)?v:0; }
+function _calcMoney(n){ var s=Math.abs(n).toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2}); return (n<0?'\u2212$':'$')+s; }
+function _calcRun(){
+  var out=document.getElementById('_cOut'); if(!out)return;
+  var entry=_calcNum('_cEntry'), parcel=_calcNum('_cParcel'), brok=_calcNum('_cBrok'), slip=_calcNum('_cSlip');
+  if(entry<=0||parcel<=0){ out.innerHTML='<div style="text-align:center;color:var(--dim);font-size:13px;padding:12px;">Enter an entry price and parcel.</div>'; return; }
+  var shares=Math.floor(parcel/entry);
+  if(shares<=0){ out.innerHTML='<div style="text-align:center;color:var(--dim);font-size:13px;padding:12px;">Parcel too small for one share at this price.</div>'; return; }
+  var spent=shares*entry;
+  var exitPrice=(window._calcModeV==='price')?_calcNum('_cExitPrice'):entry*(1+_calcNum('_cExitPct')/100);
+  var grossOut=shares*exitPrice;
+  var brokRound=brok*2;
+  var slipCost=(slip/100)*(spent+grossOut);
+  var net=grossOut-spent-brokRound-slipCost;
+  var netPct=net/parcel*100;
+  var be=((brokRound+(slip/100)*2*spent)/spent)*100;
+  var col=net>=0?'var(--green,#1f9d57)':'var(--red,#d64550)';
+  var sign=function(n){return (n>=0?'+':'\u2212')+Math.abs(n).toFixed(2)+'%';};
+  out.innerHTML=''
+   +'<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;">'
+   +'<div style="padding:16px;text-align:center;border-bottom:1px solid var(--border);">'
+   +'<div style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--dim);font-weight:700;margin-bottom:6px;">Net profit in your pocket</div>'
+   +'<div style="font-family:var(--mono,monospace);font-size:32px;font-weight:600;color:'+col+';line-height:1;">'+_calcMoney(net)+'</div>'
+   +'<div style="font-size:14px;color:var(--dim);margin-top:7px;font-family:var(--mono,monospace);">'+sign(netPct)+' on your $'+parcel.toLocaleString('en-AU')+'</div>'
+   +'</div>'
+   +'<div style="padding:8px 0;font-size:13.5px;">'
+   +_calcRow('Shares bought',shares.toLocaleString('en-AU'))
+   +_calcRow('Cash into shares',_calcMoney(spent))
+   +_calcRow('Sold for',_calcMoney(grossOut))
+   +_calcRow('Brokerage (2 sides)','\u2212'+_calcMoney(brokRound).replace('\u2212',''),true)
+   +(slip>0?_calcRow('Slippage','\u2212'+_calcMoney(slipCost).replace('\u2212','')):'')
+   +_calcRow('Net profit',_calcMoney(net),true,col)
+   +'</div></div>'
+   +'<div style="margin-top:12px;background:var(--purplebg,#efeafc);border:1px solid #ddd3f7;border-radius:12px;padding:13px 15px;">'
+   +'<div style="font-size:11px;letter-spacing:.03em;text-transform:uppercase;color:var(--purple,#6a4bd0);font-weight:700;margin-bottom:5px;">Break-even move</div>'
+   +'<div style="font-family:var(--mono,monospace);font-size:21px;font-weight:600;color:var(--text);">+'+be.toFixed(2)+'%</div>'
+   +'<div style="font-size:12px;color:var(--dim);margin-top:6px;line-height:1.45;">The shares need to rise <b>'+be.toFixed(2)+'%</b> just to cover your costs at this parcel size. Anything above that is profit; below it, a loss. Put in more per trade and this number shrinks.</div>'
+   +'</div>';
+}
+function _calcRow(lbl,val,rule,col){
+  return '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:8px 16px;'+(rule?'border-top:1px solid var(--border);margin-top:2px;':'')+'">'
+    +'<span style="color:'+(col?'var(--text);font-weight:600':'var(--dim)')+';">'+lbl+'</span>'
+    +'<span style="font-family:var(--mono,monospace);font-size:14px;color:'+(col||'var(--text)')+';'+(col?'font-weight:700;':'')+'">'+val+'</span></div>';
 }
 function _showWizard(step){
   if(step===2 && _serverData()){ return _showWizard(3); } // v382: no data-key step when the server provides data
@@ -10800,11 +10905,44 @@ function showPortfolio(exSel){
   const _pfPc=x=>x>0.005?'var(--green)':x<-0.005?'var(--red)':'var(--muted)';
   const _fmtN=x=>'$'+Number(x).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
   const _ordN=(p.orders||[]).filter(o=>ex==='ALL'||o.exchange===ex).length;
+  // v808 — day change across the holdings shown: shares × (latest close − previous close), summed.
+  // Two honesty rules from the spec: a holding bought ON the latest bar's day counts as 0 (it
+  // hasn't held through a close-to-close change yet — showing its full gain would be wrong);
+  // and if the latest bar is NOT today, the label carries that date instead of saying "today".
+  let _dcSum=0,_dcKnown=0;const _dcDates={};
+  try{
+    const _dcMap=new Map();
+    (allData||[]).forEach(function(s){
+      if(!s||!s.ticker)return;
+      // chgAbs is the field these objects actually carry. A finite 0 is a REAL
+      // answer (a share that closed unchanged), not a missing one — so only a
+      // non-numeric chgAbs falls through to the derived alternatives.
+      const chg=(typeof s.chgAbs==='number'&&isFinite(s.chgAbs))?s.chgAbs
+               :((typeof s.chgPct==='number'&&isFinite(s.chgPct)&&s.price>0&&s.chgPct!==-100)?(s.price-(s.price/(1+s.chgPct/100)))
+               :((s.price>0&&s.prevClose>0)?(s.price-s.prevClose):null));
+      const d=s.lastDate||((Array.isArray(s.series)&&s.series.length)?(s.series[s.series.length-1].d||null):null);
+      _dcMap.set(s.ticker+'|'+(s.exchange||''),{chg:chg,d:d});
+    });
+    hold.forEach(function(h){
+      const m=_dcMap.get(h.ticker+'|'+(h.exchange||''));
+      if(!m||m.chg==null||!(h.qty>0))return;
+      _dcKnown++;
+      if(m.d)_dcDates[m.d]=1;
+      if(m.d&&h.buyDate&&String(h.buyDate)>=String(m.d))return;   // bought at the latest close — 0, not its full gain
+      _dcSum+=h.qty*m.chg;
+    });
+  }catch(e){}
+  let _dcDate=null;try{const _dk=Object.keys(_dcDates);if(_dk.length)_dcDate=_dk.sort().pop();}catch(e){}
+  const _dcIsToday=(_dcDate&&typeof _todayLocal==='function'&&_dcDate===_todayLocal());
+  const _dcLabel=_dcKnown?(_dcIsToday?'Today&#8217;s change':('Change &#183; '+(_dcDate||'last close'))):'Day change';
+  const _dcPrev=totVal-_dcSum;
+  const _dcPct=(_dcKnown&&_dcPrev>0)?(_dcSum/_dcPrev*100):null;
   const keyStrip=`<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 13px;margin-bottom:10px;">
     <div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Account</div><div style="font-family:var(--mono);font-weight:800;font-size:15px;color:var(--text);">${_fmtN(_pfAcctNow)}</div></div>
     <div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">💵 Cash</div><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text);">${_fmtN(_pfCashNow)}</div></div>
     ${_pfResvNow>0.005?`<div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">⏳ Reserved</div><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text);">${_fmtN(_pfResvNow)}</div></div>`:''}
     <div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Open P/L</div><div class="pf-pl" style="font-family:var(--mono);font-weight:800;font-size:15px;color:${_pfPc(totPl)};">${totPl>=0?'+':''}${totPl.toFixed(2)}</div></div>
+    <div title="Each holding&#8217;s shares × (its latest close − the close before), added up across these holdings. A share bought at the latest close counts as 0 until it has held through a full day. Needs the day&#8217;s market data loaded to calculate."><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">${_dcLabel}</div><div class="pf-pl" style="font-family:var(--mono);font-weight:800;font-size:15px;color:${_dcKnown?_pfPc(_dcSum):'var(--dim)'};">${_dcKnown?((_dcSum>=0?'+':'-')+_fmtN(Math.abs(_dcSum))):'&#8212;'}${(_dcKnown&&_dcPct!=null&&isFinite(_dcPct))?`<span style="font-size:10px;font-weight:600;"> (${_dcPct>=0?'+':''}${_dcPct.toFixed(2)}%)</span>`:''}</div></div>
     <button id="pfHideBtn" onclick="_pfToggleProfit()" title="Hide or show your profit/loss figures in the portfolio" style="margin-left:auto;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--muted);font-weight:600;font-size:10px;font-family:var(--sans);cursor:pointer;white-space:nowrap;">${_pfHideProfit()?'🙈 Show P/L':'👁 Hide P/L'}</button>
   </div>`;
   // v364: Map lookup instead of a full allData scan per history row — with a
@@ -19492,9 +19630,15 @@ function simpleMarketPulse(){
   else if(pctUp>=55){mood='🟢 Slightly positive — mild buying edge';moodC='var(--green)';}
   else if(pctDn>=55){mood='🔴 Slightly negative — mild selling edge';moodC='var(--red)';}
   else{mood='↔️ Mixed — buyers and sellers roughly balanced';moodC='var(--muted)';}
-  // Top movers
-  const gainers=[...up].sort((a,b)=>b.chgPct-a.chgPct).slice(0,5);
-  const losers=[...dn].sort((a,b)=>a.chgPct-b.chgPct).slice(0,5);
+  // Top movers. v801: exclude shares priced below $0.005 from the gainers/falls
+  // boards. Below a half-cent, ASX stores prices to a tenth of a cent, so ONE
+  // increment (0.001→0.002) reads as +100% and 0.003→0.002 as −33% — the
+  // "+50.0%" and "−33.3%" clusters are quantization artifacts, not real moves,
+  // and they were crowding genuine movers off the board. "Most active" keeps
+  // the full universe (a volume spike on a sub-cent share is still a real spike).
+  const _moverFloor=s=>((+s.price||+s.c||0)>=0.005);
+  const gainers=[...up].filter(_moverFloor).sort((a,b)=>b.chgPct-a.chgPct).slice(0,5);
+  const losers=[...dn].filter(_moverFloor).sort((a,b)=>a.chgPct-b.chgPct).slice(0,5);
   const active=[...volArr].sort((a,b)=>(b.volPct||0)-(a.volPct||0)).slice(0,3);
   // Row builder (string concat, no nested template)
   const row=(s,col)=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);">'
@@ -19896,7 +20040,12 @@ function myChangesData(){
   window._pfCtx='main'; // v312: the briefing's holdings checks read YOUR account; bot activity is added separately below
   const out={items:[],lists:[],dataDate:null,holdN:0,watchN:0};
   if(!Array.isArray(allData)||!allData.length) return out;
-  try{ out.dataDate=_pfMktDate(currentExch||'ASX'); }catch(e){}
+  // v803: use the REAL latest market-bar date only. _pfMktDate falls back to
+  // today's wall-clock when data hasn't loaded yet — that produced a header
+  // dated 2026-08-16 (a Sunday, no trading) while every other screen correctly
+  // said 2026-08-14. Read the loaded bar date directly; if absent, leave null
+  // so the template says "the latest data" rather than inventing a date.
+  try{ out.dataDate=(window._exchDataDate||{})[currentExch||'ASX']||null; }catch(e){ out.dataDate=null; }
   const by={}; allData.forEach(s=>{by[s.ticker]=s;});
   const seen={};
   let p=null; try{ p=_paper(); }catch(e){ p={holdings:[]}; }
@@ -22779,10 +22928,10 @@ function gradingCheckReport(){
     var decayTxt=(decay===null)?'':('<div style="margin-top:8px;font-size:11px;">Proven lines averaged <b>'+f1(pThen)+'</b> in the window they earned their badge, and <b>'+f1(pMean)+'</b> in the window after \u2014 '+((decay>0)?('a <b style="color:'+(decay>50?'#ff9caa':'var(--gold)')+'">'+decay+'% fade</b>'):('an <b style="color:var(--green)">increase</b>'))+'. Some fade is normal and expected; a total collapse would mean the edge only ever existed in the window that measured it.</div>');
     var tbl=function(list,label){
       if(!list.length)return '';
-      return '<tr><td style="padding:5px 6px;color:var(--text);">'+label+'</td>'
-        +'<td style="padding:5px 6px;text-align:right;font-family:var(--mono);">'+list.length+'</td>'
-        +'<td style="padding:5px 6px;text-align:right;font-family:var(--mono);color:'+(mean(list,function(x){return x.next;})>0?'var(--green)':'#ff9caa')+';">'+f1(mean(list,function(x){return x.next;}))+'</td>'
-        +'<td style="padding:5px 6px;text-align:right;font-family:var(--mono);">'+share(list,function(x){return x.next>0;})+'%</td></tr>';
+      return '<tr><td style="padding:5px 4px;color:var(--text);overflow:hidden;text-overflow:ellipsis;">'+label+'</td>'
+        +'<td style="padding:5px 4px;text-align:right;font-family:var(--mono);">'+list.length+'</td>'
+        +'<td style="padding:5px 4px;text-align:right;font-family:var(--mono);color:'+(mean(list,function(x){return x.next;})>0?'var(--green)':'#ff9caa')+';">'+f1(mean(list,function(x){return x.next;}))+'</td>'
+        +'<td style="padding:5px 4px;text-align:right;font-family:var(--mono);">'+share(list,function(x){return x.next>0;})+'%</td></tr>';
     };
     var worst=proven.slice().sort(function(a,b){return a.next-b.next;}).slice(0,4);
     var best=proven.slice().sort(function(a,b){return b.next-a.next;}).slice(0,4);
@@ -22795,10 +22944,10 @@ function gradingCheckReport(){
       +'<div style="font-weight:800;color:'+vcol+';font-size:13.5px;margin-bottom:5px;">'+verdict+'</div>'
       +'<div style="font-size:11.5px;margin-bottom:9px;">'+vwhy+'</div>'
       +'<div style="font-size:11px;margin-bottom:6px;">The test: take every line\u2019s verdict in one window, then look at what that line actually did in the window that <b>followed</b> \u2014 never the window it was judged on. '+rows.length+' before\u2192after pairs from '+Object.keys(A.M).length+' lines across two transitions.</div>'
-      +'<table style="width:100%;border-collapse:collapse;font-size:11px;margin:6px 0 2px;">'
-      +'<tr style="color:var(--dim);font-size:10px;"><td style="padding:3px 6px;">Verdict at the time</td><td style="padding:3px 6px;text-align:right;">lines</td><td style="padding:3px 6px;text-align:right;">avg edge NEXT window</td><td style="padding:3px 6px;text-align:right;">still positive</td></tr>'
+      +'<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin:6px 0 2px;"><table style="width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed;">'
+      +'<tr style="color:var(--dim);font-size:9.5px;"><td style="padding:3px 4px;">Verdict at the time</td><td style="padding:3px 4px;text-align:right;width:34px;">lines</td><td style="padding:3px 4px;text-align:right;width:62px;">next edge</td><td style="padding:3px 4px;text-align:right;width:46px;">still +</td></tr>'
       +tbl(proven,'\u2705 had earned a badge')+tbl(unprov,'\u2014 had not (TOO EARLY)')
-      +'</table>'
+      +'</table></div>'
       +decayTxt
       +(best.length?'<div style="margin-top:10px;font-weight:700;color:var(--text);font-size:11.5px;">Strongest in the NEXT window</div>'+lst(best):'')
       +(worst.length?'<div style="margin-top:8px;font-weight:700;color:var(--text);font-size:11.5px;">Weakest in the NEXT window <span style="font-weight:400;color:var(--dim);font-size:10px;">(weakest \u2260 negative \u2014 a badge can fade and still be up)</span></div>'+lst(worst):'')
@@ -22952,7 +23101,7 @@ function climbersScan(){
     showModal('<div style="padding:14px;font-size:12px;line-height:1.6;color:var(--muted);">'
       +'<div style="font-weight:800;color:var(--text);font-size:13px;margin-bottom:4px;">🌱 Climbers Today — '+top.length+' share'+(top.length===1?'':'s')+' now in the table'+(items.length>top.length?(' <span style="font-weight:400;color:var(--dim);font-size:11px;">(closest '+top.length+' of '+items.length+' firing today)</span>'):'')+'</div>'
       +'<div style="color:var(--gold);font-size:11px;margin-bottom:8px;"><b>A nursery, not a menu.</b> Every line behind this list is UNPROVEN — the whole point is scepticism with a shortlist. Watch, don\u2019t lean. The 🤖 auto-pilot never reads it.</div>'
-      +'<div style="font-size:11px;margin-bottom:4px;">These shares fired at least one <b style="color:var(--text)">climbing</b> signal today \u2014 a line moving toward SOLID but not there. Ranked by how close its strongest climber is. They are also in the table behind this box.</div>'
+      +'<div style="font-size:11px;margin-bottom:4px;">These shares fired at least one <b style="color:var(--text)">climbing</b> signal today \u2014 a line moving toward SOLID but not there. Ranked by how close its strongest climbing LINE is to the bar \u2014 not by the share\u2019s score chip, which measures something else (its accumulation strength), so a share with a lower score can rank higher here. They are also in the table behind this box.</div>'
       +shares
       +'<div style="font-weight:700;color:var(--text);font-size:11.5px;margin:12px 0 2px;">The climbing lines behind them \u2014 and what each still needs</div>'
       +lines
@@ -24648,7 +24797,9 @@ function _renderReportCard(A){
                 if(!(m.tier==='solid'||m.tier==='promising'))return '';
                 const eAdj=m.dirNeg?-m.edge:m.edge; if(!(eAdj>0))return '';
                 const after=eAdj*P.keep;
-                return ` <span title="This line's edge (${f1(eAdj)}) multiplied by the pooled keep-ratio from the ⏳ header — the fraction of themselves badge-earning edges kept, on average, in the year that followed (${Math.round(100*P.keep)}%, from ${P.n} transitions in this card's own three-year history). A rule of thumb applied uniformly, NOT a forecast for this line — its own ↘ fading / ↗ strengthening chip below is the better per-line read. If it fades like the average badge-holder, expect about ${f1(after)}." style="cursor:help;color:var(--dim);">· ⏳ ≈${f1(after)} after the typical fade</span>`;
+                const grew=P.keep>=1.15; // v802: pooled edges strengthened next window, not faded — don't call growth a haircut
+                const _lbl=grew?('· ⏳ \\u2248'+f1(after)+' if it holds like the average badge'):('· \\u23f3 \\u2248'+f1(after)+' after the typical fade');
+                return ` <span title="This line's edge (${f1(eAdj)}) multiplied by the pooled ratio from the ⏳ header — what badge-earning edges averaged, on average, in the year that followed versus the year they earned the badge (${Math.round(100*P.keep)}%, from ${P.n} transitions in this card's own three-year history). ${grew?'On this history badges tended to STRENGTHEN next window, not fade':'On this history badges tended to give back some edge next window'} — but this is a rule of thumb applied uniformly, NOT a forecast for this line; its own ↘ fading / ↗ strengthening chip is the better per-line read." style="cursor:help;color:var(--dim);">${_lbl}</span>`;
               }catch(_de){ return ''; } })()}`;})()}</div></div>`;
     };
     const _flagTip={
@@ -24729,11 +24880,12 @@ function _renderReportCard(A){
         const pThen=P.pThen, pNext=P.pNext, pos=P.pos, keep=Math.round(100*P.keep);
         let word,col;
         if(pNext<=0){ word='did NOT survive on average'; col='#ff9caa'; }
+        else if(keep>=115){ word='actually STRENGTHENED, not faded, in the year that followed'; col='var(--green)'; } // v802: growth case — the report shows this honestly; the card must too
         else if(keep>=90){ word='held almost fully'; col='var(--green)'; }
         else if(keep>=50){ word='kept roughly '+keep+'% of themselves'; col='var(--gold)'; }
         else { word='kept only ~'+keep+'% of themselves'; col='#ff9caa'; }
         const tip='Measured on this card\u2019s own three-year history: every line that had earned a badge (SOLID or PROMISING) in one stored year is followed into the year after. '+P.n+' such transitions exist. Badge-year edge averaged '+f1(pThen)+'; the following year those same lines averaged '+f1(pNext)+' ('+pos+'% stayed positive). Some fade is normal \u2014 a graded edge is a ceiling estimate of its own future \u2014 so read every edge on this card with this haircut in mind, and lean on the \u2198 fading / \u2197 strengthening chips on each line. Full breakdown, including which lines held and which collapsed: the \u2696 \u201cDoes the grading work?\u201d report in the sidebar. Lines overlap (a triple contains its pairs), so treat this as one honest pooled read, not '+P.n+' independent experiments.';
-        return `<div title="${tip}" style="font-size:11px;margin-bottom:10px;padding:6px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);line-height:1.5;cursor:help;">⏳ <b style="color:${col}">Expect decay:</b> on this card's own history, badge-earning edges ${word} in the year that followed (${f1(pThen)} → ${f1(pNext)}, ${pos}% stayed positive). <span style="color:var(--dim)">Each graded line below now shows its own after-haircut figure — hover for the maths.</span></div>`;
+        return `<div title="${tip}" style="font-size:11px;margin-bottom:10px;padding:6px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);line-height:1.5;cursor:help;">⏳ <b style="color:${col}">${keep>=115?'Edges held up:':'Expect decay:'}</b> on this card's own history, badge-earning edges ${word} (${f1(pThen)} → ${f1(pNext)}, ${pos}% stayed positive). <span style="color:var(--dim)">Each graded line below shows its own next-window figure — hover for the maths.</span></div>`;
       }catch(e){ return ''; } })();
     // rank helper for combo/sequence sections
     const tierRank={solid:2,promising:1,early:0};
