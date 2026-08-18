@@ -4,7 +4,7 @@
 // source into IndexedDB (first run of each version), keeping the last 8, so any
 // previous version can be re-downloaded as a working .html file ("versions"
 // link in Setup). Captured here, before scripts modify the page.
-const APP_VERSION='2026.08.18-819-beta';
+const APP_VERSION='2026.08.19-822-beta';
 // ── Make the app installable (PWA) without needing a separate manifest file ──
 // We build the manifest in-memory and attach it as a Blob URL, so the whole app
 // stays a single HTML file you can upload as-is. Phones/desktops then offer
@@ -1489,6 +1489,11 @@ async function showDailyPicks(mode){
         +'border:1px solid '+(M===m?'var(--gold)':'var(--border2)')+';background:'+(M===m?'rgba(217,164,65,.15)':'var(--bg3)')+';color:'+(M===m?'var(--gold)':'var(--text)')+';">'
         +(m==='mine'?'\ud83c\udf10 My rules':m==='trail'?'\u26a1 The tested rules':'\u2696 15/15 comparison')+'</button>').join('')+'</div>';
 
+    // v820 — pick age, measured against the latest market day the server has.
+    // A 2%-dip limit priced off a two-week-old close is not a live recommendation,
+    // so picks older than ~5 trading days drop below a 'Still open' divider.
+    const _ageD=r=>{ try{ if(!j.latestBar||!r.first_seen_day)return 0; var _ms=(new Date(j.latestBar+'T00:00:00Z'))-(new Date(r.first_seen_day+'T00:00:00Z')); return Math.max(0,Math.round(_ms/86400000)); }catch(_ae){ return 0; } };
+    const _OLD_AFTER=7; // calendar days ≈ 5 trading days behind the latest bar
     let body;
     if(!rows.length){
       body = noRules
@@ -1507,13 +1512,14 @@ async function showDailyPicks(mode){
         +'<span style="font-size:12px;">Four gates in a row \u2014 the price band, the score, the signal and the daily cap \u2014 often leave nothing on a given day. '
         +'That is the rules being choosy, not a fault.</span></div>';
     } else {
-      body=rows.map(r=>{
+      const _pickCard=(r)=>{
         const tr = mine ? !(+r.target_price>0) : trail;           // this row's exit style
         const sv = trail ? r.initial_stop : r.stop_price;          // trail control stores initial_stop; mine/fixed store stop_price
         const oob=(R.minPrice!=null && !(r.ref_close>R.minPrice && r.ref_close<=R.maxPrice));
-        const age=(j.latestBar && r.first_seen_day && r.first_seen_day<j.latestBar)
-          ? ' <span style="color:var(--gold);font-size:10px;">(from '+esc(r.first_seen_day)+')</span>' : '';
-        return '<div style="border:1px solid var(--border2);border-radius:8px;padding:10px;margin-bottom:8px;background:var(--bg2);">'
+        const _ad=_ageD(r);
+        const age=(_ad>0)
+          ? ' <span style="color:var(--gold);font-size:10px;">(picked '+_ad+' day'+(_ad===1?'':'s')+' ago \u00b7 '+esc(r.first_seen_day)+')</span>' : '';
+        return '<div style="border:1px solid var(--border2);border-radius:8px;padding:10px;margin-bottom:8px;background:var(--bg2);'+(_ad>_OLD_AFTER?'opacity:.72;':'')+'">'
           +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'
           +'<a href="#" onclick="_picksOpen(\''+esc(r.ticker)+'\');return false;" style="font-size:15px;font-weight:800;color:var(--gold);text-decoration:underline dotted;">'+esc(r.ticker)+'</a>'
           +(r.status==='queued'?'<span style="font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(217,164,65,.18);color:var(--gold);">already queued</span>':'')
@@ -1575,7 +1581,11 @@ async function showDailyPicks(mode){
           +'<button onclick="printShareReport(\''+esc(r.ticker)+'\')" style="flex:1;padding:7px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-weight:600;font-size:11px;font-family:var(--sans);cursor:pointer;">\ud83d\udcc4 Report</button>'
           +'</div>'
           +'</div>';
-      }).join('');
+      };
+      const _freshRows=rows.filter(r=>_ageD(r)<=_OLD_AFTER), _oldRows=rows.filter(r=>_ageD(r)>_OLD_AFTER);
+      body=_freshRows.map(_pickCard).join('');
+      if(!_freshRows.length&&_oldRows.length){ body+='<div style="text-align:center;padding:10px 6px;color:var(--muted);font-size:12px;line-height:1.5;">Nothing picked on the latest sessions \u2014 the older picks below are still open on the server.</div>'; }
+      if(_oldRows.length){ body+='<div style="margin:14px 0 8px;padding-top:10px;border-top:1px dashed var(--border2);font-size:11px;color:var(--muted);line-height:1.5;"><b style="color:var(--gold);">\u23f3 Still open \u2014 picked on earlier days.</b> The prices shown are from the day each was picked, not from today. The server retires suggested picks after 5 trading days \u2014 sooner if they leave the price band or fail the costs test \u2014 so anything here is due for review at the next close.</div>'+_oldRows.map(_pickCard).join(''); }
     }
 
     html='<div style="font-size:12px;color:var(--muted);line-height:1.55;">'+esc(ruleLine)+'</div>'
@@ -18919,12 +18929,24 @@ function setAutoLoad(on){
   document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible') _wakeLoad('visible'); });
   (async function autoStartup(){
     // v380 — access gate: don't run automated data loads while the preview is locked.
-    try{ const _g=await _gateCheck(); if(_g&&_g.locked){ _gateLock(); return; } }catch(e){}
+    // v821 — the gate answer is only needed before LIVE work spends API calls;
+    // showing saved data from disk costs nothing. The old serial await put a
+    // full worker round-trip (7s timeout on a cold edge) in front of first
+    // paint on every open, on both channels. Probe now, await later.
+    const _gp=(function(){ try{ return _gateCheck(); }catch(e){ return Promise.resolve({locked:false}); } })();
+    // v821 — boot timing marks. performance.now() counts from navigation start,
+    // so t0 itself is the download+parse cost of the page. _bootReport() prints
+    // the trail; a slow start (>9s to saved data) states its own breakdown.
+    try{ window._bootT={t0:Math.round(performance.now()),m:[]}; }catch(e){ window._bootT={t0:0,m:[]}; }
+    const _bt=(k)=>{ try{ window._bootT.m.push([k,Math.round(performance.now())]); }catch(_){} };
+    window._bootReport=function(){ try{ var T=window._bootT; var out='page ready '+(T.t0/1000).toFixed(1)+'s'; for(var i=0;i<T.m.length;i++){ out+=' \u00b7 '+T.m[i][0]+' '+(T.m[i][1]/1000).toFixed(1)+'s'; } return out; }catch(e){ return ''; } };
+    try{ _gp.then(function(){ _bt('gate answered'); }); }catch(e){}
     const ls=document.getElementById('loadStatus');
     const phase=document.getElementById('loadPhase');
     const setPhase=(t)=>{ if(phase){phase.style.display='block';phase.textContent=t;} try{ const sst=document.getElementById('simpleStatus'); if(sst&&document.body.classList.contains('simple-mode')) sst.textContent=t; }catch(_){} }; // v686: Starter hides the load panel, so mirror startup phases into the Starter status line
     let cached=0;
     try{ cached=await histCount(); }catch(e){}
+    _bt('saved-data check');
     let key=(document.getElementById('apiKey')||{}).value||'';
     if(!key){ try{ key=localStorage.getItem('BETA_asxScreener.apiKey')||''; }catch(e){} } // v249: input may not be populated yet at this point
 
@@ -18945,6 +18967,11 @@ function setAutoLoad(on){
       setPhase('Step 1 of 2 — showing your saved data');
       try{ await _alignExchToSaved(); }catch(_){}
       try{ await loadOfflineNow(); }catch(e){}
+      _bt('saved data shown');
+      try{ console.log('[boot] '+window._bootReport()); }catch(e){}
+      try{ if(performance.now()>9000&&ls){ ls.innerHTML+=' <span style="color:var(--muted);font-size:10px;" title="Where the start-up time went, in seconds from opening the app.">('+window._bootReport()+')</span>'; } }catch(e){}
+      // v821 — the gate verdict is needed from here on (live work spends API calls).
+      try{ const _g=await _gp; if(_g&&_g.locked){ _gateLock(); return; } }catch(e){}
       if((key || _serverData()) && navigator.onLine!==false){
         setPhase('Step 2 of 2 — fetching today\'s fresh prices in the background');
         const _ls2=document.getElementById('loadStatus');
@@ -18962,6 +18989,8 @@ function setAutoLoad(on){
     }
 
     // ── No offline data yet. Download everything to disk (one time), then prepare. ──
+    // v821 — everything below is live work, so the gate verdict is required first.
+    try{ const _g=await _gp; if(_g&&_g.locked){ _gateLock(); return; } }catch(e){}
     if(key.trim() || _serverData()){
       // v362: the saved key lives in localStorage but the key BOX may not be
       // populated yet (init restores it asynchronously) — and loadData() /
