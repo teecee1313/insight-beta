@@ -1,5 +1,6 @@
 {
-  "version": "2026.08.19-828",
+  "version": "2026.08.19-829-beta",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta build 2026.08.19-828 — thanks for testing! This copy updates separately from the released app. Anything odd, confusing or brilliant: use the ✉ feedback link in the top-left."
+  "notes": "🤖 The robot now says what it's doing on the MAIN screen, not just inside its panel. We audited every step of auto-buy after a report that it was slow and found no faults — the two honest reasons it can look idle: after a data load it deliberately waits until ~60% of shares have signals prepared (minutes on a phone), and it acts once per data day, so once it has run it sits quietly until the next close. A small always-visible line under the data box now shows exactly that: “bot: today's signals are still preparing (1,204 of ~1,329 shares ready)”, “bot: done for 2026-08-18 — runs again when new data loads (nothing to press)”. Same truth the robot panel always told — now where your eyes are.",
+  "date": "2026-08-19"
 }
