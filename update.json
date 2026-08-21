@@ -1,5 +1,5 @@
 {
-  "version": "2026.08.20-836",
+  "version": "2026.08.20-840",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta build 2026.08.20-836 — thanks for testing! This copy updates separately from the released app. Anything odd, confusing or brilliant: use the ✉ feedback link in the top-left."
+  "notes": "Beta 840 — catches the channel up with four fixes from 20 Aug: faster loads (pantry-first), automatic freshness on resume, automatic day-sync when you've been away, and the legacy data key fully retired. Anything odd: ✉ feedback link top-left."
 }

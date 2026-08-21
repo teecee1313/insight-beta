@@ -4,7 +4,7 @@
 // source into IndexedDB (first run of each version), keeping the last 8, so any
 // previous version can be re-downloaded as a working .html file ("versions"
 // link in Setup). Captured here, before scripts modify the page.
-const APP_VERSION='2026.08.20-836-beta';
+const APP_VERSION='2026.08.20-840-beta';
 // v827 — is Sydney right now inside a server ingest pass? (17:00–17:15 early,
 // 18:15–18:45 final, weekdays.) During those minutes the server is writing the
 // whole market's closing prices into its database, and reads genuinely slow
@@ -962,9 +962,15 @@ function _hasOwnKey(u){
   }catch(e){ return false; }
 }
 function _keyedRoutes(u){
+  // v840: THE DIRECT ROUTE IS GONE. api.eoddata.com is dead; the only thing the
+  // "direct with your own key" route did in 2026 was hang a browser for the full
+  // timeout, one request at a time. On 20 Aug a device carrying a legacy saved
+  // key stalled its whole signal-prepare pass at 48 of ~2,710 shares because
+  // every store-missing ticker fell through to a direct fetch that could never
+  // answer. Removed, not guarded - the worker (pantry) is the only route left,
+  // and a miss there now answers instantly.
   var safe=[];
   try{ if(typeof DATA_PROXY==='string'&&DATA_PROXY&&_eodProxy(u)!==u)safe.push(function(x){return _eodProxy(x);}); }catch(e){}
-  if(_hasOwnKey(u))safe.push(function(x){return x;});   // direct: the key reaches EODData, and nobody else
   return safe;
 }
 // Filter any route list down to the safe ones when the URL carries a key.
@@ -2483,7 +2489,13 @@ async function restoreFromBackup(){
 
 function initKeyLock(){
   try{
-    const saved=localStorage.getItem('BETA_asxScreener.apiKey');
+    // v840: purge the legacy EODData key. The provider is dead and the UI to
+    // remove the key left in v382, so devices that saved one years ago were
+    // stuck carrying it forever - and _hasOwnKey kept arming direct fetches to
+    // a corpse. One-time cleanup: the key is deleted from storage and never
+    // loaded into the (hidden) field again.
+    try{ localStorage.removeItem('BETA_asxScreener.apiKey'); }catch(e){}
+    const saved=null;
     if(saved){const el=document.getElementById('apiKey');if(el)el.value=saved;}
     const nk=localStorage.getItem(NEWSAPI_KEY_STORE);
     if(nk){const el=document.getElementById('newsApiKey');if(el)el.value=nk;}
@@ -11584,14 +11596,23 @@ async function _srvFirstFill(exch,depth,say){
     const _ptrOK=isFinite(_ptrAge)&&_ptrAge<=5;
     const _fillStamp=_ptrOK?_today:latestD;
     const per=new Map();
-    const d=new Date(latestD+'T12:00:00Z');
+    /* v838: FIVE DAYS AT ONCE. The one-at-a-time loop made a 300-day rebuild a
+       10-minute wait on a phone (Tony, 20 Aug). Weekday candidates are listed
+       up front, fetched in parallel chunks of 5, and merged in date order -
+       same data, same misses-abort, ~5x the speed. Progress reports every
+       chunk instead of every 10 days, and lands on the BUTTON (see
+       _fillFromServer) instead of a box below the fold. */
+    const _cands=[];
+    { const d=new Date(latestD+'T12:00:00Z');
+      for(let i=0;i<Math.ceil(D*1.5)+20;i++){ const dow=d.getUTCDay(); if(dow!==0&&dow!==6)_cands.push(d.toISOString().slice(0,10)); d.setUTCDate(d.getUTCDate()-1); } }
     let misses=0;
-    for(let i=0;i<Math.ceil(D*1.5)+20&&out.days<D;i++){
+    for(let ci=0;ci<_cands.length&&out.days<D;ci+=5){
       if(window._fillAbort){ out.stopped=true; break; }
-      const ds=d.toISOString().slice(0,10);
-      const dow=d.getUTCDay();
-      if(dow!==0&&dow!==6){
-        const day=await jf('/history/day/'+ds+'?exch='+encodeURIComponent(exch),20000).catch(function(){return null;});
+      const _chunk=_cands.slice(ci,ci+5);
+      const _got=await Promise.all(_chunk.map(function(ds){ return jf('/history/day/'+ds+'?exch='+encodeURIComponent(exch),20000).then(function(day){return {ds:ds,day:day};}).catch(function(){return {ds:ds,day:null};}); }));
+      for(const g of _got){
+        if(out.days>=D)break;
+        const ds=g.ds, day=g.day;
         if(day&&day.ok&&Array.isArray(day.rows)&&day.rows.length){
           misses=0; out.days++;
           for(const r of day.rows){
@@ -11599,10 +11620,10 @@ async function _srvFirstFill(exch,depth,say){
             let a=per.get(t); if(!a){a=[];per.set(t,a);}
             a.push({dateStamp:ds,open:(r.o!=null?r.o:r.c),high:(r.h!=null?r.h:r.c),low:(r.l!=null?r.l:r.c),close:r.c,volume:r.v||0});
           }
-          if(say&&out.days%10===0)say('\ud83e\uddca Pulled '+out.days+' of '+D+' days from your server store...');
-        } else { misses++; if(misses>=8)break; }
+        } else { misses++; }
       }
-      d.setUTCDate(d.getUTCDate()-1);
+      if(misses>=10)break;
+      if(say)say('\ud83e\uddca Pulled '+out.days+' of '+D+' days from your server store...');
     }
     if(!out.days){ if(say)say('\u26a0 Your server store returned no days.'); return out; }
     const ticks=[...per.keys()];
@@ -11628,15 +11649,23 @@ async function _srvFirstFill(exch,depth,say){
   }catch(e){ if(say)say('\u26a0 Fill stopped: '+(e&&e.message?e.message:'unknown')); return out; }
 }
 async function _fillFromServer(){
+  const b=document.getElementById('fillSrvBtn');
+  /* v838: the button IS the progress bar and the stop switch. It ran >10
+     minutes with its progress printing in a box below the fold and no way to
+     cancel but a page reload (Tony, 20 Aug). Now: progress writes onto the
+     button itself, and tapping it again while running aborts cleanly (the
+     loops already honour _fillAbort; everything saved so far is kept). */
+  if(window._fillRunning){ window._fillAbort=true; if(b)b.textContent='\u23f9 stopping\u2026 (everything saved so far is kept)'; return null; }
   try{
     const box=document.getElementById('prepMsg')||document.getElementById('loadBox');
-    const say=function(t){ try{ if(box){box.style.display='';box.textContent=t;} }catch(e){} };
-    window._fillAbort=false;
-    const b=document.getElementById('fillSrvBtn'); if(b){ b.disabled=true; b.textContent='\u23f3 filling from your server...'; }
+    const say=function(t){ try{ if(box){box.style.display='';box.textContent=t;} if(b)b.textContent='\u23f3 '+t+' \u2014 tap to stop'; }catch(e){} };
+    window._fillAbort=false; window._fillRunning=true;
+    if(b){ b.disabled=false; b.textContent='\u23f3 filling from your server\u2026 tap to stop'; }
     const r=await _srvFirstFill(currentExch,300,say);
+    window._fillRunning=false;
     if(b){ b.disabled=false; b.textContent='\u26a1 Fill from my server store'; }
     return r;
-  }catch(e){ return null; }
+  }catch(e){ window._fillRunning=false; if(b){ b.disabled=false; b.textContent='\u26a1 Fill from my server store'; } return null; }
 }
 async function _srvDaySync(exch,say){
   const out={days:0,merged:0,skippedGap:0};
@@ -19012,7 +19041,58 @@ function setAutoLoad(on){
       window._wakeLoading=false;
     }catch(_){ window._wakeLoading=false; }
   }
-  window.addEventListener('pageshow', function(e){ if(e&&e.persisted) _wakeLoad('pageshow'); });
+  // v837 — STALE-RESUME FRESHNESS. The open item since v832: on phones the
+  // installed app RESUMES instead of re-booting, and _wakeLoad (a) only reads
+  // the disk and (b) bails when data is already in memory — so an app left
+  // open, or reopened next morning, showed yesterday forever and the bot line
+  // read "done for <yesterday>" with nothing ever fetching the newer session
+  // (Tony's screenshot, 20 Aug 09:49: saved data 18 Aug, server holding 19 Aug).
+  // _wakeFresh answers one question on every resume and every few minutes:
+  // "is the session on screen older than the newest session that should exist?"
+  // - and if so, kicks the SAME background loadData() the cold boot already
+  // uses (v356: a same-exchange refresh keeps the screen, no flicker).
+  function _expectedSessionDay(){
+    try{
+      var p={}; new Intl.DateTimeFormat('en-CA',{timeZone:'Australia/Sydney',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',hour12:false,weekday:'short'}).formatToParts(new Date()).forEach(function(x){p[x.type]=x.value;});
+      var d=p.year+'-'+p.month+'-'+p.day;
+      var dow={Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6}[p.weekday];
+      var hour=parseInt(p.hour,10)||0;
+      if(dow>=1&&dow<=5&&hour>=18) return d;   // today's close is published (final pass lands 18:15-18:45)
+      var dt=new Date(d+'T12:00:00Z');
+      do{ dt=new Date(dt.getTime()-86400000); }while(dt.getUTCDay()===0||dt.getUTCDay()===6);
+      return dt.toISOString().slice(0,10);
+    }catch(e){ return ''; }
+  }
+  function _wakeFresh(why){
+    try{
+      if(!autoLoadOn()) return;
+      if(navigator.onLine===false) return;
+      if(currentExch && currentExch!=='ASX') return;                      // sessions are Sydney-defined
+      if(window._liveBusy||window._wakeLoading||window._bulkRunning) return;
+      if(!(Array.isArray(allData)&&allData.length)) return;               // empty memory is _wakeLoad's job
+      var now=Date.now();
+      if(window._lastFreshKick && (now-window._lastFreshKick)<10*60*1000) return; // 10-min throttle
+      var want=_expectedSessionDay(); if(!want) return;
+      var have=(window._exchDataDate&&window._exchDataDate[currentExch||'ASX'])||'';
+      if(have && have>=want) return;                                      // already showing the newest session
+      window._lastFreshKick=now;
+      try{ var ls=document.getElementById('loadStatus'); if(ls)ls.innerHTML='<span style="color:var(--muted)">A newer session is available ('+want+') \u2014 fetching it in the background\u2026</span>'; }catch(e){}
+      // v839: THE MISSING WIRE. The auto path refreshed the day's PRICES but never
+      // extended the saved HISTORY - the day-sync (up to 14 missing days, one
+      // request per day, gap-safe) was wired only into the manual Refresh flow.
+      // So a device opened after a week away auto-loaded, showed fresh prices,
+      // and the bot still said "done for <a week ago>" because its histories
+      // ended there (Tony's device: stuck on 12 Aug with 20 Aug on the server,
+      // 20 Aug 2026). Now the auto path pulls the missing days FIRST, then
+      // loads - and the bot re-runs on its own, exactly as the label promises.
+      (async function(){
+        try{ if(typeof _srvDaySync==='function') await _srvDaySync(currentExch||'ASX',null); }catch(e){}
+        try{ loadData(); }catch(e){}
+      })();
+    }catch(e){}
+  }
+  setInterval(function(){ _wakeFresh('interval'); }, 5*60*1000);
+  window.addEventListener('pageshow', function(e){ if(e&&e.persisted){ _wakeLoad('pageshow'); setTimeout(function(){_wakeFresh('pageshow');},4000); } });
   // v687 — startup watchdog: whatever branch boot took, if the market is still
   // empty after 12s, run the same path as the Load button (which self-reports
   // into the Starter status) exactly once.
@@ -19022,7 +19102,7 @@ function setAutoLoad(on){
     if(window._wakeLoading||window._bulkRunning) return;
     if(typeof simpleLoad==='function') simpleLoad();
   }catch(_){}} ,12000);
-  document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible') _wakeLoad('visible'); });
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible'){ _wakeLoad('visible'); setTimeout(function(){_wakeFresh('visible');},4000); } });
   (async function autoStartup(){
     // v380 — access gate: don't run automated data loads while the preview is locked.
     // v821 — the gate answer is only needed before LIVE work spends API calls;
