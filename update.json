@@ -1,5 +1,6 @@
 {
-  "version": "2026.08.20-840",
+  "version": "2026.08.24-841-beta",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Beta 840 — catches the channel up with four fixes from 20 Aug: faster loads (pantry-first), automatic freshness on resume, automatic day-sync when you've been away, and the legacy data key fully retired. Anything odd: ✉ feedback link top-left."
+  "notes": "\ud83d\udcc8 Each holding now shows its own day move \u2014 the share\u2019s latest close-vs-close change in dollars and percent, on the desktop table and the phone cards. Pending orders carry the same figure beside the ticker, so you can see how a share moved while your order waits. The watchlist already had it (the Change column next to Price). One source of truth: the per-share figures and the portfolio\u2019s day-change total come from the same calculation and can never disagree.",
+  "date": "2026-08-24"
 }
