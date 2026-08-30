@@ -4,7 +4,7 @@
 // source into IndexedDB (first run of each version), keeping the last 8, so any
 // previous version can be re-downloaded as a working .html file ("versions"
 // link in Setup). Captured here, before scripts modify the page.
-const APP_VERSION='2026.08.25-846-beta';
+const APP_VERSION='2026.08.30-855-beta';
 // v827 — is Sydney right now inside a server ingest pass? (17:00–17:15 early,
 // 18:15–18:45 final, weekdays.) During those minutes the server is writing the
 // whole market's closing prices into its database, and reads genuinely slow
@@ -139,7 +139,7 @@ async function downloadVersion(v){
 // ═══════════════════════════════════
 const I18N={
   en:{
-    tagline:"Multi-Exchange Screener",
+    tagline:"ASX End-of-Day Screener",
     setup:"Setup", apiKey:"EODData API Key", keyLocked:"🔒 locked", keyEditable:"🔓 editable",
     unlockEdit:"🔓 Unlock to edit key", lockEdit:"🔒 Lock key editing",
     exchange:"Exchange", loadData:"⚡ Load Exchange Data", loadPrompt:"Select exchange and press Load",
@@ -436,7 +436,7 @@ const I18N={
     estimate:"stima"
   },
   fil:{
-    tagline:"Multi-Exchange na Screener",
+    tagline:"ASX End-of-Day na Screener",
     setup:"Setup", apiKey:"EODData API Key", keyLocked:"🔒 naka-lock", keyEditable:"🔓 mae-edit",
     unlockEdit:"🔓 I-unlock para i-edit", lockEdit:"🔒 I-lock ang pag-edit",
     exchange:"Palitan", loadData:"⚡ I-load ang Datos ng Palitan", loadPrompt:"Pumili ng palitan at pindutin ang Load",
@@ -3644,6 +3644,99 @@ function _showFastRows(){ window._rowCap=1000; try{ (typeof applyF==='function'?
 
 // Build table rows from any array of stock objects (used by both the main
 // filtered view and the filter-independent watchlist view).
+// ── v850: STARTER SHOWS THE PRODUCT ─────────────────────────────────────────
+// Tony, 30 Aug: "doesn't make sense to hide this - it's what the product is
+// about." He is right. v711 hid the full table from Starter to protect
+// beginners from 30 columns of jargon - but the graded market IS the product,
+// and hiding it left a giant white void that reads as broken (it fooled the
+// founder on camera). Starter now shows the market as a GENTLE table: top 50
+// by evidence-then-score, six plain-language columns, each row opens the share's
+// report. Advanced remains the full instrument, one tap away.
+function _starterMarket(){
+  try{
+    var host=document.getElementById('starterMarket');
+    if(!document.body.classList.contains('simple-mode')){
+      if(host)host.style.display='none';   /* v852: never shadow Advanced's real table */
+      return;
+    }
+    if(!host){
+      var tw=document.getElementById('tblwrap');
+      if(!tw||!tw.parentNode)return;
+      host=document.createElement('div'); host.id='starterMarket';
+      tw.parentNode.insertBefore(host,tw);
+    }
+    /* v852: the main column is overflow:hidden by design (scrolling lives INSIDE
+       the table wrapper, which Starter hides) - so this host must be its own
+       scroll container or everything below the fold is unreachable (Tony:
+       "doesn't scroll past CAM"). */
+    host.style.cssText='padding:6px 14px 26px;flex:1 1 auto;min-height:0;overflow-y:auto;display:block;';
+    if(!Array.isArray(allData)||!allData.length){ host.innerHTML=''; return; }
+    host.innerHTML=_strongestTableHTML(50,true);
+  }catch(e){}
+}
+// v854: ONE builder for the strongest-of-today table - Starter's home view and
+// the Advanced "\ud83c\udfc6 Strongest Today" report render the same component, so the
+// two can never drift apart. `starterHeader` adds the Starter-specific intro.
+function _strongestTableHTML(limit,starterHeader){
+    var rows=allData.slice();
+    var tR={'SOLID':2,'PROMISING':1};
+    rows.sort(function(a,b){
+      var ta=tR[a._evTier]||0, tb=tR[b._evTier]||0; if(tb!==ta)return tb-ta;
+      var ea=(a._evEdge!=null&&isFinite(a._evEdge))?a._evEdge:-9e9, eb=(b._evEdge!=null&&isFinite(b._evEdge))?b._evEdge:-9e9; if(eb!==ea)return eb-ea;
+      return ((b.watchScore!=null?b.watchScore:b.score)||0)-((a.watchScore!=null?a.watchScore:a.score)||0);  /* v855: the /10 score lives in watchScore */
+    });
+    rows=rows.slice(0,limit||50);
+    var out=(starterHeader
+      ? '<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:4px 0 8px;">'
+        +'<span style="font-weight:800;font-size:14px;color:var(--text);">\ud83c\udfc6 Today\u2019s market \u2014 the '+(limit||50)+' strongest of '+allData.length.toLocaleString()+'</span>'
+        +'<span style="font-size:10px;color:var(--muted);">proven evidence first, then score \u00b7 tap any share for its full story \u00b7 the complete table with every column lives in <a href="#" onclick="try{setAppMode(\'advanced\');}catch(e){};return false;" style="color:var(--gold);">Advanced</a></span></div>'
+      : '<div style="font-size:10px;color:var(--muted);margin:2px 0 8px;">The '+(limit||50)+' strongest of '+allData.length.toLocaleString()+' \u2014 proven evidence first, then measured PN Edge, then score. Tap any share for its full story. A ranking of today\u2019s evidence, not a buy list and not advice.</div>')
+      +'<table style="width:100%;border-collapse:collapse;font-size:12px;">'
+      +'<thead><tr style="color:var(--muted);font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;text-align:left;">'
+      +'<th style="padding:4px 6px;">Share</th><th style="padding:4px 6px;text-align:right;">Price</th><th style="padding:4px 6px;text-align:right;" title="The share\u2019s move over the latest session \u2014 close vs the close before.">Day</th>'
+      +'<th style="padding:4px 6px;text-align:right;" title="Pattern score out of 10 \u2014 how many of today\u2019s studied patterns line up on this share.">Score</th>'
+      +'<th style="padding:4px 6px;" title="The evidence badge. SOLID = this share\u2019s firing pattern made money consistently across up to a decade of history and passed the luck test, including in earlier years. PROMISING = positive so far, still earning its stripes.">Evidence</th>'
+      +'<th style="padding:4px 6px;" title="The last five days of company news. \ud83d\udcf0 = confirmed ASX announcements (from the official feed) \u2014 the number is how many. \ud83d\udd07 quiet = no announcements: any move is happening WITHOUT a news reason, which is exactly where quiet accumulation hides. Where the feed hasn\u2019t confirmed this share yet, the flag is an estimate from price and volume.">News (5d)</th>'
+      +'<th style="padding:4px 6px;text-align:right;" title="PN Edge \u2014 our measured edge, the number this product is named for. Not a prediction: the extra dollars per $100 this share\u2019s strongest proven pattern has historically made in the days after firing, beyond the market, before costs. +$2.41 means every $100 on this pattern came out $2.41 ahead of the market on average, across up to a decade of replays.">PN Edge <span style="font-weight:400;text-transform:none;letter-spacing:0;">(extra per $100)</span></th></tr></thead><tbody>';
+    for(var i=0;i<rows.length;i++){
+      var r=rows[i];
+      var chg=(typeof r.chgAbs==='number'&&isFinite(r.chgAbs))?r.chgAbs:((typeof r.chgPct==='number'&&isFinite(r.chgPct)&&r.price>0&&r.chgPct!==-100)?(r.price-(r.price/(1+r.chgPct/100))):null);
+      var pct=(chg!=null&&r.price>0&&(r.price-chg)>0)?(chg/(r.price-chg)*100):null;
+      var cc=chg==null?'var(--muted)':chg>0.0005?'var(--green)':chg<-0.0005?'var(--red)':'var(--muted)';
+      var tier=r._evTier==='SOLID'?'<span style="font-size:9px;font-weight:800;color:var(--green);border:1px solid var(--green);border-radius:8px;padding:1px 7px;">SOLID</span>'
+        :r._evTier==='PROMISING'?'<span style="font-size:9px;font-weight:800;color:var(--gold);border:1px solid var(--gold);border-radius:8px;padding:1px 7px;">PROMISING</span>'
+        :'<span style="font-size:9px;color:var(--dim);">\u2014</span>';
+      var edge=(r._evTier&&r._evEdge!=null&&isFinite(r._evEdge))?('<span style="font-family:var(--mono);font-weight:700;color:'+(r._evEdge>0?'var(--green)':'var(--red)')+';">'+(r._evEdge>0?'+':'')+'$'+(+r._evEdge).toFixed(2)+'</span>'):'<span style="color:var(--dim);">\u2014</span>';
+      out+='<tr onclick="try{showShareDetail(\''+String(r.ticker).replace(/'/g,'')+'\')}catch(e){}" style="cursor:pointer;border-top:1px solid var(--border2);">'
+        +'<td style="padding:6px;"><strong style="color:var(--text);">'+r.ticker+'</strong>'+(r.name?' <span style="font-size:10px;color:var(--muted);">'+String(r.name).slice(0,26)+'</span>':'')+'</td>'
+        +'<td style="padding:6px;text-align:right;font-family:var(--mono);">'+fmtP(r.price,r.currency)+'</td>'
+        +'<td style="padding:6px;text-align:right;font-family:var(--mono);font-weight:700;color:'+cc+';">'+(chg==null?'\u2014':((chg>=0?'+':'\u2212')+'$'+Math.abs(chg).toFixed(3).replace(/0$/,'').replace(/\.$/,'')+(pct!=null?' <span style="font-weight:400;font-size:10px;">('+(pct>=0?'+':'')+pct.toFixed(1)+'%)</span>':'')))+'</td>'
+        +(function(){var sc=(r.watchScore!=null?r.watchScore:r.score);return '<td style="padding:6px;text-align:right;font-family:var(--mono);font-weight:700;'+(sc!=null&&sc>=7?'color:var(--gold);':'')+'">'+(sc!=null?sc:'\u2014')+'</td>';})()
+        +'<td style="padding:6px;">'+tier+'</td>'
+        +(function(){
+          var t='',cl='var(--dim)';
+          if(r.annConfirmed){
+            var n=(r.annNews5d||0);
+            if(n>0){ t='\ud83d\udcf0 \u00d7'+n; cl='var(--blue)'; }
+            else { t='\ud83d\udd07 quiet'; cl='var(--muted)'; }
+          } else if(r.newsFlag==='likely'){ t='\ud83d\udcf0 likely'; cl='var(--blue)'; }
+          else if(r.newsFlag==='quiet'){ t='\ud83d\udd07 quiet'; cl='var(--muted)'; }
+          else { t='\u2014'; }
+          return '<td style="padding:6px;font-size:10.5px;font-weight:600;color:'+cl+';white-space:nowrap;">'+t+'</td>';
+        })()
+        +'<td style="padding:6px;text-align:right;">'+edge+'</td></tr>';
+    }
+    out+='</tbody></table>';
+    return out;
+}
+// v854: the same component as an Advanced report (Tony: "one of the strongest we have now")
+function strongestTodayReport(){
+  try{
+    if(!Array.isArray(allData)||!allData.length){ alert('Load the market first \u2014 tap \u26a1 Load.'); return; }
+    window._modalLabel='\ud83c\udfc6 Strongest Today'; window._modalType='strongest';
+    showModal(_strongestTableHTML(50,false),'\ud83c\udfc6 Strongest Today');
+  }catch(e){}
+}
 function renderRows(rows){
   const tbody=document.getElementById('tbody');
   // Build the ENTIRE table body as one HTML string and inject it in a single
@@ -5276,7 +5369,7 @@ function showRules(){
           <div style="margin-top:4px;font-size:9px;color:var(--dim);">It trades its own $50,000 practice account — watch it in 💼 Portfolio → 🤖 tab. Every decision it makes is written in its 📜 diary (inside ⚙ advanced, below).</div>
         </div>`;
       }catch(e){return '';}})()}
-      <button onclick="applyTestedRules()" title="Applies AND saves the rule set the 13 August 2026 ten-year replay settled on: 20% trailing stop with no take-profit, $0.20-$0.99, 2% dip entry, top 4 a day at score 7+. One tap, nothing left half-applied. Ten-year figures are a best case: every share in that test is still listed today — companies that died along the way aren’t in the data yet." style="width:100%;margin:8px 0 3px;padding:10px;border-radius:7px;border:1px solid var(--green);background:rgba(74,222,128,.12);color:var(--green);font-weight:700;font-size:12px;font-family:var(--sans);cursor:pointer;">⚡ Use the tested rules <span style="font-weight:400;font-size:9px;">(one tap — applied AND saved)</span></button><div style="font-size:9px;color:var(--dim);margin:0 0 8px;line-height:1.5;">Re-set 13 Aug 2026 on a ten-year replay (2016–2026, real daily highs and lows, brokerage and 1% slippage included). One dial moved: the dip entry, 5% → 2%. On the decade the 2% dip returned +232% against +89% for the old 5% — and kept +160% with its three biggest winners removed, where the old setting kept +26%. The deeper dip was missing winners, not filtering losers: shares that never fell 5% were often the ones that went straight up. The same signal scores flatter absolute returns because they are graded across the whole period (lesson 55) — the comparison between settings is the finding. Most trades still lose and every winner gives back 20% from its peak; that is the mechanism, not a fault.</div><button onclick="applyBotBestPractice()" title="Fills the whole panel with the recommended stack — ⚖ All-rounder risk numbers, every don&#39;t-chase gate, 📋 adaptive combo gate that follows YOUR report card, 🎣 2% dip entry, 🧪 evidence-gated source, min score 7, 2 buys/day. Nothing applies until you press Save." style="width:100%;margin:8px 0 3px;padding:8px;border-radius:7px;border:1px solid var(--gold);background:rgba(255,210,0,.10);color:var(--gold);font-weight:700;font-size:11.5px;font-family:var(--sans);cursor:pointer;">🏆 Set up the best-practice bot <span style="font-weight:400;font-size:9px;">(one tap — review, then Save)</span></button>
+      <button onclick="applyTestedRules()" title="Applies AND saves the rule set the 13 August 2026 ten-year replay settled on: 20% trailing stop with no take-profit, $0.20-$0.99, 2% dip entry, top 4 a day at score 7+. One tap, nothing left half-applied. Ten-year figures are a best case: every share in that test is still listed today — companies that died along the way aren’t in the data yet." style="width:100%;margin:8px 0 3px;padding:10px;border-radius:7px;border:1px solid var(--green);background:rgba(74,222,128,.12);color:var(--green);font-weight:700;font-size:12px;font-family:var(--sans);cursor:pointer;">⚡ Use the tested rules <span style="font-weight:400;font-size:9px;">(one tap — applied AND saved)</span></button><div style="font-size:9px;color:var(--dim);margin:0 0 8px;line-height:1.5;">Re-set 13 Aug 2026 on a ten-year replay (2016–2026, real daily highs and lows, brokerage and 1% slippage included). One dial moved: the dip entry, 5% → 2%. On the decade the 2% dip returned +232% against +89% for the old 5% — and kept +160% with its three biggest winners removed, where the old setting kept +26%. The deeper dip was missing winners, not filtering losers: shares that never fell 5% were often the ones that went straight up. The same signal scores flatter absolute returns because they are graded across the whole period — the comparison between settings is the finding. Most trades still lose and every winner gives back 20% from its peak; that is the mechanism, not a fault.</div><button onclick="applyBotBestPractice()" title="Fills the whole panel with the recommended stack — ⚖ All-rounder risk numbers, every don&#39;t-chase gate, 📋 adaptive combo gate that follows YOUR report card, 🎣 2% dip entry, 🧪 evidence-gated source, min score 7, 2 buys/day. Nothing applies until you press Save." style="width:100%;margin:8px 0 3px;padding:8px;border-radius:7px;border:1px solid var(--gold);background:rgba(255,210,0,.10);color:var(--gold);font-weight:700;font-size:11.5px;font-family:var(--sans);cursor:pointer;">🏆 Set up the best-practice bot <span style="font-weight:400;font-size:9px;">(one tap — review, then Save)</span></button>
       <div style="font-size:9px;color:var(--dim);margin-bottom:8px;line-height:1.5;">⚖ All-rounder exits (🎯15 🛑15, no trail/breakeven/hold) · every don't-chase gate · 🌏 index-above-50-day regime gate · 🎲 1% of account at risk per trade · 📋 adaptive combos from YOUR report card · 🎣 patient 2% dip entry · min score 7 · 2 buys/day. Tune the 🎣 depth per share with 📉 Dip Finder. The bot trades its own $50k account.</div>
       <button onclick="toggleApAdv()" id="apAdvToggle" style="width:100%;margin:2px 0 6px;padding:6px;border-radius:6px;border:1px dashed var(--border2);background:var(--bg3);color:var(--muted);font-weight:600;font-size:10px;font-family:var(--sans);cursor:pointer;">⚙ Advanced bot settings ${window._apAdvOpen?'▾ (tap to hide)':'▸ (optional — the 🏆 button already set these)'}</button>
       <div id="apAdvBox" style="display:${window._apAdvOpen?'block':'none'};">
@@ -9248,7 +9341,7 @@ function _wkTable(hist,vh){
       +'<td style="text-align:right;"><button onclick="_wkEditNote(\''+w.key+'\')" style="padding:3px 7px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-size:10px;cursor:pointer;">'+(note?'✎ note':'+ note')+'</button></td>'
       +'</tr>';
     if(note) out+='<tr><td colspan="6" style="padding:0 4px 7px 4px;color:var(--text);font-size:11px;font-style:italic;opacity:.85;">“'+note.replace(/</g,'&lt;')+'”</td></tr>';
-    if(thin) out+='<tr><td colspan="6" style="padding:0 4px 7px 4px;color:var(--muted);font-size:10px;">'+w.shut+' closed trade'+(w.shut===1?'':'s')+' — too few to read as skill either way (lesson 55).</td></tr>';
+    if(thin) out+='<tr><td colspan="6" style="padding:0 4px 7px 4px;color:var(--muted);font-size:10px;">'+w.shut+' closed trade'+(w.shut===1?'':'s')+' — too few to read as skill either way.</td></tr>';
   });
   return out+'</table></div>';
 }
@@ -9280,8 +9373,10 @@ function _pfRowMenu(id,ev,hex){
     const m0=document.createElement('div');
     m0.id='pfRowMenu';
     m0.style.cssText='position:fixed;z-index:100000;background:var(--bg2);border:1px solid var(--border);border-radius:9px;box-shadow:0 10px 30px rgba(0,0,0,.55);overflow:hidden;min-width:210px;';
-    m0.innerHTML='<div style="padding:10px 14px;font-size:10.5px;color:var(--muted);line-height:1.5;max-width:230px;">This share lives in your <b style="color:var(--text)">'+hex+'</b> account. Load '+hex+' to manage or sell it.</div>'+
-      '<button onclick="_pfCloseMenu();try{var s=document.getElementById(\'exchSel\');if(s){s.value=\''+hex+'\';onExchChange();}}catch(e){}" style="display:block;width:100%;text-align:left;padding:11px 14px;border:none;background:none;color:var(--gold);font-weight:700;font-size:12px;font-family:var(--sans);cursor:pointer;">🌐 Switch to '+hex+' now</button>';
+    /* v849: the app loads only the ASX now (v846) - the old switch button set a
+       picker value that no longer exists and silently did nothing. A retired-market
+       holding gets the honest truth instead of a dead button. */
+    m0.innerHTML='<div style="padding:10px 14px;font-size:10.5px;color:var(--muted);line-height:1.5;max-width:240px;">This share is from your <b style="color:var(--text)">'+hex+'</b> practice account \u2014 a market this app no longer loads. Its record stays in your history; prices for it no longer update and there is nothing to manage here.</div>';
     document.body.appendChild(m0);
     try{ const r=m0.getBoundingClientRect(); const x=ev?ev.clientX:80, y=ev?ev.clientY:80;
       m0.style.left=Math.max(6,Math.min(x, window.innerWidth-r.width-8))+'px';
@@ -14237,7 +14332,7 @@ function _fcShuffle(){ var o=_fc.order; for(var k=o.length-1;k>0;k--){var r=Math
 
 const STUDYQUIZ=[
  {q:'A share rises 5% on volume 300% above average. Another rises 5% on volume 80% BELOW average. Which move carries more information?',o:['The quiet one \u2014 stealth buying','The loud one \u2014 real participation','Identical \u2014 5% is 5%','Neither \u2014 percentages lie'],c:1,w:'Volume is the app\u2019s secret ingredient: a move with heavy participation is a claim backed by money; a quiet move is easy to fake.'},
- {q:'What does NOT PROVEN beside a signal mean?',o:['The signal is broken','It was tested honestly and no edge was found','Not enough users clicked it','It\u2019s waiting for approval'],c:1,w:'It\u2019s the app admitting the pattern didn\u2019t make money in ~3 years of ASX history. Most tools would just hide it.'},
+ {q:'What does NOT PROVEN beside a signal mean?',o:['The signal is broken','It was tested honestly and no edge was found','Not enough users clicked it','It\u2019s waiting for approval'],c:1,w:'It\u2019s the app admitting the pattern didn\u2019t make money across up to a decade of ASX history. Most tools would just hide it.'},
  {q:'A line shows a real, statistically solid edge \u2014 but PROVEN \u00b7 TOO SMALL. Why?',o:['The sample is too small','Brokerage would eat the profit','The share price is too low','The window is too short'],c:1,w:'Real \u2260 tradeable. If costs exceed the edge per trade, the app says so instead of selling it to you.'},
  {q:'The audit page exists to answer which question?',o:['Which shares to buy tomorrow','Did the grades PREDICT, or just describe?','How fast the server is','Which users trade the most'],c:1,w:'Every badge is re-tested on the window AFTER it was earned \u2014 data it had never seen. Keepers and letdowns both get listed.'},
  {q:'\u201cVol record \u2192 then MA cross\u201d is graded separately from its two parts because\u2026',o:['it looks nicer','the ORDER itself is the pattern','the maths is easier','sequences score double'],c:1,w:'\u201cBig money arrived, then the trend turned\u201d is a different claim than either signal alone \u2014 so it earns its own grade.'},
@@ -14252,7 +14347,7 @@ const STUDYQUIZ=[
  {q:'A share hits a 52-week high and your gut says \u201ctoo expensive \u2014 I\u2019ll wait for a dip\u201d. The backtests say that instinct\u2026',o:['is right \u2014 always wait for the dip','usually costs you \u2014 strength tends to persist','only applies to miners','means the share must be avoided'],c:1,w:'The trap is the FEELING, not the share: new highs keep performing more often than intuition expects, because everyone anchors on the old price as a ceiling. It\u2019s a look-closer signal, never a stay-away sign \u2014 and never a buy instruction either.'},
  {q:'The Golden Cross is the slowest signal in the app. Its job is\u2026',o:['prediction','confirmation','timing entries to the day','beating the RS Leader'],c:1,w:'By the time the 50-day crosses the 200-day, the turn is well underway \u2014 it confirms a trend, it doesn\u2019t call one.'},
  {q:'If a number on a card looks wrong, the app\u2019s answer is\u2026',o:['trust it \u2014 computers don\u2019t err','tap it and see the exact data behind it','clear your cache','email support and wait'],c:1,w:'Every number can explain itself \u2014 the deep-dive rows open their own working. The app would rather show receipts than be trusted blindly.'},
- {q:'Evidence tiers are earned on\u2026',o:['user votes','~3 years of real ASX history, re-graded nightly','a one-off lab backtest','broker recommendations'],c:1,w:'Grading never stops: every signal, combo and sequence is re-tested against real history every night.'},
+ {q:'Evidence tiers are earned on\u2026',o:['user votes','up to a decade of real ASX history, re-graded nightly','a one-off lab backtest','broker recommendations'],c:1,w:'Grading never stops: every signal, combo and sequence is re-tested against real history every night.'},
  {q:'Practice-portfolio fees are\u2026',o:['ignored \u2014 it\u2019s pretend money','modelled like real brokerage','doubled for safety','optional'],c:1,w:'Real prices, real fees modelled \u2014 otherwise the practice results would flatter you and teach the wrong lesson.'}
 ];
 let _qz=null;
@@ -14327,7 +14422,7 @@ async function _streakWhy(tk){
 // ═══ v714 — LOOKALIKE HISTORY ═══════════════════════════════════════════════
 // Every share-day in the on-device history gets a compact fingerprint (volume
 // band vs its trailing 3-month average, day-change band, up-streak, near-high).
-// A share's TODAY is then matched against every lookalike day in ~3 years of
+// A share's TODAY is then matched against every lookalike day in up to a decade of
 // stored ASX history, and we report the DISTRIBUTION of what actually followed
 // over the next 10 trading days. Base rates, not predictions.
 let _laIdx=null, _laBuilt=0, _laSig='';
@@ -14484,7 +14579,7 @@ function _laChip(s,ctx){
     var arr={length:stc.n}; var pos=stc.pos;
     var col=pos>=60?'var(--green)':pos>=45?'var(--gold)':'#ff8b8b';
     var tk=String(s.ticker||s.code||'').replace(/[^A-Za-z0-9.]/g,'');
-    return '<span onclick="event.stopPropagation();_lookalikeOpen(\''+tk+'\')" title="Of '+arr.length+' lookalike days in '+(stc.src==='server'?'\u22483 years of history':'the saved history')+', '+pos+'% finished higher over the next 10 \u2014 a base rate, not a prediction.'+(ctx==='pf'?' Odds describe the share\u2019s DAY, not your position \u2014 your entry, stop and plan are the decision layer.':'')+' Tap for the full distribution." style="cursor:pointer;font-weight:700;font-size:10px;font-family:var(--mono);color:'+col+';border:1px solid '+col+';border-radius:9px;padding:1px 6px;margin-left:5px;white-space:nowrap;" class="la-chip">\ud83d\udcca '+pos+'/100</span>';
+    return '<span onclick="event.stopPropagation();_lookalikeOpen(\''+tk+'\')" title="Of '+arr.length+' lookalike days in '+(stc.src==='server'?'the stored history (up to a decade)':'the saved history')+', '+pos+'% finished higher over the next 10 \u2014 a base rate, not a prediction.'+(ctx==='pf'?' Odds describe the share\u2019s DAY, not your position \u2014 your entry, stop and plan are the decision layer.':'')+' Tap for the full distribution." style="cursor:pointer;font-weight:700;font-size:10px;font-family:var(--mono);color:'+col+';border:1px solid '+col+';border-radius:9px;padding:1px 6px;margin-left:5px;white-space:nowrap;" class="la-chip">\ud83d\udcca '+pos+'/100</span>';
   }catch(e){ return ''; }
 }
 function _laShareToday(s){
@@ -17723,6 +17818,7 @@ function setAppMode(mode){
   const simple = mode==='simple';
   document.body.classList.toggle('simple-mode', simple);
   try{ if(simple&&typeof _todayRender==='function')_todayRender(); }catch(_){}
+  try{ if(simple)_starterMarket(); }catch(_){}  /* v850: Starter shows the product */
   const sb=document.getElementById('modeSimpleBtn'), ab=document.getElementById('modeAdvBtn');
   if(sb)sb.classList.toggle('on',simple);
   if(ab)ab.classList.toggle('on',!simple);
@@ -18661,7 +18757,7 @@ function _sellWarn(s){
       for(i=1;i<=5&&last-i>=199;i++){
         var p50=ma(last-i,50), p200=ma(last-i,200);
         if(p50!=null&&p200!=null&&p50>=p200){
-          out.push({sev:0,icon:'✝️',txt:'death cross — its 50-day average has fallen BELOW its 200-day within the last week. The golden cross’s dark twin (lesson 41): a classic warning the long trend may be turning. A prompt to review, not an order to sell.'});
+          out.push({sev:0,icon:'✝️',txt:'death cross — its 50-day average has fallen BELOW its 200-day within the last week. The golden cross’s dark twin: a classic warning the long trend may be turning. A prompt to review, not an order to sell.'});
           break;
         }
       }
@@ -19197,6 +19293,7 @@ function setAutoLoad(on){
     el.style.display='none';
   }catch(_){} }
   setInterval(_radarPrepTick, 2500);
+  setInterval(function(){ try{_starterMarket();}catch(_){} }, 2500);  /* v850: keeps the Starter market live as prep fills in */
   async function _wakeLoad(why){
     try{
       if(window._wakeLoading) return; 
@@ -19448,7 +19545,7 @@ function _groupScans(){
     const zone=document.getElementById('scanDragZone'); if(!zone)return;
     const GROUPS=[
       {id:'sgStart',title:'⭐ Start your day',hint:'the four-tap routine',ids:['scan-pulse','scan-top20','scan-bestev','scan-picks'],pinned:true},
-      {id:'sgGrade',title:'🎓 Graded evidence',hint:'reports with a track record',ids:['scan-fade','scan-climbers','scan-gradecheck']},
+      {id:'sgGrade',title:'🎓 Graded evidence',hint:'reports with a track record',ids:['scan-strongest','scan-fade','scan-climbers','scan-gradecheck']},
       {id:'sgAct',title:'🔎 Today’s action',hint:'what stood out this session',ids:['scan-sharp','scan-unusual','scan-surge','scan-gap']},
       {id:'sgBuild',title:'🌱 Building quietly',hint:'patient setups',ids:['scan-quiet','scan-pullback','scan-trend','scan-recovery']},
       {id:'sgComp',title:'🧩 Composite',hint:'every signal at once',ids:['scan-allsig']}
