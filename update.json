@@ -1,6 +1,6 @@
 {
-  "version": "2026.08.30-856-beta",
+  "version": "2026.09.04-858-beta",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "\u23f1 No server call can hang the app any more. A wedged connection used to stall whatever pressed it \u2014 silently, forever \u2014 which felt like freezing. Every server request now carries a 25-second clock: if the server doesn\u2019t answer in time, the request fails cleanly and the app\u2019s normal fallbacks take over (saved data, the offline chip, a retry) instead of silence.",
-  "date": "2026-08-30"
+  "notes": "\u23f3 New orders now expire after 5 days instead of 30. A dip-limit that hasn\u2019t filled within a week is a decayed signal \u2014 the reserved cash comes back automatically and stays deployable for fresh decisions instead of sitting locked for a month. Orders already pending keep their current dates; the \ud83d\udcc5 expiry button adjusts any of them individually.",
+  "date": "2026-09-04"
 }
