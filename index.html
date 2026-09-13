@@ -855,7 +855,6 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
     <span>Insight<span style="color:var(--gold)"> Trading</span></span>
     <span style="font-size:9px;font-weight:600;letter-spacing:2px;color:var(--muted);">MARKET ANALYSER</span>
     <span id="appVer" style="font-size:9px;color:var(--dim);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;"></span>
-    <span id="betaTag" title="This is a beta-test copy — things may change between visits. Spotted something odd or have an idea? Use the feedback link!" style="font-size:8px;font-weight:800;letter-spacing:1px;color:#ff9142;border:1px solid #ff9142;border-radius:4px;padding:1px 6px;background:rgba(255,145,66,.10);white-space:nowrap;">🧪 BETA · <a href="mailto:tonycotton13@gmail.com?subject=Insight%20Trading%20beta%20feedback%20v2026.09.12-867" style="color:#ff9142;">✉ feedback</a></span>
   </div>
   <div class="hbadge" id="exchBadge">🇦🇺 ASX end-of-day screener</div>
   <div class="notice" id="notice" style="display:none">—</div>
@@ -943,7 +942,7 @@ body.theme-switching *,body.theme-switching *::before,body.theme-switching *::af
           <div id="keyEntryRow">
             <label>EODData API Key</label>
             <input type="password" id="apiKey" value="" placeholder="your EODData apiKey…"
-              oninput="try{localStorage.setItem('asxScreener.apiKey',this.value);}catch(e){} _refreshKeyUI();">
+              oninput="try{localStorage.setItem('BETA_asxScreener.apiKey',this.value);}catch(e){} _refreshKeyUI();">
             <div style="font-size:9px;color:var(--dim);margin-top:4px;">Get one free at eodhd.com · saved on this device only.</div>
           </div>
           <div id="keySavedRow" style="display:none;align-items:center;gap:8px;">
@@ -1777,7 +1776,7 @@ body.radar-preparing #radarPrepNote{display:block;}</style><div id="radarPrepNot
 </div>
 </div>
 
-<script src="app.js?v=2026.09.12-867-beta"></script>
+<script src="app.js?v=2026.09.12-867-open"></script>
 
 
 
@@ -2477,7 +2476,7 @@ window.LESSONS=LESSONS; // v410: completion/certificate helpers live in a later 
    (renderLesson, quiz, flashcards, certificate) sees the chosen language. */
 const LESSONS_EN=LESSONS.slice();
 const LESSON_LANGS=[['en','English'],['zh','中文 (简体)'],['es','Español'],['de','Deutsch'],['fr','Français'],['ja','日本語'],['hi','हिन्दी'],['ar','العربية'],['it','Italiano'],['fil','Filipino'],['vi','Tiếng Việt'],['el','Ελληνικά']];
-const LESSON_LANG_KEY='asxScreener.lessonLang.v1';
+const LESSON_LANG_KEY='BETA_asxScreener.lessonLang.v1';
 function _lsnLangFill(){ try{ var s=document.getElementById('lsnLang'); if(!s||s.options.length)return; var cur=localStorage.getItem(LESSON_LANG_KEY)||'en';
   s.innerHTML=LESSON_LANGS.map(function(p){return '<option value="'+p[0]+'"'+(p[0]===cur?' selected':'')+'>'+p[1]+'</option>';}).join(''); }catch(e){} }
 function _lsnSwap(list){ LESSONS.length=0; for(var i=0;i<list.length;i++)LESSONS.push(list[i]); try{ renderLesson(typeof _curLesson==='number'?_curLesson:0); }catch(e){} }
@@ -2964,7 +2963,7 @@ window._helpJump=function(c){
 (function(){ try{
   var _w=function(){
     var h=document.getElementById('sgCardsH'), b=document.getElementById('sgCardsBody'); if(!h||!b)return;
-    var K='asxScreener.cardsTab.v1', open=false;
+    var K='BETA_asxScreener.cardsTab.v1', open=false;
     try{ open=localStorage.getItem(K)==='1'; }catch(e){}
     var paint=function(){ b.style.display=open?'block':'none'; var c=h.querySelector('.sg-ch'); if(c)c.textContent=open?'▾':'▸'; };
     h.onclick=function(){ open=!open; paint(); try{ localStorage.setItem(K,open?'1':'0'); }catch(e){} };
@@ -2989,7 +2988,7 @@ window.disableTrainingMode=function(){
   _trainHot=null;
   document.body.classList.remove('training-on');
   document.body.classList.remove('training-min');
-  try{sessionStorage.removeItem('asxScreener.trainingUnlocked');}catch(e){}
+  try{sessionStorage.removeItem('BETA_asxScreener.trainingUnlocked');}catch(e){}
   _hideTT();
   // v483 — what used to be here cleared the demo shares on the way out, and
   // decided what was "demo" by asking whether the first share had _history.
@@ -2999,7 +2998,7 @@ window.disableTrainingMode=function(){
   // Leaving training mode must never touch allData. It is a display mode.
 };
 // If already unlocked this session, re-enable on load.
-try{ if(sessionStorage.getItem('asxScreener.trainingUnlocked')==='1'){ window.addEventListener('load',()=>setTimeout(()=>window.enableTrainingMode&&window.enableTrainingMode(),800)); } }catch(e){}
+try{ if(sessionStorage.getItem('BETA_asxScreener.trainingUnlocked')==='1'){ window.addEventListener('load',()=>setTimeout(()=>window.enableTrainingMode&&window.enableTrainingMode(),800)); } }catch(e){}
 })();
 </script>
 <!-- ═══════════ END EMBEDDED TRAINING LAYER ═══════════ -->
@@ -3209,7 +3208,7 @@ body.tbl-tighter .tick-name{max-width:80px;}
 /* ═══ v248 — confirmed ASX announcements layer (news ✓ + director ✓) ═══ */
 (function(){
   var DAY=new Date().toISOString().slice(0,10);
-  var CK='asxScreener.ann.v3';
+  var CK='BETA_asxScreener.ann.v3';
   var cache={date:DAY,by:{}};
   try{ var st=JSON.parse(localStorage.getItem(CK)||'null'); if(st&&st.date===DAY)cache=st; }catch(e){}
   var attempted={}, fails=0, MAXC=3;
@@ -3217,7 +3216,7 @@ body.tbl-tighter .tick-name{max-width:80px;}
   function apply(s,rec){ s.annConfirmed=true; s.annNews5d=rec.n||0; s.annDir5d=!!rec.d; s.annList=Array.isArray(rec.list)?rec.list:[]; s.annHeadline=(typeof _sanText==='function')?_sanText(rec.h||'',140):String(rec.h||'').replace(/[<>"'`\\]/g,'').slice(0,140); } // v285: cached/feed headlines cleaned at the boundary before any render
   // v275: rolling dated log of confirmed price-sensitive announcements, so the
   // Signal Report Card can split fires into news-driven vs quiet — honestly.
-  var LK='asxScreener.annLog.v1';
+  var LK='BETA_asxScreener.annLog.v1';
   var annLog={start:DAY,checked:{},ps:{}};
   try{ var lg=JSON.parse(localStorage.getItem(LK)||'null'); if(lg&&lg.checked&&lg.ps){annLog=lg; if(!annLog.start)annLog.start=DAY;} }catch(e){}
   var _lgDirty=false;
@@ -3445,7 +3444,7 @@ function _promLiveModal(){
       +body+'</div>','\ud83d\udd2c Live overlap check — today\'s building lines');
   }catch(e){ showModal('<div style="padding:16px;font-size:12.5px;color:var(--muted);">Could not run the live check: '+String((e&&e.message)||e)+'</div>','\ud83d\udd2c Live overlap check'); }
 }
-function _gLocalKey(exch,date,hold){ return 'asxScreener.gradeCache.'+(exch||'')+'.'+(date||'')+'.'+(hold||5); }
+function _gLocalKey(exch,date,hold){ return 'BETA_asxScreener.gradeCache.'+(exch||'')+'.'+(date||'')+'.'+(hold||5); }
 function _gradesHydrateLocal(exch,date,hold){
   try{
     var raw=localStorage.getItem(_gLocalKey(exch,date,hold)); if(!raw)return null;
@@ -3484,7 +3483,7 @@ function _gradesPut(exch,date,hold,A){
 }
 function _gradesPrefetchOthers(exch,date,payload,currentHold){
   try{
-    var flagKey='asxScreener.prefetchedOn.v1';
+    var flagKey='BETA_asxScreener.prefetchedOn.v1';
     if(localStorage.getItem(flagKey)===date+'|'+exch)return; // once per exchange per day is enough
     [5,10,30].forEach(function(h){
       if(h===currentHold)return; // already have this one — that's the primary ask
@@ -3614,8 +3613,8 @@ function _cardScore10(m){
 // RESEARCH views ("does the edge last?"). The bot ALWAYS reads the 5-day card
 // (window._auditCache) no matter what you are viewing — flipping this switch
 // can never silently change what the bot trades.
-function _cardHold(){ try{ var v=+localStorage.getItem('asxScreener.cardHold.v1'); return (v===10||v===30)?v:5; }catch(e){ return 5; } }
-function setCardHold(n){ try{ localStorage.setItem('asxScreener.cardHold.v1',String((n===10||n===30)?n:5)); }catch(e){}
+function _cardHold(){ try{ var v=+localStorage.getItem('BETA_asxScreener.cardHold.v1'); return (v===10||v===30)?v:5; }catch(e){ return 5; } }
+function setCardHold(n){ try{ localStorage.setItem('BETA_asxScreener.cardHold.v1',String((n===10||n===30)?n:5)); }catch(e){}
   /* v588: a new hold window is a NEW question — the old answer must go, and
      the MAIN screen must re-ask immediately, not wait for the card to close.
      _evRetryServer is the proven kick: strip flips to ⏳ before any network. */
@@ -4367,7 +4366,7 @@ function _evBannerChip(key){
 // A second server would be a second copy of the rules. Keeping the ANSWER on
 // the device gets most of the resilience and none of that risk: an answer is
 // not a threshold, and it is already on screen anyway.
-var _SC_STASH_DB='asxScreener.scanStash.v1';
+var _SC_STASH_DB='BETA_asxScreener.scanStash.v1';
 function _scStashDB(){
   return new Promise(function(res){
     try{
@@ -4892,7 +4891,7 @@ function _apRuleFilter(pool,key){
 var _CARD_LIQ=[['any','Any (server $50k)',0],['50k','$50k',5e4],['250k','$250k',2.5e5],['1m','$1m',1e6],['5m','$5m',5e6]];
 function _cardLiqKey(){
   if(window._cardLiq)return window._cardLiq;
-  try{ var s=localStorage.getItem('asxScreener.cardLiq.v1'); if(s)return (window._cardLiq=s); }catch(e){}
+  try{ var s=localStorage.getItem('BETA_asxScreener.cardLiq.v1'); if(s)return (window._cardLiq=s); }catch(e){}
   // first run: inherit whatever the app's own 💧 filter is set to
   try{ if(typeof F!=='undefined'&&F&&F.cap&&F.cap!=='any')return (window._cardLiq=(F.cap==='l50'?'50k':F.cap==='l250'?'250k':F.cap==='l1m'?'1m':'any')); }catch(e){}
   return (window._cardLiq='any');
@@ -5018,7 +5017,7 @@ function _evSetFloor(k){
   }catch(e){}
 }
 function _cardLiqSet(k,fn){
-  window._cardLiq=k; try{ localStorage.setItem('asxScreener.cardLiq.v1',k); }catch(e){}
+  window._cardLiq=k; try{ localStorage.setItem('BETA_asxScreener.cardLiq.v1',k); }catch(e){}
   /* v588 · one-ruler follow-through: the floor is a DISPLAY filter now, and the
      grades live on the fixed $250k ruler — so the graded answer STAYS. Nuking
      _auditCache here (the old behaviour) forced a pointless server round-trip
@@ -5742,7 +5741,7 @@ function _renderReportCard(A){
     // v398: one ledger PER outcome window, so 10d/30d research views can never
     // overwrite or pollute the 5-day track record the bot's history is built on.
     const _h=(A.hold===10||A.hold===30)?A.hold:5;
-    const LKEY=(_h!==5)?('asxScreener.cardLedger.h'+_h+'.v1'):'asxScreener.cardLedger.v1';
+    const LKEY=(_h!==5)?('BETA_asxScreener.cardLedger.h'+_h+'.v1'):'BETA_asxScreener.cardLedger.v1';
     let ledger=[]; try{ ledger=JSON.parse(localStorage.getItem(LKEY)||'[]')||[]; }catch(e){ ledger=[]; }
     const dd=A.to||'';
     if(dd){
@@ -6093,9 +6092,9 @@ function _renderReportCard(A){
       <div style="font-size:11px;font-weight:700;color:var(--muted);margin:10px 0 2px;">② Combinations &amp; sequences${comboMore>0?` <span style="font-weight:400;color:var(--dim);">· top 12 of ${comboLad.length}</span>`:''}</div>
       ${comboShown.length?comboShown.map((it,i)=>ladRow(it,i,cMax)).join(''):'<div style="font-size:10px;color:var(--dim);padding:4px 2px;">No combo reached ≥'+MINC+' fires yet.</div>'}
     </div>`;
-    const _deepOpen=(function(){try{return localStorage.getItem('asxScreener.cardDeepOpen.v1')==='1';}catch(e){return false;}})();
+    const _deepOpen=(function(){try{return localStorage.getItem('BETA_asxScreener.cardDeepOpen.v1')==='1';}catch(e){return false;}})();
     const deepDive=`<div style="margin:0 0 12px;border:1px solid var(--border2);border-radius:9px;background:var(--bg3);overflow:hidden;">
-      <div onclick="(function(x){var b=x.nextElementSibling;var o=b.style.display==='none';b.style.display=o?'block':'none';x.querySelector('.dchev').textContent=o?'▾':'▸';try{localStorage.setItem('asxScreener.cardDeepOpen.v1',o?'1':'0');}catch(e){}})(this)" style="cursor:pointer;padding:10px 12px;font-weight:800;font-size:12px;font-family:var(--sans);color:var(--text);display:flex;justify-content:space-between;align-items:center;gap:8px;">📖 How to read this card — a plain-English deep dive <span class="dchev" style="color:var(--gold);">${_deepOpen?'▾':'▸'}</span></div>
+      <div onclick="(function(x){var b=x.nextElementSibling;var o=b.style.display==='none';b.style.display=o?'block':'none';x.querySelector('.dchev').textContent=o?'▾':'▸';try{localStorage.setItem('BETA_asxScreener.cardDeepOpen.v1',o?'1':'0');}catch(e){}})(this)" style="cursor:pointer;padding:10px 12px;font-weight:800;font-size:12px;font-family:var(--sans);color:var(--text);display:flex;justify-content:space-between;align-items:center;gap:8px;">📖 How to read this card — a plain-English deep dive <span class="dchev" style="color:var(--gold);">${_deepOpen?'▾':'▸'}</span></div>
       <div style="display:${_deepOpen?'block':'none'};padding:0 13px 12px;font-size:10.5px;color:var(--muted);line-height:1.65;">
         <p style="margin:6px 0;"><b style="color:var(--text)">What this is.</b> The app took every buy/sell flag it can spot and re-ran its exact formula across <b>your saved history</b> — every share, every past day it had data for. Each time a flag “fired” it pretended to buy at the NEXT day’s close (you only see an end-of-day signal after the market shuts) and watched what price did over your chosen window — <b>one week (5d)</b> or <b>six weeks (30d)</b>, the switch above. These aren’t opinions; they’re each flag’s own track record.</p>
         <p style="margin:6px 0;"><b style="color:var(--text)">💰 The Paula–Niño Edge (PN Edge) — the number that matters.</b> Money made per <b>$100 invested</b>, on average, <i>beyond what the average share did those same days</i>, before costs — so a lucky good-market week can’t flatter anything. The scale is FIXED: under $0.50 = too small (costs eat it) · $0.50–$2 = decent · <b style="color:var(--green)">$2–$3.50 = strong</b> (the realistic top for end-of-day signals) · <b style="color:#ff6b6b">above $3.50 = check this</b> — too good almost always means a tiny sample or a fluke, and the gauge says so. Every gauge bar everywhere fills against this same scale. For a <b>warning</b> flag (📉 Quiet selling? and the down-day forms) the money shown is what catching the FALLS was worth.</p>
@@ -6259,7 +6258,7 @@ function _watchTrendChip(s,starPrice,starDate,w){
 </style>
 <script id="quizJs">
 /* ═══ v254 — lesson quizzes: teaching, not testing ═══ */
-function _quizDone(){ try{return JSON.parse(localStorage.getItem('asxScreener.quizDone.v1')||'{}');}catch(e){return {};} }
+function _quizDone(){ try{return JSON.parse(localStorage.getItem('BETA_asxScreener.quizDone.v1')||'{}');}catch(e){return {};} }
 function _quizHtml(li,quiz){
   var done=_quizDone()[li];
   var h='<div class="lsn-quiz"><div class="lsn-quiz-hd">📝 Quick quiz'+(done?' <span class="lsn-quiz-done">✓ passed</span>':'')+'<span class="lsn-quiz-sub">tap an answer — wrong guesses cost nothing</span></div>';
@@ -6272,9 +6271,9 @@ function _quizHtml(li,quiz){
 }
 // v410: first-ever answer to each question is scored (right/wrong) for the
 // certificate's "% correct". Retries and re-reads never change a recorded score.
-function _quizScore(){ try{return JSON.parse(localStorage.getItem('asxScreener.quizScore.v1')||'{}');}catch(e){return {};} }
+function _quizScore(){ try{return JSON.parse(localStorage.getItem('BETA_asxScreener.quizScore.v1')||'{}');}catch(e){return {};} }
 function _quizRecord(li,qi,right){
-  try{ var s=_quizScore(); var k=li+':'+qi; if(k in s)return; s[k]=right?1:0; localStorage.setItem('asxScreener.quizScore.v1',JSON.stringify(s)); }catch(e){}
+  try{ var s=_quizScore(); var k=li+':'+qi; if(k in s)return; s[k]=right?1:0; localStorage.setItem('BETA_asxScreener.quizScore.v1',JSON.stringify(s)); }catch(e){}
 }
 function _quizPick(el,li,qi,oi,ci){
   try{
@@ -6286,7 +6285,7 @@ function _quizPick(el,li,qi,oi,ci){
       q.classList.add('answered');
       var wrap=q.closest('.lsn-quiz');
       if(wrap && wrap.querySelectorAll('.lsn-q').length===wrap.querySelectorAll('.lsn-q.answered').length){
-        try{ var d=_quizDone(); d[li]=true; localStorage.setItem('asxScreener.quizDone.v1',JSON.stringify(d)); }catch(e){}
+        try{ var d=_quizDone(); d[li]=true; localStorage.setItem('BETA_asxScreener.quizDone.v1',JSON.stringify(d)); }catch(e){}
         var hd=wrap.querySelector('.lsn-quiz-hd');
         if(hd && !hd.querySelector('.lsn-quiz-done'))hd.insertAdjacentHTML('beforeend',' <span class="lsn-quiz-done">✓ passed</span>');
         // v410: light up this lesson's ✓ chip and the progress bar straight away
@@ -6325,11 +6324,11 @@ window.showCertificate=function(){
   var s=_lsnStats();
   if(s.done<s.total){ alert('The certificate unlocks when every lesson is completed — you\'re at '+s.done+' of '+s.total+' ('+s.pct+'%). A lesson counts as completed when its quick quiz is passed.'); return; }
   var name='';
-  try{ name=localStorage.getItem('asxScreener.certName.v1')||''; }catch(e){}
+  try{ name=localStorage.getItem('BETA_asxScreener.certName.v1')||''; }catch(e){}
   var typed=prompt('🏅 Name on the certificate:',name||'');
   if(typed===null)return;
   name=(String(typed).trim()||'Insight Trader').slice(0,60).replace(/[<>&"]/g,'');
-  try{ localStorage.setItem('asxScreener.certName.v1',name); }catch(e){}
+  try{ localStorage.setItem('BETA_asxScreener.certName.v1',name); }catch(e){}
   var d=new Date(); var dateStr=d.toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
   var old=document.getElementById('certOverlay'); if(old)old.remove();
   var ov=document.createElement('div'); ov.id='certOverlay';
