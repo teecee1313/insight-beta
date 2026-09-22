@@ -1,5 +1,5 @@
 {
-  "version": "2026.09.22-926-beta",
+  "version": "2026.09.22-927-beta",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Tour got clearer on two things people asked about: why a share with no PN Edge still shows up in Strongest Today (it ranks proven evidence first, then falls back to score - a dash just means nothing's proven yet, not a data problem), and what the 5-vs-10-day hold setting actually means (it's testing an old backtest window, not changing how fast today's signals show up - 5 days is the one that matches how picks in this app actually retire)."
+  "notes": "Tour now covers Market Today - the first card in the daily routine, and until now the only one with no walkthrough. Added right before Strongest Today in the Reports chapter: what the breadth snapshot shows (up/down/flat, advance-decline, volume vs normal, today's biggest movers) and why it's worth checking before judging any single share's move."
 }
