@@ -4,13 +4,75 @@
 // source into IndexedDB (first run of each version), keeping the last 8, so any
 // previous version can be re-downloaded as a working .html file ("versions"
 // link in Setup). Captured here, before scripts modify the page.
-const APP_VERSION='2026.09.13-868-beta';
+const APP_VERSION='2026.09.22-914-beta';
+// v893 — the friction verdict's multiple, shared with worker _FRICTION_MULT.
+// Was a literal 2×; lowered to 1.5× (edge must beat the round trip by half again).
+const _FRICTION_MULT=1.5;
+// v882 — FIRST-ERROR BEACON. "Not working" with no numbers is a riddle; a
+// crash that dies silently leaves a half-loaded session that LOOKS loaded
+// (table rendered, radar counting one share, 🔬 refusing). This paints the
+// FIRST JavaScript error — sync or async — into a small copyable box and the
+// status bars, with the app version and how many shares the session held at
+// that moment. It changes no behaviour; it only makes failure name itself.
+(function(){
+  var _hit=0;
+  function _paint(kind,msg,src,line,col,stack){
+    try{
+      if(_hit++)return; // first error only — the rest are usually echoes
+      var n=(typeof allData!=='undefined'&&Array.isArray(allData))?allData.length:'?';
+      var head='⚠ '+kind+' — '+String(msg||'').slice(0,300);
+      var where=(src?String(src).split('/').pop():'')+(line?(':'+line+(col?(':'+col):'')):'');
+      var tail=(stack?String(stack).split('\n').slice(0,3).join(' ⏎ ').slice(0,400):'');
+      var txt=head+(where?('\n@ '+where):'')+'\napp '+APP_VERSION+' · session shares: '+n+(tail?('\n'+tail):'');
+      function put(){
+        try{
+          var b=document.getElementById('errBeacon');
+          if(!b){
+            b=document.createElement('div'); b.id='errBeacon';
+            b.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:99999;background:#fff3f3;border:2px solid #c0392b;border-radius:10px;padding:8px 10px;font:12px/1.4 monospace;color:#7b241c;white-space:pre-wrap;word-break:break-word;max-height:40vh;overflow:auto;';
+            var x=document.createElement('div');
+            x.textContent='✕ dismiss (long-press the text to copy it for the build chat)';
+            x.style.cssText='text-align:right;cursor:pointer;color:#c0392b;font-weight:bold;margin-bottom:4px;';
+            x.onclick=function(){try{b.remove();}catch(_){}};
+            b.appendChild(x);
+            var t=document.createElement('div'); t.id='errBeaconTxt'; b.appendChild(t);
+            (document.body||document.documentElement).appendChild(b);
+          }
+          var tEl=document.getElementById('errBeaconTxt'); if(tEl)tEl.textContent=txt;
+          ['loadStatus','streakStatus'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML='<span style="color:#c0392b">'+head.replace(/[<>]/g,'')+' — details in the red box below</span>';});
+        }catch(_){}
+      }
+      if(document.body)put(); else document.addEventListener('DOMContentLoaded',put,{once:true});
+    }catch(_){}
+  }
+  window.addEventListener('error',function(e){
+    if(e&&e.target&&(e.target.tagName==='IMG'||e.target.tagName==='SCRIPT'||e.target.tagName==='LINK'))return; // resource loads: not code errors
+    _paint('JavaScript error',(e&&e.message)||'',(e&&e.filename)||'',(e&&e.lineno)||0,(e&&e.colno)||0,e&&e.error&&e.error.stack);
+  },true);
+  window.addEventListener('unhandledrejection',function(e){
+    var r=e&&e.reason;
+    _paint('Async (promise) error',(r&&(r.message||String(r)))||'',(r&&r.fileName)||'',0,0,r&&r.stack);
+  });
+})();
+
 // v827 — is Sydney right now inside a server ingest pass? (17:00–17:15 early,
 // 18:15–18:45 final, weekdays.) During those minutes the server is writing the
 // whole market's closing prices into its database, and reads genuinely slow
 // down — the honest explanation for a bad load at 5pm is 'today's prices are
 // arriving', not 'the proxy was slow'. w543 paces the writes so this window
 // should rarely bite; the message covers the residue truthfully.
+// v883 — the 🔬's wider truth window: from the first take-in to the end of the
+// final one (17:00–18:45 Sydney, weekdays) tonight's numbers can still MOVE
+// between the early and final passes. A comparison run in that stretch is a
+// photo of a kitchen mid-cook: honest, but it will not stand. The 🔬 says so
+// on its verdict instead of letting settling data read as rule differences
+// (16 Sep evening: three runs, three different ✗ patterns, all data-in-motion).
+function _repDataSettling(){ try{
+  var p={}; new Intl.DateTimeFormat('en-CA',{timeZone:'Australia/Sydney',hour:'2-digit',minute:'2-digit',hour12:false,weekday:'short'}).formatToParts(new Date()).forEach(function(x){p[x.type]=x.value;});
+  var dow={Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6}[p.weekday]; if(dow===0||dow===6)return false;
+  var h=parseInt(p.hour,10), m=parseInt(p.minute,10);
+  return (h===17)||(h===18&&m<45);
+}catch(e){ return false; } }
 function _inIngestWindow(){ try{
   var p={}; new Intl.DateTimeFormat('en-CA',{timeZone:'Australia/Sydney',hour:'2-digit',minute:'2-digit',hour12:false,weekday:'short'}).formatToParts(new Date()).forEach(function(x){p[x.type]=x.value;});
   var dow={Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6}[p.weekday]; if(dow===0||dow===6)return false;
@@ -34,7 +96,7 @@ function _stopPctTxt(buy,stop){ var b=+buy, st=+stop; if(!(b>0&&st>0))return '';
   const manifest={
     name:"Insight Trading — Share Screener",
     short_name:"Insight Trading",
-    description:"Multi-exchange end-of-day share screener.",
+    description:"ASX end-of-day share screener.",
     start_url:".",
     scope:".",
     display:"standalone",
@@ -156,7 +218,7 @@ const I18N={
     sharePrice:"Share Price", daysUp:"Days Up in a Row",
     volSurge:"Volume Surge", absVolume:"Absolute Volume",
     any:"Any", clear:"clear",
-    welcomeTitle:"Welcome to Insight Trading", welcomeSub:"Multi-exchange end-of-day share screener",
+    welcomeTitle:"Welcome to Insight Trading", welcomeSub:"ASX end-of-day share screener",
     qs1Title:"Load a market", qs1Desc:"Pick an exchange and load the day's data — top-left.",
     qs2Title:"Run a report", qs2Desc:"Hit 🎯 Best Evidence Today or a preset for instant picks.",
     qs3Title:"Refine & save", qs3Desc:"Tune filters, star shares to a watchlist, save your My Report.",
@@ -172,11 +234,11 @@ const I18N={
     estimate:"estimate"
   },
   es:{
-    tagline:"Cribador Multi-Bolsa",
+    tagline:"Cribador ASX al Cierre",
     setup:"Configuración", apiKey:"Clave API de EODData", keyLocked:"🔒 bloqueada", keyEditable:"🔓 editable",
     unlockEdit:"🔓 Desbloquear para editar", lockEdit:"🔒 Bloquear edición",
     exchange:"Bolsa", loadData:"⚡ Cargar datos de la bolsa", loadPrompt:"Elija una bolsa y pulse Cargar",
-    instantReports:"Informes instantáneos", oneClick:"un clic", smartScan:"🎯 Escaneo de Dinero Inteligente",
+    instantReports:"Informes instantáneos", oneClick:"un clic", smartScan:"🎯 Mejor Evidencia de Hoy",
     smartScanTag:"sube 2+ días · vol 50%+", speedTicket:"🚨 Detector de Movimientos Anómalos",
     speedTag:"movimiento anómalo · estimación", presetPlans:"Planes de filtro predefinidos",
     planBreakout:"🚀 Ruptura", planMomentum:"📈 Impulso", planSpike:"⚡ Pico de Volumen", planPenny:"🪙 Acciones Penny",
@@ -189,7 +251,7 @@ const I18N={
     sharePrice:"Precio de Acción", daysUp:"Días Seguidos al Alza",
     volSurge:"Aumento de Volumen", absVolume:"Volumen Absoluto",
     any:"Cualquiera", clear:"limpiar",
-    welcomeTitle:"Bienvenido a Insight Trading", welcomeSub:"Cribador de acciones de cierre, multi-bolsa",
+    welcomeTitle:"Bienvenido a Insight Trading", welcomeSub:"Cribador de acciones ASX al cierre",
     qs1Title:"Cargar un mercado", qs1Desc:"Elija una bolsa y cargue los datos del día — arriba a la izquierda.",
     qs2Title:"Ejecutar un informe", qs2Desc:"Pulse Escaneo de Dinero Inteligente o un plan para resultados al instante.",
     qs3Title:"Refinar y guardar", qs3Desc:"Ajuste filtros, marque acciones en una lista, guarde Mi Informe.",
@@ -205,11 +267,11 @@ const I18N={
     estimate:"estimación"
   },
   zh:{
-    tagline:"多交易所筛选器",
+    tagline:"ASX 收盘筛选器",
     setup:"设置", apiKey:"EODData API 密钥", keyLocked:"🔒 已锁定", keyEditable:"🔓 可编辑",
     unlockEdit:"🔓 解锁以编辑密钥", lockEdit:"🔒 锁定密钥编辑",
     exchange:"交易所", loadData:"⚡ 加载交易所数据", loadPrompt:"选择交易所并按加载",
-    instantReports:"即时报告", oneClick:"一键", smartScan:"🎯 聪明钱扫描",
+    instantReports:"即时报告", oneClick:"一键", smartScan:"🎯 今日最佳证据",
     smartScanTag:"连涨2天以上 · 量+50%以上", speedTicket:"🚨 异动检测器",
     speedTag:"异常波动 · 估算", presetPlans:"预设筛选方案",
     planBreakout:"🚀 突破", planMomentum:"📈 动量", planSpike:"⚡ 成交量激增", planPenny:"🪙 低价股",
@@ -222,7 +284,7 @@ const I18N={
     sharePrice:"股价", daysUp:"连续上涨天数",
     volSurge:"成交量激增", absVolume:"绝对成交量",
     any:"任意", clear:"清除",
-    welcomeTitle:"欢迎使用 Insight Trading", welcomeSub:"多交易所收盘股票筛选器",
+    welcomeTitle:"欢迎使用 Insight Trading", welcomeSub:"ASX 收盘股票筛选器",
     qs1Title:"加载市场", qs1Desc:"选择交易所并加载当日数据 — 左上角。",
     qs2Title:"运行报告", qs2Desc:"点击聪明钱扫描或预设方案，即时获得标的。",
     qs3Title:"细化并保存", qs3Desc:"调整筛选，收藏股票到观察列表，保存我的报告。",
@@ -238,11 +300,11 @@ const I18N={
     estimate:"估算"
   },
   de:{
-    tagline:"Multi-Börsen-Screener",
+    tagline:"ASX-Tagesschluss-Screener",
     setup:"Einrichtung", apiKey:"EODData API-Schlüssel", keyLocked:"🔒 gesperrt", keyEditable:"🔓 bearbeitbar",
     unlockEdit:"🔓 Zum Bearbeiten entsperren", lockEdit:"🔒 Bearbeitung sperren",
     exchange:"Börse", loadData:"⚡ Börsendaten laden", loadPrompt:"Börse wählen und Laden drücken",
-    instantReports:"Sofortberichte", oneClick:"ein Klick", smartScan:"🎯 Smart-Money-Scan",
+    instantReports:"Sofortberichte", oneClick:"ein Klick", smartScan:"🎯 Beste Evidenz heute",
     smartScanTag:"2+ Tage im Plus · Vol. 50%+", speedTicket:"🚨 Auffälligkeits-Detektor",
     speedTag:"auffällige Bewegung · Schätzung", presetPlans:"Vorgefertigte Filterpläne",
     planBreakout:"🚀 Ausbruch", planMomentum:"📈 Momentum", planSpike:"⚡ Volumenspitze", planPenny:"🪙 Penny-Aktien",
@@ -255,7 +317,7 @@ const I18N={
     sharePrice:"Aktienkurs", daysUp:"Tage in Folge im Plus",
     volSurge:"Volumenanstieg", absVolume:"Absolutes Volumen",
     any:"Beliebig", clear:"löschen",
-    welcomeTitle:"Willkommen bei Insight Trading", welcomeSub:"Multi-Börsen-Aktienscreener (Tagesschluss)",
+    welcomeTitle:"Willkommen bei Insight Trading", welcomeSub:"ASX-Aktienscreener (Tagesschluss)",
     qs1Title:"Markt laden", qs1Desc:"Börse wählen und Tagesdaten laden — oben links.",
     qs2Title:"Bericht ausführen", qs2Desc:"Smart-Money-Scan oder Plan klicken für sofortige Treffer.",
     qs3Title:"Verfeinern & speichern", qs3Desc:"Filter anpassen, Aktien zur Watchlist markieren, Mein Bericht speichern.",
@@ -271,11 +333,11 @@ const I18N={
     estimate:"Schätzung"
   },
   fr:{
-    tagline:"Filtre Multi-Bourses",
+    tagline:"Filtre ASX de Clôture",
     setup:"Configuration", apiKey:"Clé API EODData", keyLocked:"🔒 verrouillée", keyEditable:"🔓 modifiable",
     unlockEdit:"🔓 Déverrouiller pour modifier", lockEdit:"🔒 Verrouiller la modification",
     exchange:"Bourse", loadData:"⚡ Charger les données", loadPrompt:"Choisissez une bourse et cliquez sur Charger",
-    instantReports:"Rapports instantanés", oneClick:"un clic", smartScan:"🎯 Scan Argent Intelligent",
+    instantReports:"Rapports instantanés", oneClick:"un clic", smartScan:"🎯 Meilleure Preuve du Jour",
     smartScanTag:"hausse 2+ jours · vol 50%+", speedTicket:"🚨 Détecteur de Mouvements Anormaux",
     speedTag:"mouvement anormal · estimation", presetPlans:"Plans de filtre prédéfinis",
     planBreakout:"🚀 Cassure", planMomentum:"📈 Momentum", planSpike:"⚡ Pic de Volume", planPenny:"🪙 Penny Stocks",
@@ -288,7 +350,7 @@ const I18N={
     sharePrice:"Prix de l'action", daysUp:"Jours de Hausse Consécutifs",
     volSurge:"Hausse de Volume", absVolume:"Volume Absolu",
     any:"Tous", clear:"effacer",
-    welcomeTitle:"Bienvenue sur Insight Trading", welcomeSub:"Filtre d'actions de clôture, multi-bourses",
+    welcomeTitle:"Bienvenue sur Insight Trading", welcomeSub:"Filtre d'actions ASX de clôture",
     qs1Title:"Charger un marché", qs1Desc:"Choisissez une bourse et chargez les données du jour — en haut à gauche.",
     qs2Title:"Lancer un rapport", qs2Desc:"Cliquez sur Scan Argent Intelligent ou un plan pour des résultats instantanés.",
     qs3Title:"Affiner et enregistrer", qs3Desc:"Ajustez les filtres, ajoutez des actions à une liste, enregistrez Mon Rapport.",
@@ -304,11 +366,11 @@ const I18N={
     estimate:"estimation"
   },
   ja:{
-    tagline:"マルチ取引所スクリーナー",
+    tagline:"ASX 終値スクリーナー",
     setup:"設定", apiKey:"EODData APIキー", keyLocked:"🔒 ロック中", keyEditable:"🔓 編集可能",
     unlockEdit:"🔓 ロック解除して編集", lockEdit:"🔒 キー編集をロック",
     exchange:"取引所", loadData:"⚡ 取引所データを読込", loadPrompt:"取引所を選んで読込を押してください",
-    instantReports:"即時レポート", oneClick:"ワンクリック", smartScan:"🎯 スマートマネースキャン",
+    instantReports:"即時レポート", oneClick:"ワンクリック", smartScan:"🎯 本日のベストエビデンス",
     smartScanTag:"2日以上上昇 · 出来高+50%以上", speedTicket:"🚨 異常変動ディテクター",
     speedTag:"異常な値動き · 推定", presetPlans:"プリセットフィルター",
     planBreakout:"🚀 ブレイクアウト", planMomentum:"📈 モメンタム", planSpike:"⚡ 出来高急増", planPenny:"🪙 低位株",
@@ -321,7 +383,7 @@ const I18N={
     sharePrice:"株価", daysUp:"連続上昇日数",
     volSurge:"出来高急増", absVolume:"絶対出来高",
     any:"すべて", clear:"クリア",
-    welcomeTitle:"Insight Trading へようこそ", welcomeSub:"マルチ取引所・終値ベース株式スクリーナー",
+    welcomeTitle:"Insight Trading へようこそ", welcomeSub:"ASX・終値ベース株式スクリーナー",
     qs1Title:"市場を読込", qs1Desc:"取引所を選び当日のデータを読み込む — 左上。",
     qs2Title:"レポート実行", qs2Desc:"スマートマネースキャンまたはプリセットで即座に銘柄を抽出。",
     qs3Title:"絞込と保存", qs3Desc:"フィルターを調整し、銘柄をウォッチリストに星付け、マイレポートを保存。",
@@ -337,11 +399,11 @@ const I18N={
     estimate:"推定"
   },
   hi:{
-    tagline:"मल्टी-एक्सचेंज स्क्रीनर",
+    tagline:"ASX समापन-मूल्य स्क्रीनर",
     setup:"सेटअप", apiKey:"EODData API कुंजी", keyLocked:"🔒 लॉक", keyEditable:"🔓 संपादन योग्य",
     unlockEdit:"🔓 संपादन हेतु अनलॉक करें", lockEdit:"🔒 कुंजी संपादन लॉक करें",
     exchange:"एक्सचेंज", loadData:"⚡ एक्सचेंज डेटा लोड करें", loadPrompt:"एक्सचेंज चुनें और लोड दबाएँ",
-    instantReports:"त्वरित रिपोर्ट", oneClick:"एक क्लिक", smartScan:"🎯 स्मार्ट मनी स्कैन",
+    instantReports:"त्वरित रिपोर्ट", oneClick:"एक क्लिक", smartScan:"🎯 आज का सर्वश्रेष्ठ साक्ष्य",
     smartScanTag:"2+ दिन तेज़ी · वॉल्यूम 50%+", speedTicket:"🚨 असामान्य चाल डिटेक्टर",
     speedTag:"असामान्य चाल · अनुमान", presetPlans:"पूर्वनिर्धारित फ़िल्टर योजनाएँ",
     planBreakout:"🚀 ब्रेकआउट", planMomentum:"📈 मोमेंटम", planSpike:"⚡ वॉल्यूम उछाल", planPenny:"🪙 पेनी स्टॉक",
@@ -354,7 +416,7 @@ const I18N={
     sharePrice:"शेयर मूल्य", daysUp:"लगातार तेज़ी के दिन",
     volSurge:"वॉल्यूम उछाल", absVolume:"पूर्ण वॉल्यूम",
     any:"कोई भी", clear:"साफ़ करें",
-    welcomeTitle:"Insight Trading में आपका स्वागत है", welcomeSub:"मल्टी-एक्सचेंज समापन-मूल्य शेयर स्क्रीनर",
+    welcomeTitle:"Insight Trading में आपका स्वागत है", welcomeSub:"ASX समापन-मूल्य शेयर स्क्रीनर",
     qs1Title:"बाज़ार लोड करें", qs1Desc:"एक्सचेंज चुनें और दिन का डेटा लोड करें — ऊपर बाएँ।",
     qs2Title:"रिपोर्ट चलाएँ", qs2Desc:"तुरंत चयन हेतु स्मार्ट मनी स्कैन या प्रीसेट दबाएँ।",
     qs3Title:"सुधारें और सहेजें", qs3Desc:"फ़िल्टर समायोजित करें, शेयरों को वॉचलिस्ट में तारांकित करें, मेरी रिपोर्ट सहेजें।",
@@ -370,11 +432,11 @@ const I18N={
     estimate:"अनुमान"
   },
   ar:{
-    tagline:"ماسح متعدد البورصات",
+    tagline:"ماسح ASX بسعر الإغلاق",
     setup:"الإعداد", apiKey:"مفتاح EODData API", keyLocked:"🔒 مقفل", keyEditable:"🔓 قابل للتعديل",
     unlockEdit:"🔓 فتح للتعديل", lockEdit:"🔒 قفل تعديل المفتاح",
     exchange:"البورصة", loadData:"⚡ تحميل بيانات البورصة", loadPrompt:"اختر بورصة واضغط تحميل",
-    instantReports:"تقارير فورية", oneClick:"نقرة واحدة", smartScan:"🎯 مسح الأموال الذكية",
+    instantReports:"تقارير فورية", oneClick:"نقرة واحدة", smartScan:"🎯 أفضل دليل اليوم",
     smartScanTag:"صعود يومين+ · حجم +50%", speedTicket:"🚨 كاشف الحركات غير الطبيعية",
     speedTag:"حركة غير طبيعية · تقدير", presetPlans:"خطط تصفية جاهزة",
     planBreakout:"🚀 اختراق", planMomentum:"📈 زخم", planSpike:"⚡ ارتفاع الحجم", planPenny:"🪙 أسهم زهيدة",
@@ -387,7 +449,7 @@ const I18N={
     sharePrice:"سعر السهم", daysUp:"أيام صعود متتالية",
     volSurge:"ارتفاع الحجم", absVolume:"الحجم المطلق",
     any:"أي", clear:"مسح",
-    welcomeTitle:"مرحباً بك في Insight Trading", welcomeSub:"ماسح أسهم بسعر الإغلاق متعدد البورصات",
+    welcomeTitle:"مرحباً بك في Insight Trading", welcomeSub:"ماسح أسهم ASX بسعر الإغلاق",
     qs1Title:"تحميل سوق", qs1Desc:"اختر بورصة وحمّل بيانات اليوم — أعلى اليسار.",
     qs2Title:"تشغيل تقرير", qs2Desc:"اضغط مسح الأموال الذكية أو خطة جاهزة لنتائج فورية.",
     qs3Title:"تنقيح وحفظ", qs3Desc:"اضبط الفلاتر، أضف أسهماً لقائمة المتابعة، احفظ تقريري.",
@@ -403,11 +465,11 @@ const I18N={
     estimate:"تقدير"
   },
   it:{
-    tagline:"Screener Multi-Borsa",
+    tagline:"Screener ASX di Chiusura",
     setup:"Configurazione", apiKey:"Chiave API EODData", keyLocked:"🔒 bloccata", keyEditable:"🔓 modificabile",
     unlockEdit:"🔓 Sblocca per modificare", lockEdit:"🔒 Blocca modifica chiave",
     exchange:"Borsa", loadData:"⚡ Carica dati borsa", loadPrompt:"Scegli una borsa e premi Carica",
-    instantReports:"Report istantanei", oneClick:"un clic", smartScan:"🎯 Scansione Smart Money",
+    instantReports:"Report istantanei", oneClick:"un clic", smartScan:"🎯 Migliore Evidenza di Oggi",
     smartScanTag:"su 2+ giorni · vol 50%+", speedTicket:"🚨 Rilevatore Movimenti Anomali",
     speedTag:"movimento anomalo · stima", presetPlans:"Piani di filtro predefiniti",
     planBreakout:"🚀 Breakout", planMomentum:"📈 Momentum", planSpike:"⚡ Picco di Volume", planPenny:"🪙 Penny Stock",
@@ -420,7 +482,7 @@ const I18N={
     sharePrice:"Prezzo Azione", daysUp:"Giorni Consecutivi in Rialzo",
     volSurge:"Aumento di Volume", absVolume:"Volume Assoluto",
     any:"Qualsiasi", clear:"cancella",
-    welcomeTitle:"Benvenuto in Insight Trading", welcomeSub:"Screener azionario di chiusura, multi-borsa",
+    welcomeTitle:"Benvenuto in Insight Trading", welcomeSub:"Screener azionario ASX di chiusura",
     qs1Title:"Carica un mercato", qs1Desc:"Scegli una borsa e carica i dati del giorno — in alto a sinistra.",
     qs2Title:"Esegui un report", qs2Desc:"Premi 🎯 Best Evidence Today o un piano per risultati immediati.",
     qs3Title:"Affina e salva", qs3Desc:"Regola i filtri, aggiungi azioni a una lista, salva Il Mio Report.",
@@ -440,7 +502,7 @@ const I18N={
     setup:"Setup", apiKey:"EODData API Key", keyLocked:"🔒 naka-lock", keyEditable:"🔓 mae-edit",
     unlockEdit:"🔓 I-unlock para i-edit", lockEdit:"🔒 I-lock ang pag-edit",
     exchange:"Palitan", loadData:"⚡ I-load ang Datos ng Palitan", loadPrompt:"Pumili ng palitan at pindutin ang Load",
-    instantReports:"Instant na Ulat", oneClick:"isang click", smartScan:"🎯 Smart Money Scan",
+    instantReports:"Instant na Ulat", oneClick:"isang click", smartScan:"🎯 Pinakamahusay na Ebidensya Ngayon",
     smartScanTag:"taas 2+ araw · vol 50%+", speedTicket:"🚨 Detektor ng Abnormal na Galaw",
     speedTag:"abnormal na galaw · tantya", presetPlans:"Mga handa nang filter plan",
     planBreakout:"🚀 Breakout", planMomentum:"📈 Momentum", planSpike:"⚡ Volume Spike", planPenny:"🪙 Penny Stocks",
@@ -453,7 +515,7 @@ const I18N={
     sharePrice:"Presyo ng Share", daysUp:"Sunod-sunod na Araw na Pataas",
     volSurge:"Pagtaas ng Volume", absVolume:"Absolutong Volume",
     any:"Kahit ano", clear:"burahin",
-    welcomeTitle:"Maligayang pagdating sa Insight Trading", welcomeSub:"Multi-exchange na end-of-day na screener ng share",
+    welcomeTitle:"Maligayang pagdating sa Insight Trading", welcomeSub:"ASX end-of-day na screener ng share",
     qs1Title:"Mag-load ng merkado", qs1Desc:"Pumili ng palitan at i-load ang datos ng araw — kaliwang itaas.",
     qs2Title:"Magpatakbo ng ulat", qs2Desc:"Pindutin ang 🎯 Best Evidence Today o preset para sa instant na piling stocks.",
     qs3Title:"Pinuhin at i-save", qs3Desc:"I-adjust ang filter, i-star ang shares sa watchlist, i-save ang Aking Ulat.",
@@ -1585,7 +1647,7 @@ async function showDailyPicks(mode){
       else fresh='<span style="color:var(--green)">\u2713 Up to date \u2014 picked from '+esc(j.latestPick)+', the latest market day.</span>';
     }
 
-    const tabs='<div style="display:flex;gap:6px;margin:10px 0 4px;">'
+    const tabs='<div id="dpTabs" style="display:flex;gap:6px;margin:10px 0 4px;">'
       +['mine','trail','fixed'].map(m=>'<button onclick="showDailyPicks(\''+m+'\')" style="flex:1;padding:7px;border-radius:6px;font-weight:700;font-size:11px;font-family:var(--sans);cursor:pointer;'
         +'border:1px solid '+(M===m?'var(--gold)':'var(--border2)')+';background:'+(M===m?'rgba(217,164,65,.15)':'var(--bg3)')+';color:'+(M===m?'var(--gold)':'var(--text)')+';">'
         +(m==='mine'?'\ud83c\udf10 My rules':m==='trail'?'\u26a1 The tested rules':'\u2696 15/15 comparison')+'</button>').join('')+'</div>';
@@ -1620,14 +1682,14 @@ async function showDailyPicks(mode){
         const _ad=_ageD(r);
         const age=(_ad>0)
           ? ' <span style="color:var(--gold);font-size:10px;">(picked '+_ad+' day'+(_ad===1?'':'s')+' ago \u00b7 '+esc(r.first_seen_day)+')</span>' : '';
-        return '<div style="border:1px solid var(--border2);border-radius:8px;padding:10px;margin-bottom:8px;background:var(--bg2);'+(_ad>_OLD_AFTER?'opacity:.72;':'')+'">'
+        return '<div class="dp-card" style="border:1px solid var(--border2);border-radius:8px;padding:10px;margin-bottom:8px;background:var(--bg2);'+(_ad>_OLD_AFTER?'opacity:.72;':'')+'">'
           +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'
           +'<a href="#" onclick="_picksOpen(\''+esc(r.ticker)+'\');return false;" style="font-size:15px;font-weight:800;color:var(--gold);text-decoration:underline dotted;">'+esc(r.ticker)+'</a>'
           +(r.status==='queued'?'<span style="font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(217,164,65,.18);color:var(--gold);">already queued</span>':'')
           +(oob?'<span style="font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(226,25,55,.18);color:#ff9caa;">outside the band</span>':'')
           +age+'</div>'
           +'<div style="font-size:11px;color:var(--muted);margin:3px 0 2px;">'+esc(sigName(r.evidence_key))+' \u00b7 score '+(r.score==null?'\u2014':(+r.score).toFixed(1))+(r.tier?(' \u00b7 '+esc(String(r.tier).toUpperCase())):'')+'</div>'
-          +'<div style="font-size:11px;color:var(--dim);margin:0 0 7px;line-height:1.35;">'+esc(_whyLine(r))+'</div>'   /* v862: one plain sentence — what fired, what the tier means */
+          +'<div class="dp-why" style="font-size:11px;color:var(--dim);margin:0 0 7px;line-height:1.35;">'+esc(_whyLine(r))+'</div>'   /* v862: one plain sentence — what fired, what the tier means */
           +'<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;">'
           +'<div><span style="color:var(--muted);font-size:10px;display:block;">Buy under</span><b>'+money(r.limit_price)+'</b></div>'
           +(tr
@@ -1663,14 +1725,14 @@ async function showDailyPicks(mode){
               var _amtLbl=(_sized>0?'$'+Math.round(_sized).toLocaleString():'an assumed $'+Math.round(_amt).toLocaleString());
               var _tip='Two numbers, compared. WHAT IT COSTS: $3 brokerage to buy plus $3 to sell \u2014 $6 for the round trip on the parcel size the server sized this suggestion at. That is the whole cost of trading it the way these picks trade: a limit order in (the market comes to you \u2014 you never pay the buy\u2013sell gap) and the next morning\u2019s opening auction out (one price for everyone). WHAT IT HAS MADE: what this signal has averaged per trade in testing. We want the gain to be at least DOUBLE the cost before calling it worth doing. Brokerage is a flat $6 either way, so it hurts a small parcel far more than a large one \u2014 which is why the parcel size is named. The separate spread figure shows what buying AT MARKET instead would add \u2014 the limit entry exists precisely to avoid it. All figures are estimates from past data, never a promise about this trade.';
               var _ed=(r.edge!=null&&isFinite(+r.edge))?+r.edge:null;
-              var _ok=(_ed!=null)?(_ed>=2*_fr):null;
+              var _ok=(_ed!=null)?(_ed>=_FRICTION_MULT*_fr):null; // v893: same multiple as the worker's lanes
               var _costD=_amt*_fr/100, _edD=(_ed!=null)?(_amt*_ed/100):null;
               var _mktD=_amt*_cross/100;
               var _money=function(x){ return '$'+(x>=100?Math.round(x).toLocaleString():x.toFixed(2)); };
               var _verdict=(_ed==null)?''
-                :(_ok?('<br><b style="color:var(--green)">Worth the costs</b> \u2014 the average gain is more than twice what this trade costs.')
+                :(_ok?('<br><b style="color:var(--green)">Worth the costs</b> \u2014 the average gain is at least '+_FRICTION_MULT+'\u00d7 what this trade costs.')  /* v902: worded from the setting it tests — it said 'twice' after v893 made it 1.5× */
                      :('<br><b style="color:#ff9caa">Costs eat it</b> \u2014 even at just $6 brokerage, on past form this one does not pay for itself.'));
-              return '<div title="'+_tip+'" style="flex-basis:100%;font-size:10px;cursor:help;line-height:1.55;color:'+(_ok===false?'#ff9caa':'var(--dim)')+';margin-top:4px;">'
+              return '<div class="dp-cost" title="'+_tip+'" style="flex-basis:100%;font-size:10px;cursor:help;line-height:1.55;color:'+(_ok===false?'#ff9caa':'var(--dim)')+';margin-top:4px;">'
                 +'\ud83d\udcb8 Trading this the way these picks trade \u2014 limit in, next open out \u2014 costs <b>'+_money(_costD)+'</b> on a '+_amtLbl+' parcel ('+_fr.toFixed(2)+'%).'
                 +(_edD!=null?(' This signal has averaged <b>'+_money(_edD)+'</b> a trade at that size ('+_ed.toFixed(2)+'%).'):'')
                 +_verdict
@@ -1690,8 +1752,8 @@ async function showDailyPicks(mode){
       if(_oldRows.length){ body+='<div style="margin:14px 0 8px;padding-top:10px;border-top:1px dashed var(--border2);font-size:11px;color:var(--muted);line-height:1.5;"><b style="color:var(--gold);">\u23f3 Still open \u2014 picked on earlier days.</b> The prices shown are from the day each was picked, not from today. The server retires suggested picks after 5 trading days \u2014 sooner if they leave the price band or fail the costs test \u2014 so anything here is due for review at the next close.</div>'+_oldRows.map(_pickCard).join(''); }
     }
 
-    html='<div style="font-size:12px;color:var(--muted);line-height:1.55;">'+esc(ruleLine)+'</div>'
-      +'<div style="font-size:11px;margin-top:5px;">'+fresh+'</div>'
+    html='<div id="dpRule" style="font-size:12px;color:var(--muted);line-height:1.55;">'+esc(ruleLine)+'</div>'
+      +'<div id="dpFresh" style="font-size:11px;margin-top:5px;">'+fresh+'</div>'
       +tabs
       +(mine?'<div style="font-size:11px;color:var(--muted);margin:6px 0 10px;line-height:1.5;">These are the picks <b>your saved rules</b> chose on the server at end-of-day \u2014 the same decisions the \ud83e\udd16 bot places as dated practice orders. This page is that list, human-readable, running beside the two control sets so all three are judged forward from the same nights.</div>'
               :trail?'<div style="font-size:11px;color:var(--muted);margin:6px 0 10px;line-height:1.5;">The stop shown is where the trail <b>starts</b>. It only ever moves up as the price rises, and never down \u2014 there is no take-profit, so a winner runs until it gives back '+((R.trailPct||20))+'% from its best close.</div>'
@@ -1778,8 +1840,18 @@ function volDepthGood(w){return volDepthRank(w)>=3;} // 3-month+ = upgraded
 // User-selectable averaging window for the "today vs history" volume comparison.
 // 0 = Auto (use all cached history). Otherwise trading-day counts.
 const VOLWIN_STORE='BETA_asxScreener.volWindow.v1';
-let volAvgWindow = (function(){try{return parseInt(localStorage.getItem(VOLWIN_STORE))||0;}catch(e){return 0;}})();
-const VOLWIN_LABELS={0:'Auto',22:'1-month',66:'3-month',132:'6-month',252:'1-year'};
+let volAvgWindow = (function(){try{
+  let n=parseInt(localStorage.getItem(VOLWIN_STORE))||0;
+  // v880 — the stored value is now CALENDAR days, which is what the shared
+  // window maths (computeVolAvg, same code as the server) actually measures.
+  // Older saves held BAR counts (22/66/132/252) while the maths counted them
+  // as calendar days, so "1-year" really averaged ~8.4 months and "1-month"
+  // ~3 weeks. Migrate old saves to the calendar figure their label promised.
+  const _mig={22:31,66:92,132:183,252:365};
+  if(_mig[n]){ n=_mig[n]; try{localStorage.setItem(VOLWIN_STORE,n);}catch(_){}}
+  return n;
+}catch(e){return 0;}})();
+const VOLWIN_LABELS={0:'Auto',31:'1-month',92:'3-month',183:'6-month',365:'1-year'}; // v880: calendar-day keys
 // ── Trading-range window (sessions). Selectable: 3 days ≈ 3, 1 week ≈ 5,
 //    1 month ≈ 20, 3 months ≈ 66. Default 1 month. ──
 const RANGEWIN_STORE='BETA_asxScreener.rangeWindow.v1';
@@ -1793,18 +1865,18 @@ function setVolWindow(n){
   let done=0;
   (allData||[]).forEach(s=>{
     if(!Array.isArray(s.series)||s.series.length<3)return;
-    let hist=s.series.map(x=>x.v).filter(v=>v>0);
-    if(hist.length>=2)hist=hist.slice(0,-1);                 // drop today
-    if(volAvgWindow>0 && hist.length>volAvgWindow)hist=hist.slice(-volAvgWindow);
-    if(hist.length<1)return;
-    let sum=0;hist.forEach(v=>sum+=v);
-    const avg=Math.round(sum/hist.length);
+    // v878: one measuring cup everywhere — the same shared window math the
+    // server and every other app path use (computeVolAvg over effVolWindow()),
+    // instead of a private all-history / bar-count average. This private math
+    // was one cause of the device-vs-server ORDERING seam: same shares, same
+    // data, different order, because "usual volume" was measured over a
+    // different span than the worker's 90 calendar days.
+    const avg=computeVolAvg(_volRowsForAvg(s.series),effVolWindow());
     if(avg>0){
-      s.avgVol=avg;
+      s.avgVol=avg;s.avg3mo=avg;
       s.volPct=Math.round(((s.volume-avg)/avg)*100);
       s.volCalced=true;
-      s.volWindow=volAvgWindow>0?(VOLWIN_LABELS[volAvgWindow]||(hist.length+'d'))
-                 :hist.length>=200?'1-year':hist.length>=120?'6-month':hist.length>=45?'3-month':hist.length>=30?'2-month':'1-month';
+      s.volWindow=effVolWindowLabel();
       done++;
     }
   });
@@ -3777,17 +3849,36 @@ function _strongestTableHTML(limit,starterHeader){
     });
     rows=rows.slice(0,limit||50);
     var _anyTier=rows.some(function(r){return !!r._evTier;});
+    // v891 — SAY WHICH DAY THE EVIDENCE WAS GRADED. _scReplay falls back to a
+    // STORED replay from an earlier day when the server cannot answer, and its
+    // own comment promised "as long as we say which day it is from" — but
+    // _scanGradedOn was assigned in three places and rendered in none. So a
+    // SOLID badge and a +$2.06 edge could be today's measurement or a leftover
+    // from weeks ago, with nothing on screen to tell them apart. Now it says.
+    var _gradedNote=(function(){
+      try{
+        var s=window._scanSrc||'';
+        if(s==='server') return ' \u00b7 <span style="color:var(--green);">evidence graded today, on the server</span>';
+        if(s==='device'){ var d=window._scanGradedOn||''; return ' \u00b7 <span style="color:var(--gold);font-weight:700;">evidence graded '+(d?d:'on an earlier day')+' \u2014 a stored copy, not today\u2019s</span>'; }
+        if(s==='unavailable') return ' \u00b7 <span style="color:var(--gold);font-weight:700;">evidence not graded \u2014 badges and PN Edge are unavailable</span>';
+      }catch(e){}
+      return '';
+    })();
+    // v892 — and whether this card reached the server, so the nightly
+    // email can quote it. Silent failure is what cost two days.
+    var _snapNote=(function(){ try{ var r=window._pnSnapReason||''; if(!r)return '';
+      var good=(r.indexOf('sent ')===0); return ' \u00b7 <span style="color:'+(good?'var(--green)':'var(--gold)')+';">card \u2192 server: '+r+'</span>'; }catch(e){ return ''; } })();
     var _emptyNote=(_filt&&!rows.length)?'<div style="font-size:12px;color:var(--muted);padding:14px 4px;">Nothing matches this combination of radar filters today. <a href="#" onclick="try{statFilter(\'all\');}catch(e){};return false;" style="color:var(--gold);font-weight:700;">\u2715 Clear the filters</a> to see the full table.</div>':'';
     var out=(starterHeader
       ? '<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:4px 0 8px;">'
         +'<span style="font-weight:800;font-size:14px;color:var(--text);">\ud83c\udfc6 Today\u2019s market \u2014 '+(_filt?(rows.length.toLocaleString()+' matching your radar filters (of '+_tot.toLocaleString()+')'):('the '+(limit||50)+' strongest of '+_tot.toLocaleString()))+'</span>'
         +(_filt?'<a href="#" onclick="try{statFilter(\'all\');}catch(e){};return false;" style="font-size:10px;color:var(--gold);font-weight:700;">\u2715 clear filters</a>':'')
-        +'<span style="font-size:10px;color:var(--muted);">proven evidence first, then score \u00b7 tap any share for its full story \u00b7 the complete table with every column lives in <a href="#" onclick="try{setAppMode(\'advanced\');}catch(e){};return false;" style="color:var(--gold);">Advanced</a></span></div>'
-      : '<div style="font-size:10px;color:var(--muted);margin:2px 0 8px;">'+(_filt?(rows.length.toLocaleString()+' of '+_tot.toLocaleString()+' matching your radar filters \u2014 <a href="#" onclick="try{statFilter(\'all\');}catch(e){};return false;" style="color:var(--gold);font-weight:700;">\u2715 clear filters</a>. '):('The '+(limit||50)+' strongest of '+_tot.toLocaleString()+' \u2014 '))+'proven evidence first, then measured PN Edge, then score. Tap any share for its full story. A ranking of today\u2019s evidence, not a buy list and not advice.</div>')
+        +'<span style="font-size:10px;color:var(--muted);">proven evidence first, then score'+_gradedNote+_snapNote+' \u00b7 tap any share for its full story \u00b7 the complete table with every column lives in <a href="#" onclick="try{setAppMode(\'advanced\');}catch(e){};return false;" style="color:var(--gold);">Advanced</a></span></div>'
+      : '<div id="stIntro" style="font-size:10px;color:var(--muted);margin:2px 0 8px;">'+(_filt?(rows.length.toLocaleString()+' of '+_tot.toLocaleString()+' matching your radar filters \u2014 <a href="#" onclick="try{statFilter(\'all\');}catch(e){};return false;" style="color:var(--gold);font-weight:700;">\u2715 clear filters</a>. '):('The '+(limit||50)+' strongest of '+_tot.toLocaleString()+' \u2014 '))+'proven evidence first, then measured PN Edge, then score.'+_gradedNote+_snapNote+' Tap any share for its full story. A ranking of today\u2019s evidence, not a buy list and not advice.</div>')
       +_emptyNote
       +((!_anyTier)?'<div style="font-size:10px;color:var(--gold);margin:0 0 6px;">\u23f3 Evidence badges and PN Edge appear once today\u2019s evidence check finishes \u2014 until then this ranks by score. On a phone, swipe the table sideways for every column.</div>':'')
       +'<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">'
-      +'<table style="width:100%;min-width:620px;border-collapse:collapse;font-size:12px;">'
+      +'<table id="stTbl" style="width:100%;min-width:620px;border-collapse:collapse;font-size:12px;">'
       +'<thead><tr style="color:var(--muted);font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;text-align:left;">'
       +'<th style="padding:4px 2px;text-align:center;" title="Tap \u2606 on a row to add that share to your watchlist (\u2605 = already there).">\u2606</th><th style="padding:4px 6px;">Share</th><th style="padding:4px 6px;text-align:right;">Price</th><th style="padding:4px 6px;text-align:right;" title="The share\u2019s move over the latest session \u2014 close vs the close before.">Day</th>'
       +'<th style="padding:4px 6px;text-align:right;" title="Pattern score out of 10 \u2014 how many of today\u2019s studied patterns line up on this share.">Score</th>'
@@ -4962,13 +5053,23 @@ window._pfCtx=window._pfCtx||'main'; // which account the UI is looking at
 // records out of the shared store (see _pfSplitMigrate).
 const PF_EXCHS_KEY='BETA_asxScreener.paperExchs.v1';
 function _pfExch(exch){ const e=String(exch||currentExch||'ASX').toUpperCase(); return e||'ASX'; }
+// v877 — NYSE was retired in v869 (no ingest, no grading, prices frozen), but a
+// device that traded it before still has it in PF_EXCHS_KEY, so the portfolio
+// kept rendering an NYSE tab whose P/L can never update again. Retired markets
+// are now filtered out of the tab list. NOTHING IS DELETED: the per-exchange
+// store (PAPER_STORE.NYSE / PAPER_STORE_AUTO.NYSE) is left untouched on disk, so
+// any practice rows survive and can be brought back by removing the ticker from
+// RETIRED_EXCHS. Because the tab is gone, those rows also stop distorting the
+// combined 'All' totals with frozen prices - which is the point.
+const RETIRED_EXCHS=['NYSE','NASDAQ','AMEX'];
+function _pfExchRetired(ex){ return RETIRED_EXCHS.indexOf(String(ex||'').toUpperCase())>=0; }
 function _pfExchsKnown(){
   try{ const l=JSON.parse(localStorage.getItem(PF_EXCHS_KEY)||'[]');
-    const s=['ASX']; (Array.isArray(l)?l:[]).forEach(e=>{ if(e&&s.indexOf(e)<0)s.push(e); }); return s;
+    const s=['ASX']; (Array.isArray(l)?l:[]).forEach(e=>{ if(e&&!_pfExchRetired(e)&&s.indexOf(e)<0)s.push(e); }); return s;
   }catch(e){ return ['ASX']; }
 }
 function _pfExchRegister(ex){
-  try{ if(!ex||ex==='ASX')return; const l=JSON.parse(localStorage.getItem(PF_EXCHS_KEY)||'[]');
+  try{ if(!ex||ex==='ASX'||_pfExchRetired(ex))return;   // v877: retired markets never re-register const l=JSON.parse(localStorage.getItem(PF_EXCHS_KEY)||'[]');
     const a=Array.isArray(l)?l:[]; if(a.indexOf(ex)<0){ a.push(ex); localStorage.setItem(PF_EXCHS_KEY,JSON.stringify(a)); }
   }catch(e){}
 }
@@ -5467,7 +5568,7 @@ function showRules(){
         </div>`;
       }catch(e){return '';}})()}
       <button onclick="applyTestedRules()" title="Applies AND saves the rule set the 13 August 2026 ten-year replay settled on: 20% trailing stop with no take-profit, $0.20-$0.99, 2% dip entry, top 4 a day at score 7+. One tap, nothing left half-applied. Ten-year figures are a best case: every share in that test is still listed today — companies that died along the way aren’t in the data yet." style="width:100%;margin:8px 0 3px;padding:10px;border-radius:7px;border:1px solid var(--green);background:rgba(74,222,128,.12);color:var(--green);font-weight:700;font-size:12px;font-family:var(--sans);cursor:pointer;">⚡ Use the tested rules <span style="font-weight:400;font-size:9px;">(one tap — applied AND saved)</span></button><div style="font-size:9px;color:var(--dim);margin:0 0 8px;line-height:1.5;">Re-set 13 Aug 2026 on a ten-year replay (2016–2026, real daily highs and lows, brokerage and 1% slippage included). One dial moved: the dip entry, 5% → 2%. On the decade the 2% dip returned +232% against +89% for the old 5% — and kept +160% with its three biggest winners removed, where the old setting kept +26%. The deeper dip was missing winners, not filtering losers: shares that never fell 5% were often the ones that went straight up. The same signal scores flatter absolute returns because they are graded across the whole period — the comparison between settings is the finding. Most trades still lose and every winner gives back 20% from its peak; that is the mechanism, not a fault.</div><button onclick="applyBotBestPractice()" title="Fills the whole panel with the recommended stack — ⚖ All-rounder risk numbers, every don&#39;t-chase gate, 📋 adaptive combo gate that follows YOUR report card, 🎣 2% dip entry, 🧪 evidence-gated source, min score 7, 2 buys/day. Nothing applies until you press Save." style="width:100%;margin:8px 0 3px;padding:8px;border-radius:7px;border:1px solid var(--gold);background:rgba(255,210,0,.10);color:var(--gold);font-weight:700;font-size:11.5px;font-family:var(--sans);cursor:pointer;">🏆 Set up the best-practice bot <span style="font-weight:400;font-size:9px;">(one tap — review, then Save)</span></button>
-      <div style="font-size:9px;color:var(--dim);margin-bottom:8px;line-height:1.5;">⚖ All-rounder exits (🎯15 🛑15, no trail/breakeven/hold) · every don't-chase gate · 🌏 index-above-50-day regime gate · 🎲 1% of account at risk per trade · 📋 adaptive combos from YOUR report card · 🎣 patient 2% dip entry · min score 7 · 2 buys/day. Tune the 🎣 depth per share with 📉 Dip Finder. The bot trades its own $50k account.</div>
+      <div style="font-size:9px;color:var(--dim);margin-bottom:8px;line-height:1.5;">⚡ Hunter exits (a 🪤 20% trailing stop — no take-profit, no fixed stop) · 🟢 green-day gate on, RSI gate off on purpose · 🌏 index-above-50-day regime gate · 🎲 1% of account at risk per trade · 📋 adaptive combos from YOUR report card · 🎣 patient 2% dip entry · $0.20–$0.99 · min score 7 · 2 buys/day. Tune the 🎣 depth per share with 📉 Dip Finder. The bot trades its own $50k account.</div>
       <button onclick="toggleApAdv()" id="apAdvToggle" style="width:100%;margin:2px 0 6px;padding:6px;border-radius:6px;border:1px dashed var(--border2);background:var(--bg3);color:var(--muted);font-weight:600;font-size:10px;font-family:var(--sans);cursor:pointer;">⚙ Advanced bot settings ${window._apAdvOpen?'▾ (tap to hide)':'▸ (optional — the 🏆 button already set these)'}</button>
       <div id="apAdvBox" style="display:${window._apAdvOpen?'block':'none'};">
       <div style="font-size:9.5px;color:var(--muted);margin:6px 0 8px;line-height:1.5;">Once per fresh data day it applies these entry rules and queues <b>practice</b> buys — same realistic fills as a manual buy (next day's open, brokerage charged). It sets your 🎯/🛑 from above, respects 📦 🔢 and the 💧 liquidity floor, skips parcels under $500, and logs every decision. <b>Practice money only — it cannot touch a real broker.</b></div>
@@ -6068,9 +6169,7 @@ function _apPrepShare(s){
       let dn=0; for(let i=ser.length-1;i>0;i--){ if(ser[i].c<ser[i-1].c)dn++; else break; }
       s.daysUp=up; s.daysDown=dn; s.streakCalced=true; }catch(e){} }
     if(!s.volCalced){ try{
-      const W=effVolWindow(); const from=Math.max(0,ser.length-W);
-      let vs=0,vn=0; for(let i=from;i<ser.length;i++){ if(ser[i].v>0){vs+=ser[i].v;vn++;} }
-      const a=vn>0?vs/vn:0;
+      const a=computeVolAvg(_volRowsForAvg(ser),effVolWindow()); // v878: same cup as the server (was: last-90-BARS incl. today)
       if(a>0){ s.avg3mo=s.avg3mo||a; s.avgVol=s.avgVol||a; if(s.volume>0&&s.volPct==null)s.volPct=Math.round(((s.volume-a)/a)*100); s.volCalced=true; s.volWindow=effVolWindowLabel(); } }catch(e){} }
     if(!s.volStreakCalced){ try{
       const older=ser.slice(0,-5); let vs=0,vn=0; older.slice(-63).forEach(function(x){ if(x.v>0){vs+=x.v;vn++;} }); /* v700: 3-month baseline, not all-history */
@@ -9540,8 +9639,10 @@ function showPortfolio(exSel){
   try{document.body.classList.toggle('pf-hideprofit',_pfHideProfit());}catch(e){}
   if(exSel)window._pfExSel=exSel;
   else if(window._pfExSel==null&&currentExch)window._pfExSel=String(currentExch).toUpperCase(); // v412: first open lands on the exchange you're trading — its own separate account
-  try{_pfStraySweep();}catch(e){} // v412: rehome any items stuck in the wrong exchange's account
-  updatePaperPrices();
+  // v898 — a TOUR visit is look-only: no stray sweep, no price re-mark (both save the
+  // account). The tour shows the portfolio exactly as last saved.
+  if(!window._tourActive){ try{_pfStraySweep();}catch(e){} // v412: rehome any items stuck in the wrong exchange's account
+  updatePaperPrices(); }
   // v364: while the bulk "download everything" run is going, DON'T also kick the
   // per-holding target/limit engines — their per-share live fetches queue behind
   // the download on the same rate limiter and the portfolio sat there frozen
@@ -9553,7 +9654,7 @@ function showPortfolio(exSel){
     // still running - which was always. Pending orders were therefore never
     // judged from the Portfolio, and the v642 catch-up never got the chance to
     // run. Chaining them respects the same guard instead of losing to it.
-    if(!window._tgtChecking && !window._ordChecking){
+    if(!window._tgtChecking && !window._ordChecking && !window._tourActive){ // v898: a tour visit never executes a stop, target or limit fill
       (async function(){
         let sold=null, fl=null;
         try{ sold=await checkAutoSellTargets(); }catch(e){}
@@ -9733,7 +9834,7 @@ function showPortfolio(exSel){
   const _dcLabel=_dcKnown?(_dcIsToday?'Today&#8217;s change':('Change &#183; '+(_dcDate||'last close'))):'Day change';
   const _dcPrev=totVal-_dcSum;
   const _dcPct=(_dcKnown&&_dcPrev>0)?(_dcSum/_dcPrev*100):null;
-  const keyStrip=`<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 13px;margin-bottom:10px;">
+  const keyStrip=`<div id="pfKeyStrip" style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 13px;margin-bottom:10px;">
     <div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Account</div><div style="font-family:var(--mono);font-weight:800;font-size:15px;color:var(--text);">${_fmtN(_pfAcctNow)}</div></div>
     <div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">💵 Cash</div><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text);">${_fmtN(_pfCashNow)}</div></div>
     ${_pfResvNow>0.005?`<div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">⏳ Reserved</div><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text);">${_fmtN(_pfResvNow)}</div></div>`:''}
@@ -9880,7 +9981,7 @@ ${_undoOn()?`<div class="pf-card-actions">
         const avgHoldW=wins.length?wins.reduce((a,t)=>a+_dOf(t),0)/wins.length:0;
         const avgHoldL=losses.length?losses.reduce((a,t)=>a+_dOf(t),0)/losses.length:0;
         const st=(l,v,c)=>`<span style="white-space:nowrap;">${l} <strong style="color:${c||'var(--text)'}">${v}</strong></span>`;
-        statsHtml=`<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:9px;color:var(--muted);background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 10px;margin-bottom:12px;">
+        statsHtml=`<div id="pfStats" style="display:flex;gap:12px;flex-wrap:wrap;font-size:9px;color:var(--muted);background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 10px;margin-bottom:12px;">
           ${st('Trades',allT.length)}
           ${st('Win rate',winRate.toFixed(0)+'%',winRate>=50?'var(--green)':'var(--red)')}
           ${st('Avg win','+'+avgWin.toFixed(2),'var(--green)')}
@@ -9896,7 +9997,7 @@ ${_undoOn()?`<div class="pf-card-actions">
           ${st('Hold: losses',avgHoldL.toFixed(0)+'d')}
         </div>`;
       }
-      return `${mixed?`<div style="border:1px solid var(--orange);background:rgba(255,165,0,.08);border-radius:8px;padding:6px 10px;margin-bottom:8px;font-size:9px;color:var(--orange);">⚠ You hold shares in different currencies (${_curs.join(' + ')}) — the combined totals below add them as-is. Use the exchange tabs for exact single-currency figures.</div>`:''}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:${statsHtml?'8px':'12px'};">
+      return `${mixed?`<div style="border:1px solid var(--orange);background:rgba(255,165,0,.08);border-radius:8px;padding:6px 10px;margin-bottom:8px;font-size:9px;color:var(--orange);">⚠ You hold shares in different currencies (${_curs.join(' + ')}) — the combined totals below add them as-is. Use the exchange tabs for exact single-currency figures.</div>`:''}<div id="pfSummary" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:${statsHtml?'8px':'12px'};">
         ${ex==='ALL'?(function(){const _wd=(p.wdProfit||0);const _r=((acct+_wd-SC)/SC)*100;return card('Account total',acct.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="font-size:9px">('+(_r>=0?'+':'')+_r.toFixed(1)+'%'+(_wd>0?' incl. $'+_wd.toLocaleString()+' withdrawn':'')+')</span>',pc(acct+_wd-SC));})():''}
         ${(ex==='ALL'&&SC!==PAPER_START_CASH)?card('Start capital',SC.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})):''}
         ${ex==='ALL'?card('💵 Cash',cash.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})):''}
@@ -9961,7 +10062,7 @@ ${_undoOn()?`<div class="pf-card-actions">
       <div style="font-size:10px;color:var(--muted);margin-top:5px;text-align:right;">Closed P/L (12 mo): <strong style="color:${closedPl>0.005?'var(--green)':closedPl<-0.005?'var(--red)':'var(--muted)'}">${closedPl>=0?'+':''}${closedPl.toFixed(2)}</strong></div>`
     :'<div style="font-size:10px;color:var(--muted);padding:8px;text-align:center;">No closed trades yet.</div>'}
     </div>
-    <div style="display:flex;gap:8px;margin-top:12px;">
+    <div id="pfFooter" style="display:flex;gap:8px;margin-top:12px;">
       <button onclick="printPortfolio()" style="flex:1;padding:9px;border-radius:6px;border:1px solid var(--blue);background:rgba(56,139,253,.14);color:var(--blue);font-weight:600;font-size:11px;font-family:var(--sans);cursor:pointer;">🖨 Print</button>
       <button onclick="exportPortfolioCSV()" style="flex:1;padding:9px;border-radius:6px;border:1px solid var(--gold);background:rgba(255,210,0,.14);color:var(--gold);font-weight:600;font-size:11px;font-family:var(--sans);cursor:pointer;">📤 CSV</button>
       <button onclick="sharePortfolio()" style="flex:1;padding:9px;border-radius:6px;border:1px solid var(--green);background:rgba(63,185,80,.14);color:var(--green);font-weight:600;font-size:11px;font-family:var(--sans);cursor:pointer;">📨 Share</button>
@@ -11399,10 +11500,21 @@ function _noNews5d(s){
   if(s.annConfirmed)return (s.annNews5d||0)===0;
   return s.newsFlag==='quiet';
 }
+// v888 — ONE definition of up/flat/down, everywhere (Tony, 17 Sep: 'Numbers
+// dont add up gainers aren't same'). The Market-today pulse deliberately uses
+// a ±0.1% flat band (a +0.02% tick is not a 'gainer'); the radar tiles and
+// the direction filter counted strict >0/<0 — 45 hair's-breadth shares were
+// gainers on one screen and flat on the other, from the same data. The band
+// wins (it is the documented, human-honest rule); every counter now asks
+// this one function.
+function _dayDir(s){
+  const c=+((s&&s.chgPct))||0;
+  return c>0.1?'up':(c<-0.1?'down':'flat');
+}
 function _statPass(s){
   if(!s)return false;
-  if(_statOn.gainers && !(s.chgPct>0))return false;
-  if(_statOn.losers && !(s.chgPct<0))return false;
+  if(_statOn.gainers && _dayDir(s)!=='up')return false;
+  if(_statOn.losers && _dayDir(s)!=='down')return false;
   if(_statOn.vol && !(s.volPct>=200))return false;
   if(_statOn.vol50 && !(s.volCalced&&s.volPct>=50&&s.volPct<=100))return false;
   if(_statOn.dir && !s.dirBuy)return false;
@@ -11600,7 +11712,7 @@ function statsBar(){
   var _tf613=(typeof _scDayGet==='function')?_scDayGet():null; /* v613: today's raw scan fires — a SEPARATE, already-fetched source from the combo-engine's s._evKeys, which structurally never contains these six keys */
   let _evThinN=0,_evNegN=0; // v462: included, but flagged · v465: fired-but-losing
   for(const s of d){
-    if(s.chgPct>0)g++; if(s.chgPct<0)l++;
+    var _dd=_dayDir(s); if(_dd==='up')g++; else if(_dd==='down')l++; // v888: same band as Market today
     if(s.volPct>=200)v200++;
     if(s.dirBuy)dir++;
     if(s.streakCalced&&s.daysUp>=2)c2++;
@@ -12581,7 +12693,7 @@ function countStreak(history){
 
 // Returns the volume-average window the USER selected (from the Volume window
 // dropdown), so every prepare path honours it instead of a hardcoded 3-month.
-// volAvgWindow: 0=Auto(all history), 22=1mo, 66=3mo, 132=6mo, 252=1yr.
+// volAvgWindow: CALENDAR days fed to computeVolAvg. 0=Auto(90d, matches the server), 31=1mo, 92=3mo, 183=6mo, 365=1yr. (v880: was bar counts that the maths mis-read as calendar days.)
 function effVolWindow(){ return (typeof volAvgWindow==='number'&&volAvgWindow>0)?volAvgWindow:90; }
 function effVolWindowLabel(){ return (typeof volAvgWindow==='number'&&volAvgWindow>0)?(VOLWIN_LABELS[volAvgWindow]||(volAvgWindow+'d')):'3-month'; }
 // v532 (audit A2): the GRADING ENGINE averages the previous 90 BARS
@@ -12599,6 +12711,16 @@ function _engineVolAvg(history,bars){
   let sum=0,n=0;
   for(const q of take){ const v=getVol(q); if(!isNaN(v)&&v>0){sum+=v;n++;} }
   return n>0?Math.round(sum/n):0;
+}
+// v878 — computeVolAvg resolves dates via qField(['dateStamp','date','Date'])
+// — deliberately WITHOUT 'd' (the v695 pantry-row trap) — so {d,c,v} series
+// rows must be re-keyed before the shared window math sees them, exactly as
+// the server's prepare step does. Every caller below passes rows through here.
+function _volRowsForAvg(rows){
+  if(!Array.isArray(rows))return [];
+  const out=new Array(rows.length);
+  for(let i=0;i<rows.length;i++){const q=rows[i];out[i]=(q&&(q.date!=null||q.d==null))?q:{date:q.d,v:q.v};}
+  return out;
 }
 function computeVolAvg(history,limitDays){
   // Average daily volume over the window, EXCLUDING today's bar. If limitDays
@@ -13353,7 +13475,18 @@ function _selVolumeSurge(shares){
 // so a phone does not freeze while it scores several thousand shares, and that
 // yield has to survive the move.
 async function _selTopTen(shares){
-  try{ if(typeof _evMark==='function')_evMark(shares); }catch(e){} // w-top20: populate _evTier/_evEdge cheaply when grading is already cached; safely no-ops (returns false fast) when it isn't, same call topTenScan() already makes on the post-selection subset — just moved earlier so selection itself can use it
+  // v887 — Tony's call, 16 Sep: the Top 20 ranks again by the EXACT recipe its
+  // track record measures. w-top20 had made the live list evidence-first while
+  // the year-replay (which grades the 'top20' rule and earns its tier) still
+  // ranks by score||acc — so the list customers saw wore a record earned by a
+  // different recipe. The evidence-first recipe cannot be graded at all: the
+  // replay would need the evidence that only exists after grading (circular).
+  // Under the honesty constitution the ungradeable sort must not silently
+  // replace the graded one. Evidence stays fully visible where it is explicit
+  // and separately measured: the PN Edge column keeps its evidence sort, and
+  // auto-pilot's ranking keeps its own end-to-end fill record. This also
+  // closes the last 🔬 seam (RDX/INA, both certified) — both sides now run
+  // the one graded rule.
   const scored=[];
   for(let _j=0;_j<shares.length;_j++){
     if((_j&255)===0&&_j>0)await new Promise(_r=>setTimeout(_r,0)); // v335: chunk the scoring pass too — keep the phone responsive
@@ -13364,12 +13497,7 @@ async function _selTopTen(shares){
     s.watchParts=r.parts;
     if(r.score>0)scored.push({s,r});
   }
-  // w-top20: proven evidence decides first (same _pnEdgeSortVal used by PN Edge
-  // column + auto-pilot's ranking); watchScore/acc remain the fallback chain —
-  // when no share has cached evidence yet, _pnEdgeSortVal returns -9999 for
-  // everyone, so the sort falls straight through to the old watchScore order
-  // with no special-casing needed.
-  scored.sort((a,b)=>(_pnEdgeSortVal(b.s)-_pnEdgeSortVal(a.s)) || (b.r.score-a.r.score) || (b.r.acc-a.r.acc));
+  scored.sort((a,b)=>b.r.score-a.r.score || (b.r.acc-a.r.acc));
   return scored;
 }
 
@@ -13481,7 +13609,7 @@ function _selPullback(shares){
     try{ const r=watchScore10(s); s.watchScore=r.score; }catch(e){}
     scored.push({s,score});
   }
-  scored.sort((a,b)=>b.score-a.score);
+  scored.sort((a,b)=>b.score-a.score||String(a.ticker).localeCompare(String(b.ticker))); // v874: ticker tie-break, mirrored in w559, so 🔬 sees one order
   return scored;
 }
 
@@ -16517,7 +16645,7 @@ async function _refreshOfflineBtn(){
 async function histClearAll(){const db=await cacheOpen();if(!db)return;try{db.transaction(HIST_STORE,'readwrite').objectStore(HIST_STORE).clear();}catch(e){}}
 
 // Fetch just the SYMBOL LIST (share codes) for an exchange — used by the
-// multi-exchange downloader to know which shares to pull for each market.
+// bulk downloader to know which shares to pull (ASX-only since v869).
 async function fetchSymbolList(exch,apiKey){
   const url=`https://api.eoddata.com/symbol/list/${exch}?apiKey=${apiKey}`;
   const proxies=_safeRoutes(url,[u=>u]);   // v474: keyed → worker/direct only
@@ -16535,8 +16663,12 @@ async function fetchSymbolList(exch,apiKey){
   return null;
 }
 
-// ── MULTI-EXCHANGE DOWNLOAD: pick several markets, download all of them ───────
-const DOWNLOADABLE_EXCH=['ASX','NYSE','NASDAQ','AMEX','LSE','TSX','TSXV','NSE','SGX','FRA','AMS','PAR','BRU','OSL','MSE','SHG','SHE','OTCBB','USMF'];
+// ── BULK DOWNLOAD ─────────────────────────────────────────────────────────────
+// v869: ASX only. The 18 other markets followed the exchange picker out (v846) —
+// the server serves ASX alone, so offering their download only poked retired
+// code paths. The full list lives in git history; a market returns here only
+// with its own nightly ingest and evidence.
+const DOWNLOADABLE_EXCH=['ASX'];
 function openMultiDownload(){
   const saved=(()=>{try{return JSON.parse(localStorage.getItem('BETA_asxScreener.dlExch.v1'))||['ASX'];}catch(e){return ['ASX'];}})();
   const boxes=DOWNLOADABLE_EXCH.map(x=>`<label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--text);padding:4px 8px;border:1px solid var(--border2);border-radius:6px;cursor:pointer;margin:2px;"><input type="checkbox" class="dlExchChk" value="${x}" ${saved.includes(x)?'checked':''} style="cursor:pointer;margin:0;"> ${x}</label>`).join('');
@@ -16835,6 +16967,13 @@ async function downloadEverything(){
   try{ if(ok>0) localStorage.setItem('BETA_asxScreener.histStoreDate.v1', today); }catch(e){}
   window._bulkRunning=false;
   window._forceFullDownload=false; // one-shot: back to smart-update next time
+  // v876 — THE BUG behind three identical \ud83d\udd2c runs on 16 Sep: histPut wrote the
+  // fresh rows to DISK, but _histCache (the in-session copy every scan and the
+  // server-check read from) still held the pre-download rows. So a re-download -
+  // even a Force full re-download - changed nothing until the app was restarted,
+  // and GC1 kept reporting 121/248 closes adrift against a server that was clean.
+  // Every other load path already did this; the download path never did.
+  try{ if(typeof _histClearCache==='function')_histClearCache(); }catch(e){}
   // Everything is now on disk — prepare all signals from the offline cache so the
   // whole system is fully populated (range, technicals, charts) for EVERY share.
   // Since all history is on disk, preparing everything costs no API calls, so we
@@ -17097,20 +17236,15 @@ async function bulkMonthAverageByDates(apiKey,say){
     if(rec.n>=3){
       // Build the historical volume list from the retained series, dropping the
       // most recent day (today) so it doesn't dilute its own comparison.
-      let hist=(rec.closes||[]).map(x=>x.v).filter(v=>v>0);
-      if(hist.length>=2)hist=hist.slice(0,-1); // drop today
-      // If a specific window is chosen, use only the last N days of that history.
-      if(volAvgWindow>0 && hist.length>volAvgWindow)hist=hist.slice(-volAvgWindow);
-      let histSum=0;hist.forEach(v=>histSum+=v);
-      const histN=hist.length;
-      const avg=histN>0?Math.round(histSum/histN):0;
+      // v878: shared window math — the same measuring cup as the server and
+      // every other path (computeVolAvg over effVolWindow()); the private
+      // all-history / bar-count average here was part of the ordering seam.
+      const avg=computeVolAvg(_volRowsForAvg(rec.closes||[]),effVolWindow());
       if(avg>0){
         s.avgVol=avg;
         s.volPct=Math.round(((s.volume-avg)/avg)*100);
         s.volCalced=true;
-        // Label: chosen window if set, else the actual depth available.
-        s.volWindow = volAvgWindow>0 ? (VOLWIN_LABELS[volAvgWindow]||(histN+'d'))
-                    : histN>=200?'1-year' : histN>=120?'6-month' : histN>=45?'3-month' : histN>=30?'2-month' : '1-month';
+        s.volWindow=effVolWindowLabel();
         if(!s.avg3mo)s.avg3mo=avg;
         const ratio=s.volume/avg;
         s.unusualEod=ratio>1.5&&Math.abs(s.chgPct)>2;
@@ -17292,15 +17426,24 @@ async function bulkVolume(){
       for(let _k=0;_k<ser.length;_k++){ const _c=ser[_k].c, _v=ser[_k].v; if(isFinite(_c))_cl.push(_c); if(isFinite(_v)&&_v>0)_vl.push(_v); }
       const closes=_cl, vols=_vl;
       if(vols.length>1){
-        let _vsum=0; for(let i=0;i<vols.length-1;i++)_vsum+=vols[i]; // avg of all vols except the most recent (== old vols.slice(0,-1) mean)
-        const avg=_vsum/(vols.length-1);
-        s.avgVol=Math.round(avg);
-        s.volPct=avg>0?Math.round((vols[vols.length-1]-avg)/avg*100):0;
-        s.volCalced=true; s.volWindow=s.volWindow||'demo';
-        // volume-above-average streak
-        let vd=0; { let i=vols.length-1; while(i>=0&&!(vols[i]>avg*0.01))i--; /* v696 */ for(;i>=0;i--){if(vols[i]>avg)vd++;else break;} }
-        s.volDays=vd; s.volStreakCalced=true;
-        _liveTodayFix(s,[{v:vols[vols.length-1]}],avg); // v694: second escaped site
+        // v878: same measuring cup as the server — the shared window math
+        // instead of an all-history mean. This path runs on REAL data whenever
+        // every share carries a series (i.e. after a full download), and its
+        // private average was the main cause of the device-vs-server ordering
+        // seam. Today's volume is the live quote when present, else the series'
+        // true newest bar (even if 0 — matching what the server would compute).
+        const _lastBar=ser[ser.length-1];
+        const _todayV=(s.volume!=null&&isFinite(s.volume))?+s.volume:((_lastBar&&isFinite(_lastBar.v))?+_lastBar.v:0);
+        const avg=computeVolAvg(_volRowsForAvg(ser),effVolWindow());
+        if(avg>0){
+          s.avgVol=avg; s.avg3mo=s.avg3mo||avg;
+          s.volPct=Math.round(((_todayV-avg)/avg)*100);
+          s.volCalced=true; s.volWindow=effVolWindowLabel();
+          // volume-above-average streak
+          let vd=0; { let i=vols.length-1; while(i>=0&&!(vols[i]>avg*0.01))i--; /* v696 */ for(;i>=0;i--){if(vols[i]>avg)vd++;else break;} }
+          s.volDays=vd; s.volStreakCalced=true;
+          _liveTodayFix(s,[{v:_todayV}],avg); // v694: second escaped site
+        }
       }
       // days-up streak
       let du=0; for(let i=closes.length-1;i>0;i--){if(closes[i]>closes[i-1])du++;else break;}
@@ -18514,9 +18657,9 @@ function simpleMarketPulse(){
   // notes/bonds and preference shares are out. The exclusion is by TYPE, so it
   // follows the classifier (including the new KO rule) rather than a second list.
   const all=allData.filter(s=>s.price>0&&s.type!=='Option'&&s.type!=='Preference'&&s.type!=='Bond');
-  const up=all.filter(s=>s.chgPct>0.1);
-  const dn=all.filter(s=>s.chgPct<-0.1);
-  const fl=all.filter(s=>Math.abs(s.chgPct)<=0.1);
+  const up=all.filter(s=>_dayDir(s)==='up');   // v888: the one classifier
+  const dn=all.filter(s=>_dayDir(s)==='down');
+  const fl=all.filter(s=>_dayDir(s)==='flat');
   const pctUp=all.length?Math.round(up.length/all.length*100):0;
   const pctDn=all.length?Math.round(dn.length/all.length*100):0;
   const adr=dn.length?(up.length/dn.length).toFixed(1)+':1':'—';
@@ -18646,23 +18789,41 @@ async function quietMoversScan(){
   }
 }
 // ═══ v487 — THE SHADOW CHECK ══════════════════════════════════════════════
-// Ask the server to run the same ten reports over the same shares, and compare
+// Ask the server to run the same reports over the same shares, and compare
 // its answer with ours, position by position. Nothing on screen changes: this
 // exists to earn the right to delete our own copy later, and a comparison run
 // on invented data cannot earn it.
-const _REP_OPEN=['allSignals','unusual','volumeSurge','topTen','gaps','smart','pullback','recovery','quietMovers','sharpMovers'];
+// v879 — 'smart' left the list: the customer-facing button was retired
+// (w-retire-smart; its recipe predicts a WORSE next-5-day return), so the 🔬
+// now tests only what customers can actually see. The two deep reports joined
+// instead; the server may hold them back (needs a year of stored days + the
+// nightly 52-week table) and the result prints its reason when it does.
+const _REP_OPEN=['allSignals','unusual','volumeSurge','topTen','gaps','pullback','recovery','quietMovers','sharpMovers','technical','strongTrends'];
 const _REP_NAME={allSignals:'📋 All Signals',unusual:'🔥 Unusual Activity',volumeSurge:'📊 Volume Surge',
-  topTen:'🏆 Top 20',gaps:'🕳 Gap Report',smart:'🎯 Smart Money',pullback:'🪜 Pullback',
-  recovery:'↩️ Recovery Watch',quietMovers:'🫧 Quiet Movers',sharpMovers:'🚨 Sharp Movers'};
+  topTen:'🏆 Top 20',gaps:'🕳 Gap Report',pullback:'🪜 Pullback',
+  recovery:'↩️ Recovery Watch',quietMovers:'🫧 Quiet Movers',sharpMovers:'🚨 Sharp Movers',
+  technical:'📐 Technical Signals',strongTrends:'🧱 Strong Trends'};
 
 // An even spread across the loaded list, not the first N. The first 300 by
 // ticker are the A's, which on the ASX is mostly tiny miners — a sample that
 // would miss every large, liquid share the floors are there to separate.
-function _repSample(n){
+function _repSample(n,minDays){
+  // v870 — minDays asks for FULLY-INFORMED shares only: at least that many real
+  // closing prices on this device AND a computed volume average. The 🔬 check
+  // uses it so both sides judge with the same information — a share this device
+  // only half-knows can disagree with the server for data reasons, which proves
+  // nothing about the formulas.
   var pool=[],i;
   for(i=0;i<allData.length;i++){
     var s=allData[i];
-    if(s&&Array.isArray(s.series)&&s.series.length>=30&&s.price>0)pool.push(s);
+    if(!(s&&Array.isArray(s.series)&&s.series.length>=30&&s.price>0))continue;
+    if(minDays){
+      if(!s.volCalced)continue;
+      var _c=0,_ser=s.series;
+      for(var _j=0;_j<_ser.length;_j++){ var _cl=_ser[_j]&&(_ser[_j].c!=null?_ser[_j].c:_ser[_j].close); if(_cl>0)_c++; }
+      if(_c<minDays)continue;
+    }
+    pool.push(s);
   }
   if(pool.length<=n)return pool;
   var step=pool.length/n,out=[];
@@ -18674,11 +18835,12 @@ function _repSample(n){
 async function _repLocal(sample){
   var out={},k;
   var FN={allSignals:_selAllSignals,unusual:_selUnusual,volumeSurge:_selVolumeSurge,
-    topTen:_selTopTen,gaps:_selGaps,smart:_selSmartCandidates,pullback:_selPullback,
-    recovery:_selRecovery,quietMovers:_selQuietMovers,sharpMovers:_selSharpMovers};
+    topTen:_selTopTen,gaps:_selGaps,pullback:_selPullback,
+    recovery:_selRecovery,quietMovers:_selQuietMovers,sharpMovers:_selSharpMovers,
+    technical:_selTechnical,strongTrends:_selStrongTrends};
   for(var i=0;i<_REP_OPEN.length;i++){
     k=_REP_OPEN[i];
-    var args=(k==='sharpMovers')?[speedSensitivity]:(k==='smart')?[3,false]:[];
+    var args=(k==='sharpMovers')?[speedSensitivity]:[];
     var r=null;
     try{
       r=FN[k].apply(null,[sample.slice()].concat(args));
@@ -18691,37 +18853,82 @@ async function _repLocal(sample){
   return out;
 }
 
+// v876 \u2014 repair just the shares the \ud83d\udd2c data check found adrift, instead of
+// re-downloading the whole exchange. Fetches each one LIVE (forceNet), writes it
+// to disk, and drops the session cache so the very next scan reads the new rows.
+async function repairFlaggedShares(){
+  var list=(window._repRepairList||[]).slice(0,25);
+  var el=document.getElementById('srvChkOut');
+  var say=function(h){ if(el)el.innerHTML='<div style="font-size:10px;line-height:1.6">'+h+'</div>'; };
+  if(!list.length){ say('Nothing flagged to repair.'); return; }
+  var key=((document.getElementById('apiKey')||{}).value||'').trim();
+  if(!key){ try{ key=(localStorage.getItem('BETA_asxScreener.apiKey')||'').trim(); }catch(e){} }
+  var ok=0, bad=[];
+  for(var i=0;i<list.length;i++){
+    var tk=list[i];
+    say('\ud83e\ude79 Repairing '+(i+1)+' of '+list.length+' \u2014 '+tk+'\u2026');
+    try{
+      var rows=await fetchHistory(currentExch,tk,key,400,true);
+      if(Array.isArray(rows)&&rows.length>=2){
+        await histPut(currentExch,tk,rows,new Date().toISOString().slice(0,10));
+        ok++;
+      } else bad.push(tk);
+    }catch(e){ bad.push(tk); }
+  }
+  try{ if(typeof _histClearCache==='function')_histClearCache(); }catch(e){}
+  window._repRepairList=[];
+  // v886 — the missing half of a repair. Fresh rows on DISK change nothing the
+  // scans judge: the in-memory series and every computed field (watchScore,
+  // volDays, accum10, daysUp…) still carry the pre-repair world, so the old
+  // closing line ("any share still disagreeing is a real rule difference") was
+  // false — the 16 Sep RDX/INA case proved it: both shares certified clean,
+  // server provably right (INA 6.8 vs RDX 3.1), and the device was ranking on
+  // scores prepared before its own data changed. Re-prepare, then claim.
+  say('\u2705 Repaired '+ok+' of '+list.length+'. Recomputing this device\u2019s signals from the fresh data \u2014 this takes a moment\u2026');
+  try{ if(typeof prepareAllSignals==='function')await prepareAllSignals(true); }catch(e){}
+  say('\u2705 Repaired '+ok+' of '+list.length+' share'+(list.length>1?'s':'')+'.'
+    +(bad.length?(' Could not fetch: '+bad.join(', ')+'.'):'')
+    +'<br>Fresh history saved AND this device\u2019s signals recomputed from it. Run \ud83d\udd2c again \u2014 a share still disagreeing now is telling the truth about a rule difference.');
+}
+
 async function serverReportCheck(){
   var el=document.getElementById('srvChkOut');
   var say=function(h){ if(el)el.innerHTML=h; };
-  if(!Array.isArray(allData)||allData.length<50){ say('Load a market first — there is nothing to compare.'); return; }
+  if(!Array.isArray(allData)||allData.length<50){
+    // v881 — "not working" with no numbers is a riddle. Say exactly what this
+    // session holds, and name the one known way the screen can show shares the
+    // session does not hold (a phone resuming a sleeping page whose memory was
+    // cleared — the v686 wake-loader usually catches it, but can lose the race).
+    var _n=Array.isArray(allData)?allData.length:0;
+    say('This session holds <b>'+_n+'</b> shares in memory — the check needs 50+ to compare.'
+      +(_n===0?'<br>If the table above shows shares anyway, the app woke from sleep without reloading them: close the app fully (swipe it away), reopen it, let it load, then press this again. Or press ⚡ Load now.':'<br>Press ⚡ Load to load the full market, then run this again.')
+      +'<br><span style="font-size:9px;color:var(--dim)">Your saved data on this device is untouched and fine — this is only about what is loaded right now.</span>');
+    return; }
   if(!DATA_PROXY){ say('No server address configured.'); return; }
-  var sample=_repSample(300);
+  // v870 — a FAIR test compares only shares this device can fully judge.
+  // The 14 Sep run scored 3 of 10 with every ✗ running in the direction deeper
+  // data explains (server 300 Volume Surge to our 287, server 36 Pullbacks to
+  // our 31…) — because 36 of the 300 sampled shares had no 200-day view here
+  // and some had no volume average. A half-known share can disagree with the
+  // server for data reasons, which proves nothing about the formulas. So the
+  // sample now demands 250+ real closes AND a computed volume average, easing
+  // to 200+ and then to any share only if a device is too shallow to fill the
+  // sample — and the result says which bar was used.
+  // v879: the deep pair rank partly on 52-week extremes, which need 252
+  // trading days — at 250 a high in the last two days of the year window is
+  // invisible here, and an honest data difference would read as a rule seam.
+  var _bar=252, sample=_repSample(300,_bar);
+  if(sample.length<50){ _bar=250; sample=_repSample(300,_bar); }
+  if(sample.length<50){ _bar=200; sample=_repSample(300,_bar); }
+  if(sample.length<50){ _bar=0;   sample=_repSample(300); }
   if(sample.length<50){ say('Only '+sample.length+' shares have enough history to compare. Load saved data or run a full load first.'); return; }
   say('Comparing '+sample.length+' shares…');
-  // v507 — measure the sample's history depth HERE, on the exact shares being
-  // compared, so a 🪜 Pullback gap arrives with its own explanation. Both sides
-  // run the identical rule (verified clause-by-clause, 29 July); the rule's
-  // lenient branch passes a share on the 50-day test alone when no 200-day
-  // average exists. The server's pantry is deep, so the strict branch applies
-  // to nearly everything there; shallow downloads here take the lenient branch.
-  // More history = stricter test — which is the whole 42-vs-23 mechanism.
-  var _dep={have200:0,noView:0};
-  try{
-    for(var _di=0;_di<sample.length;_di++){
-      var _ds=sample[_di], _ser=_ds.series||[];
-      var _n=0; for(var _dj=0;_dj<_ser.length;_dj++){ var _dc=_ser[_dj]&&(_ser[_dj].c!=null?_ser[_dj].c:_ser[_dj].close); if(_dc>0)_n++; }
-      if(_n>=200){ _dep.have200++; continue; }
-      // v508: 🪜 is strict on both sides now — nothing passes leniently. What
-      // still matters is how many shares this device simply CANNOT judge.
-      _dep.noView++;
-    }
-  }catch(e){}
   var mine;
   try{ mine=await _repLocal(sample); }catch(e){ say('This device could not run the reports: '+e); return; }
   var dd=(window._exchDataDate&&window._exchDataDate[currentExch])||'';
   var body={exch:currentExch,dataDate:dd,cap:((typeof F!=='undefined'&&F&&F.cap)||'any'),
     sensitivity:speedSensitivity,minDays:3,scanAll:false,
+    reports:_REP_OPEN.slice(), // v879: ask for exactly what we compare — the server answers what it can and names what it holds back
     shares:sample.map(function(s){return {ticker:s.ticker,series:s.series};})};
   var j=null;
   try{
@@ -18733,13 +18940,39 @@ async function serverReportCheck(){
   }catch(e){ say('Could not reach the server: '+e); return; }
   if(!j||!j.ok||!j.picks){ say('The server did not send an answer it could stand behind.'); return; }
 
-  var rows=[],agree=0;
+  var rows=[],agree=0,scored=0,_diagT=[];
   for(var i=0;i<_REP_OPEN.length;i++){
-    var k=_REP_OPEN[i], a=(mine[k]&&mine[k].tickers)||[], b=(j.picks[k]&&j.picks[k].tickers)||[];
+    var k=_REP_OPEN[i];
+    // v879 — the server may hold a deep report back (not enough stored days,
+    // or the nightly 52-week table not built yet). That is information, not a
+    // disagreement: print the server's own reason and leave the row unscored.
+    if((!j.picks[k])&&j.held&&j.held[k]){
+      rows.push('<div style="margin:2px 0"><span style="color:var(--dim)">\u2139</span> '+_REP_NAME[k]
+        +'<br><span style="color:var(--dim);padding-left:14px">held by the server: '+String(j.held[k])+'</span></div>');
+      continue;
+    }
+    scored++;
+    var a=(mine[k]&&mine[k].tickers)||[], b=(j.picks[k]&&j.picks[k].tickers)||[];
     var why='';
-    if(a.length!==b.length)why='this device '+a.length+', server '+b.length;
-    else{
-      for(var p=0;p<a.length;p++){ if(a[p]!==b[p]){ why='differs at position '+(p+1)+': '+a[p]+' here, '+b[p]+' there'; break; } }
+    // v871 — a ✗ that only says the counts is a riddle; name the shares.
+    // Set difference first: which tickers does each side hold that the other
+    // doesn't? If the sets are identical but the order differs, say THAT —
+    // same verdicts in a different order is a tie-break question, not a rule
+    // difference, and deserves to be read as the smaller problem it is.
+    var _sa={},_sb={},_q;
+    for(_q=0;_q<a.length;_q++)_sa[a[_q]]=1;
+    for(_q=0;_q<b.length;_q++)_sb[b[_q]]=1;
+    var onlyA=[],onlyB=[];
+    for(_q=0;_q<a.length;_q++)if(!_sb[a[_q]])onlyA.push(a[_q]);
+    for(_q=0;_q<b.length;_q++)if(!_sa[b[_q]])onlyB.push(b[_q]);
+    if(onlyA.length||onlyB.length){
+      why='this device '+a.length+', server '+b.length;
+      if(onlyA.length)why+='<br>only here: '+onlyA.slice(0,6).join(', ')+(onlyA.length>6?' +'+(onlyA.length-6)+' more':'');
+      if(onlyB.length)why+='<br>only server: '+onlyB.slice(0,6).join(', ')+(onlyB.length>6?' +'+(onlyB.length-6)+' more':'');
+      for(_q=0;_q<onlyB.length;_q++)if(_diagT.indexOf(onlyB[_q])<0)_diagT.push(onlyB[_q]);
+      for(_q=0;_q<onlyA.length;_q++)if(_diagT.indexOf(onlyA[_q])<0)_diagT.push(onlyA[_q]);
+    }else{
+      for(var p=0;p<a.length;p++){ if(a[p]!==b[p]){ why='same '+a.length+' shares, different ORDER — first differs at position '+(p+1)+' ('+a[p]+' here, '+b[p]+' there)'; if(_diagT.indexOf(a[p])<0)_diagT.push(a[p]); if(_diagT.indexOf(b[p])<0)_diagT.push(b[p]); break; } }
     }
     // The one honest exception: without today's opening prices this device
     // cannot find a gap at all, and the server can. Say which, rather than
@@ -18753,14 +18986,144 @@ async function serverReportCheck(){
     rows.push('<div style="margin:2px 0">'+(why?'<span style="color:#ff9caa">✗</span> ':'<span style="color:var(--green)">✓</span> ')+
       _REP_NAME[k]+' <span style="color:var(--dim)">('+a.length+')</span>'+(why?'<br><span style="color:var(--dim);padding-left:14px">'+why+'</span>':'')+'</div>');
   }
-  var head=(agree===_REP_OPEN.length)
-    ? '<b style="color:var(--green)">All '+agree+' reports agree</b> — same shares, same order, on '+sample.length+' of your real ones.'
-    : '<b style="color:var(--gold)">'+agree+' of '+_REP_OPEN.length+' agree</b> on '+sample.length+' real shares.';
+  // v872 — settle data-vs-rules for the shares the sides disagree on. Fetch
+  // the server's stored series for up to three of them and diff it against
+  // this device's, date by date, over the shared window. Identical numbers on
+  // both sides = the disagreement is a genuine rule difference. Different
+  // numbers = the sides are judging different data (an adjusted or repaired
+  // day), and the rules were never on trial.
+  var _diag='';
+  window._repRepairList=[];   // v876: shares the data check found adrift
+  if(_diagT.length){
+    say('Comparing '+sample.length+' shares… now checking the data behind the disagreements…');
+    var _rd=function(r){return r?(r.d||r.dateStamp||r.date||r.Date||null):null;};
+    var _rc=function(r){var x=r?(r.c!=null?r.c:(r.close!=null?r.close:r.Close)):null;x=parseFloat(x);return isFinite(x)?x:null;};
+    var _rv=function(r){var x=r?(r.v!=null?r.v:(r.vol!=null?r.vol:(r.volume!=null?r.volume:r.Volume))):null;x=parseFloat(x);return isFinite(x)?x:null;};
+    var _rh=function(r){var x=r?(r.h!=null?r.h:(r.high!=null?r.high:r.High)):null;x=parseFloat(x);return isFinite(x)?x:null;};
+    var _rl=function(r){var x=r?(r.l!=null?r.l:(r.low!=null?r.low:r.Low)):null;x=parseFloat(x);return isFinite(x)?x:null;};
+    var _lines=[];
+    // v884 — 3 was a blind spot: the first order-flip pushes BOTH its tickers,
+    // but with earlier reports' tickers ahead of them the cap could certify one
+    // half of a pair and never look at the other (16 Sep: AEV certified clean,
+    // VR8 — the share it allegedly outranked — never inspected). 8 covers both
+    // halves of the first pairs plus the membership strays.
+    for(var _t=0;_t<Math.min(8,_diagT.length);_t++){
+      var tk=_diagT[_t], line='';
+      try{
+        var _dsh=null;
+        for(var _x=0;_x<sample.length;_x++)if(sample[_x].ticker===tk){_dsh=sample[_x];break;}
+        // v886 — class 5: STALE COMPUTED FIELDS. The scans judge fields
+        // prepared at some earlier moment; the series may have moved since
+        // (download or repair without a re-prepare). countStreak on the series
+        // is cheap and pure — if it disagrees with the stored daysUp field,
+        // every score on this share predates its own data.
+        var _stale='';
+        try{
+          if(_dsh&&Array.isArray(_dsh.series)&&_dsh.series.length>2&&typeof countStreak==='function'&&isFinite(_dsh.daysUp)){
+            var _liveDu=countStreak(_dsh.series.map(function(r){return {date:r.d,c:r.c};}));
+            if(_liveDu!==_dsh.daysUp)_stale=' \u26a0 AND this device\'s computed scores are OLDER than its data (its streak field says '+_dsh.daysUp+' but its own series says '+_liveDu+') \u2014 signals were prepared before the last data change. Repairs now re-prepare automatically; an app restart also fixes it.';
+          }
+        }catch(e){}
+        var _hr=await _fetchTO(DATA_PROXY.replace(/\/+$/,'')+'/history/series/'+encodeURIComponent(currentExch)+'/'+encodeURIComponent(tk)+'?days=365',{},8000);
+        var _hj=_hr&&_hr.ok?await _hr.json():null;
+        var _srv=(_hj&&_hj.ok===true&&Array.isArray(_hj.rows))?_hj.rows:null;
+        if(!_dsh||!_srv||!_srv.length){ line=tk+': could not fetch the server\'s stored days to compare.'; }
+        else{
+          var _map={},_r,_d;
+          for(_x=0;_x<_srv.length;_x++){_r=_srv[_x];_d=_rd(_r);if(_d&&_rc(_r)>0)_map[_d]=_r;}
+          var _mine=_dsh.series||[],_shared=0,_cd=0,_vd=0,_hld=0,_first=null,_lastMine=null,_lastSrv=null;
+          for(_x=0;_x<_srv.length;_x++){_r=_srv[_x];_d=_rd(_r);if(_d&&(!_lastSrv||_d>_lastSrv))_lastSrv=_d;}
+          for(_x=Math.max(0,_mine.length-250);_x<_mine.length;_x++){
+            _r=_mine[_x]; _d=_rd(_r); if(!_d||!(_rc(_r)>0))continue;
+            if(!_lastMine||_d>_lastMine)_lastMine=_d;
+            var _sv=_map[_d]; if(!_sv)continue;
+            _shared++;
+            var mc=_rc(_r),sc=_rc(_sv);
+            if(mc>0&&sc>0&&Math.abs(mc-sc)/sc>0.005){_cd++;if(!_first||_d<_first)_first=_d;}
+            var mv=_rv(_r),sv2=_rv(_sv);
+            if(mv>0&&sv2>0&&Math.abs(mv-sv2)/sv2>0.02){_vd++;if(!_first||_d<_first)_first=_d;}
+            var mh=_rh(_r),sh=_rh(_sv);
+            if(mh>0&&sh>0&&Math.abs(mh-sh)/sh>0.005){_hld++;if(!_first||_d<_first)_first=_d;}
+            var ml=_rl(_r),sl=_rl(_sv);
+            if(ml>0&&sl>0&&Math.abs(ml-sl)/sl>0.005){_hld++;if(!_first||_d<_first)_first=_d;}
+          }
+          // v883 — third class: the device disagreeing WITH ITSELF. Scans on
+          // this device judge the live-quote fields (s.price / s.volume); the
+          // server judged the uploaded series' last bar. When tonight's revisions
+          // land, the quote and the saved bar can come from different moments —
+          // identical stored history then still produces different answers, and
+          // it is NOT a rule difference. Check before claiming one.
+          var _selfBad='';
+          try{
+            var _lb=_mine.length?_mine[_mine.length-1]:null;
+            if(_lb){
+              var _qv=parseFloat(_dsh.volume), _bv=_rv(_lb);
+              var _qp=parseFloat(_dsh.price),  _bp=_rc(_lb);
+              var _vBad=(isFinite(_qv)&&_bv>0&&Math.abs(_qv-_bv)/_bv>0.02);
+              var _pBad=(isFinite(_qp)&&_bp>0&&Math.abs(_qp-_bp)/_bp>0.005);
+              // v884 — change-% is the field Recovery, Quiet Movers and the
+              // watch score actually rank on, and it is built from the quote
+              // layer's prevClose — which can drift from the series' second-
+              // last close on revision nights while price and volume still
+              // match. Compare it to the series-derived change too.
+              var _cBad=false, _qc=parseFloat(_dsh.chgPct), _sc2=null;
+              try{ var _pb=_mine.length>1?_rc(_mine[_mine.length-2]):null; if(_pb>0&&_bp>0){ _sc2=Math.round(((_bp-_pb)/_pb)*1000)/10; if(isFinite(_qc)&&Math.abs(_qc-_sc2)>0.3)_cBad=true; } }catch(e){}
+              if(_vBad||_pBad||_cBad)_selfBad='its live quote says '+(_pBad?('price $'+_qp):'')+((_pBad&&(_vBad||_cBad))?' / ':'')+(_vBad?('volume '+Math.round(_qv).toLocaleString()):'')+((_vBad&&_cBad)?' / ':'')+(_cBad?('change '+_qc+'%'):'')+' but its own saved bars ('+(_rd(_lb)||'?')+') say '+(_pBad?('$'+_bp):'')+((_pBad&&(_vBad||_cBad))?' / ':'')+(_vBad?Math.round(_bv).toLocaleString():'')+((_vBad&&_cBad)?' / ':'')+(_cBad?(_sc2+'%'):'');
+            }
+          }catch(e){}
+          // v885 — the day-GAP class. "Identical on shared days" is honest and
+          // still misses the damage on thin stocks: the device's series can
+          // STOP days earlier than the server's (LPE ended 2026-09-10 while
+          // trading on the 16th), or skip zero-volume days entirely (AEV's
+          // 15 Sep). Shared-day diffs can't see absent days — count them.
+          var _gap=0,_gapNote='';
+          try{
+            for(_x=0;_x<_srv.length;_x++){
+              _r=_srv[_x];_d=_rd(_r);
+              if(_d&&_lastMine&&_d>_lastMine)_gap++;
+            }
+            if(_gap>0)_gapNote=' — and this device is missing the last '+_gap+' server day'+(_gap>1?'s':'')+' entirely (its series ends '+(_lastMine||'?')+', the server\'s continues to '+(_lastSrv||'?')+'; thin shares\' quiet days often skip bulk downloads)';
+          }catch(e){}
+          if(!_shared)line=tk+': no shared dates to compare (here to '+(_lastMine||'?')+', server to '+(_lastSrv||'?')+').';
+          else if(!_cd&&!_vd&&!_hld&&(_selfBad||_gap>0)){
+            line=tk+': <b style="color:#ffd28a">this device disagrees with itself</b> — stored history matches the server on shared days'+_gapNote+(_selfBad?(', and '+_selfBad):'')+'. Scans here judge the quote and the gappy series; the server judged its complete one — the missing days are the difference, not the rules. 🩹 Repair re-pulls the full series for this share.';
+            try{ if(window._repRepairList&&window._repRepairList.indexOf(tk)<0)window._repRepairList.push(tk); }catch(e){}
+          }
+          else if(!_cd&&!_vd&&!_hld)line=tk+': <b style="color:var(--gold)">identical data</b> on both sides over '+_shared+' shared days, no missing recent days, and this device\'s today-numbers match its own saved bars — <b>this share is certified clean</b>. (A disagreement is only a true rule difference when the share it is compared against is certified clean too.)';
+          else { try{ if(window._repRepairList&&window._repRepairList.indexOf(tk)<0)window._repRepairList.push(tk); }catch(e){} }
+          if(_cd>0||_vd>0||_hld>0) line=tk+': <b style="color:#ff9caa">the data differs</b> — closes differ on '+_cd+' of '+_shared+' shared days, volumes on '+_vd+', highs/lows on '+_hld+(_first?', earliest '+_first:'')+' — the sides are judging different numbers, not different rules. (⬇ Download / update usually refreshes this device\'s copy.)';
+        }
+      }catch(e){ line=tk+': data check failed ('+e+').'; }
+      if(line&&_stale)line+=_stale;
+      if(line)_lines.push(line);
+    }
+    // v876 - remember which shares actually disagreed on DATA so the repair
+    // button below can re-pull just those, instead of the whole exchange.
+    if(window._repRepairList&&window._repRepairList.length){
+      _lines.push('<div style="margin-top:6px"><button onclick="repairFlaggedShares()" style="padding:6px 10px;border-radius:6px;border:1px solid var(--gold);background:rgba(245,200,76,.10);color:var(--gold);font-weight:700;font-size:10px;font-family:var(--sans);cursor:pointer;">\ud83e\ude79 Repair these '+window._repRepairList.length+' share'+(window._repRepairList.length>1?'s':'')+' now</button>'
+        +'<div style="margin-top:3px;font-size:9px;color:var(--dim)">Re-pulls fresh history for just these shares and replaces this device\u2019s copy. Nothing else is touched.</div></div>');
+    }
+    if(_lines.length)_diag='<div style="margin-top:6px;font-size:9px;line-height:1.6;color:var(--muted)"><b>🔎 the data behind the disagreements:</b><br>'+_lines.join('<br>')+'</div>';
+  }
+  var head=(agree===scored)
+    ? '<b style="color:var(--green)">All '+agree+' compared reports agree</b> — same shares, same order, on '+sample.length+' of your real ones.'
+    : '<b style="color:var(--gold)">'+agree+' of '+scored+' agree</b> on '+sample.length+' real shares.';
+  if(_repDataSettling())head='<div style="color:var(--gold);font-weight:700;margin-bottom:4px">⏳ Tonight\'s numbers are still settling on the server (the 5:00–6:45pm Sydney take-in). Differences found right now are usually tonight\'s data on the move, not rule differences — for a verdict that stands, ⬇ Download / update and re-run after 7pm Sydney.</div>'+head;
+  // v876 - when the sample is shallow the \u2717 marks below are mostly artefacts of
+  // missing history, not rule differences (16 Sep: Volume Surge read 0 here vs 300
+  // on the server purely because this device had not loaded its volume history).
+  // That warning used to sit in 9px grey UNDER the verdict, so it read as a real
+  // score. Say it first, in the headline's place, and label the verdict void.
+  if(!(_bar>0)) head='<b style="color:#ff9caa">\u26a0 Not a fair test \u2014 this comparison does not count.</b>'
+    +'<div style="margin-top:4px;font-size:10px;color:var(--muted);line-height:1.5;font-weight:400">'
+    +'This device has not got a full year of history loaded for enough shares, so most \u2717 marks below just mean the server could judge a share this device cannot \u2014 they are NOT rule differences. '
+    +'Tap \u2b07 Download / update, let it finish, then run this again.</div>';
   var _depLine='<div style="margin-top:5px;font-size:9px;color:var(--dim);line-height:1.5;">'
-    +'📏 depth here: <b>'+_dep.have200+'</b> of '+sample.length+' have 200+ days on this device'
-    +(_dep.noView?' · 🪜 needs a 200-day view and <b>'+_dep.noView+'</b> don\'t have one here yet — this device cannot judge them, so the server, which holds the full year, may rightly find pullbacks this device cannot see':'')
+    +(_bar>0
+      ? '⚖ fair test: every one of the '+sample.length+' shares compared has <b>'+_bar+'+ days</b> of history and a volume average on this device, so both sides judged with the same information — any ✗ above is a real difference in the rules, not missing data. (Shares this device only half-knows were left out; the server always holds the full year.)'
+      : '📏 this device is too shallow to fill a fully-informed sample, so half-known shares were included — a ✗ above may just mean the server, which holds the full year, could judge shares this device cannot. ⬇ Download all data, then run this again for a fair test.')
     +'</div>';
-  say(head+_depLine+'<div style="margin-top:6px">'+rows.join('')+'</div>'+
+  say(head+_depLine+'<div style="margin-top:6px">'+rows.join('')+'</div>'+_diag+
       '<div style="color:var(--dim);margin-top:5px">Server had opening prices for '+(j.bars||0)+
       ' shares and graded '+(j.graded||0)+'. Nothing on screen changed — this is only a comparison.</div>');
 }
@@ -19017,7 +19380,7 @@ function showMyChanges(auto){
   }else{
     let budget=30;
     if(d.holdN){
-      body+=`<div style="font-weight:700;font-size:11px;font-family:var(--sans);color:var(--text);margin:4px 0 2px;">💼 Your holdings <span style="font-weight:400;color:var(--dim);">· ${d.holdN}</span></div>`;
+      body+=`<div id="mcHoldings" style="font-weight:700;font-size:11px;font-family:var(--sans);color:var(--text);margin:4px 0 2px;">💼 Your holdings <span style="font-weight:400;color:var(--dim);">· ${d.holdN}</span></div>`;
       const its=(d.holdItems||[]).slice(0,budget); budget-=its.length;
       body+=its.length?its.map(rowHtml).join(''):quietLine;
       if(d.ruleNote) body+=`<div style="font-size:10px;color:var(--orange);padding:4px 6px;">📋 ${d.ruleNote}</div>`;
@@ -19028,12 +19391,15 @@ function showMyChanges(auto){
       else if(sec.items.length){ body+=`<div style="font-size:9px;color:var(--dim);padding:4px 6px;">…more in this list — open it to see everything.</div>`; }
       else body+=quietLine;
     }
-    body+=`<div style="font-size:9px;color:var(--dim);margin-top:8px;">Tap any line for that share's deep dive · tap a list name to open the watchlist. End-of-day estimates — not advice.</div>`;
+    body+=`<div id="mcFoot" style="font-size:9px;color:var(--dim);margin-top:8px;">Tap any line for that share's deep dive · tap a list name to open the watchlist. End-of-day estimates — not advice.</div>`;
   }
-  const head=`<div style="font-weight:700;font-size:15px;color:var(--text);">🔔 What's changed for YOU</div>
+  const head=`<div id="mcHead" style="font-weight:700;font-size:15px;color:var(--text);">🔔 What's changed for YOU</div>
     <div style="font-size:9.5px;color:var(--dim);margin:3px 0 10px;">Your holdings & watchlists checked against ${d.dataDate?`the data of <b style="color:var(--muted)">${d.dataDate}</b>`:'the latest data'} · ${d.holdN} holding${d.holdN===1?'':'s'} · ${watchTotal} watched.</div>`;
-  showModal(head+body,"🔔 What's changed for me");
-  try{ if(d.dataDate)localStorage.setItem('BETA_asxScreener.myChangesSeen.v1',d.dataDate); }catch(e){}
+  // v895 — a switch to stop this opening by itself. It still opens on the 🔔 button.
+  let _autoOff=false; try{ _autoOff=localStorage.getItem('BETA_asxScreener.myChangesAuto.v1')==='0'; }catch(e){}
+  const _sw=`<div style="margin:0 0 8px;"><button onclick="_myChangesAutoToggle(this)" style="padding:4px 9px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--muted);font-size:10px;font-family:var(--sans);cursor:pointer;">${_autoOff?'🔔 Open this automatically each day: OFF — tap to turn on':'🔕 Open this automatically each day: ON — tap to turn off'}</button></div>`;
+  showModal(head+_sw+body,"🔔 What's changed for me");
+  if(!window._tourActive){ try{ if(d.dataDate)localStorage.setItem('BETA_asxScreener.myChangesSeen.v1',d.dataDate); }catch(e){} }   // v909: a TOUR visit does not mark today's briefing as seen
   return true;
 }
 function _openListFromBriefing(nm){
@@ -19041,6 +19407,11 @@ function _openListFromBriefing(nm){
   try{ if(watchlists&&watchlists[nm]){ switchWatch(nm); if(typeof watchViewOn!=='undefined'&&!watchViewOn)toggleWatchView(); } }catch(e){}
 }
 // Auto-open once per fresh data date — never over an open panel, never on a quiet day.
+function _myChangesAutoToggle(btn){
+  let off=false; try{ off=localStorage.getItem('BETA_asxScreener.myChangesAuto.v1')==='0'; }catch(e){}
+  off=!off; try{ localStorage.setItem('BETA_asxScreener.myChangesAuto.v1',off?'0':'1'); }catch(e){}
+  if(btn)btn.textContent=off?'🔔 Open this automatically each day: OFF — tap to turn on':'🔕 Open this automatically each day: ON — tap to turn off';
+}
 (function _myChangesAuto(){
   setInterval(function(){
     try{
@@ -19049,6 +19420,8 @@ function _openListFromBriefing(nm){
       if(!dd)return;
       let seenD=null; try{ seenD=localStorage.getItem('BETA_asxScreener.myChangesSeen.v1'); }catch(e){}
       if(seenD===dd)return;
+      if(window._tourActive)return;                    // v895: never pop over a running tour
+      try{ if(localStorage.getItem('BETA_asxScreener.myChangesAuto.v1')==='0')return; }catch(e){}   // v895: user switched auto-open off
       if(window._myChangesAutoShown===dd)return;      // v288: auto-open at most once per data day, per session
       const m=document.getElementById('appModal');
       if(m&&m.style.display!=='none'&&m.offsetHeight>0)return;
@@ -19776,3 +20149,663 @@ async function simpleQuietClimbers(){
   window._modalLabel='\ud83d\udd75\ufe0f Quiet climbers'; window._modalType='quiet';
   showModal('<div style="padding:4px 2px">'+intro+body+foot+'</div>','\ud83d\udd75\ufe0f Quiet climbers');
 }
+
+// ═══ v894 — GUIDED TOUR ══════════════════════════════════════════════════════
+// "Take the tour": the app drives itself. It dims the screen, spotlights one
+// part at a time, shows a plain-English bubble and (optionally) reads it aloud
+// with the browser's own voice, then moves on. Two tours:
+//   main — a two-minute walk of the screen, written from the Beginners Guide
+//   full — EVERY control the app can explain, straight from TRAIN_HELP (the
+//          same text Training mode shows on hover), in screen order
+// Stops whose element is not on screen (Starter mode hides Advanced controls,
+// the sidebar may be collapsed) are skipped, never faked. Nothing here changes
+// app state: the tour only looks and points. Esc or ✕ ends it at any time.
+(function(){
+  var S=null;                                   // the running tour, or null
+  var Z=2147480000;                             // above every modal in the app
+  var MUTE_KEY='BETA_asxScreener.tourMute';
+  var _seenKey=function(name){ return 'BETA_asxScreener.tourSeen.'+name; };
+
+  // ── the main tour ────────────────────────────────────────────────────────
+  // sel: CSS selector (first match). If the element is missing or hidden the
+  // stop is skipped. No sel = a centred card. Texts stay short: spoken at a
+  // natural pace, none runs past ~12 seconds.
+  var MAIN=[
+    {title:'Welcome to Insight Trading', text:'This is an end-of-day share screener and practice-trading app for the ASX. Everything here is research, not advice, and every dollar is practice money.'},
+    {sel:'#modeSeg', title:'Three ways to see it', text:'Simple, Starter and Advanced show the same data at different depths. Simple is six screens and nothing else. Advanced shows every scan and setting.'},
+    // ── the header ──
+    {sel:'#pfBtn', title:'Your practice portfolio', text:'Your practice positions, cash, profit and loss, and trade history. The robot buys here each data day, following your rules exactly. Many days it buys nothing, and that is the rules working.'},
+    {sel:'#wlNavBtn', title:'Watchlist', text:'The shares you have starred. In Starter it opens as a list; in Advanced it filters the table to your stars.'},
+    {sel:'#researchBtn', title:'Research further', text:'Your worklist of shares parked to look into later. Flag a share from its report, or from the What\u2019s changed list, to add it here.'},
+    {sel:'#myChangesBtn', title:'What\u2019s changed for you', text:'Your holdings and watchlist checked against the latest data: sales, new orders, big moves, and positions grown too large. It can open by itself each day, or only when you tap it.'},
+    {sel:'#calcToolsBtn', title:'Trade calculator', text:'Work out your real costs, profit and break-even on any trade, using your own numbers. Pure arithmetic, no predictions.'},
+    {sel:'#lessonsBtn', title:'Lessons', text:'Fifty-four short illustrated lessons on reading the market, the signals and this app. Your progress is remembered on this device.'},
+    {sel:'#trainBtn', title:'Training mode', text:'Turn this on and every button, column and tile explains itself when you hover over or tap it.'},
+    {sel:'#acctBtn', title:'Your account', text:'Password, language, updates and log out.'},
+    // ── the Simple and Starter screens (whichever cards are showing) ──
+    {sel:'#liteCards [onclick="strongestTodayReport()"], #starterCards [onclick="strongestTodayReport()"]', title:'Strongest Today', text:'The day\u2019s strongest shares: proven evidence first, then measured PN Edge, then score. A ranking of today\u2019s evidence, not a buy list.'},
+    {sel:'#liteCards [onclick="showDailyPicks()"], #starterCards [onclick="showDailyPicks()"]', title:'Tonight\u2019s picks', text:'What the tested rules would buy tonight, sized and priced, with the reasons attached. \u201cNothing qualified\u201d is the system working.'},
+    {sel:'#liteCards [onclick="simpleRun(\'smart\')"], #starterCards [onclick="simpleRun(\'smart\')"]', title:'PN Edge and best evidence', text:'Only shares firing a PROMISING or SOLID signal with a positive measured edge. Every tier is earned against years of history.'},
+    {sel:'#liteCards [onclick="simpleQuietClimbers()"], #starterCards [onclick="simpleQuietClimbers()"]', title:'Quiet climbers', text:'Shares up three or more days on heavy volume, with no price-sensitive announcement. A pattern estimate, not a claim about anyone.'},
+    {sel:'#starterCards [onclick="simpleRun(\'top20\')"]', title:'Today\u2019s top scorers', text:'Proven evidence first, then score out of ten.'},
+    {sel:'#starterCards [onclick="simpleRun(\'surge\')"]', title:'What\u2019s moving on big volume', text:'Unusual trading activity today: shares trading far above their normal volume.'},
+    {sel:'#starterCards [onclick="simpleMarketPulse()"]', title:'Market today', text:'A breadth snapshot: how the whole market traded today. Ten seconds of context before anything else.'},
+    {sel:'#starterCards [onclick="simpleRun(\'recovery\')"]', title:'Recovery watch', text:'Fallen shares stabilising on volume: possible reversals, for looking at, not a reason to buy on their own.'},
+    {sel:'#liteCards [onclick="simpleRun(\'portfolio\')"], #starterCards [onclick="simpleRun(\'portfolio\')"]', title:'My portfolio', text:'Your practice trades and performance, and the switch for the auto-pilot robot.'},
+    {sel:'#starterCards [onclick="simpleRun(\'watchlist\')"]', title:'My watchlist', text:'The shares you have starred to follow.'},
+    // ── Advanced: the radar and the table ──
+    {sel:'#statsBar', title:'Market Radar', text:'Counters for gainers, volume events, trends and evidence. Tap any tile and the whole app filters to just those shares.'},
+    {sel:'#sEvEdge', up:'.stat', title:'The PN Edge tile', text:'Shows only shares carrying a proven, positive edge today. A tier is only awarded when history says the signal beat the market by more than luck could explain.'},
+    {sel:'#sTot', up:'.stat', title:'Showing', text:'Taps combine. Press Showing to clear every filter and see the whole market again.'},
+    {sel:'#tblwrap thead', title:'The table', text:'One row per share: the price, the day\u2019s move, its PN Edge, volume against its three-month normal, streaks, and a score out of ten.'},
+    {sel:'#tbody .tick-link', title:'The share code', text:'Tap a share code to open that company\u2019s page on Market Index in a new tab: the latest news, price chart and announcements.'},
+    {sel:'#tbody .row-more', title:'More', text:'The report card lives here. Tap more for the deep dive, the chart, price history, announcements and a printable report.'},
+    {sel:'#tbody .tick-links a', title:'Buy', text:'Places a practice buy for that share in your own account. Practice money only.'},
+    {sel:'#tbody td[onclick^="toggleStar"]', title:'The star', text:'Tap the star to add a share to your watchlist, or tap again to remove it.'},
+    // ── Advanced: the left panel ──
+    {sel:'#streakBtn', title:'Refreshing your data', text:'Re-fetches fresh prices and recomputes signals for the shares on screen.'},
+    {sel:'#bestEvBtn', title:'Best Evidence Today', text:'The graded scan. Of everything that fired today, it keeps only the shares whose strongest signal carries a proven edge.'},
+    {sel:'#scanGradedNote', title:'The other scans', text:'The scans in the box marked \u201csearches, not verdicts\u201d find untested patterns. They are for looking, never a reason to buy on their own.'},
+    {do:['refine'], onlyIf:'#streakBtn', sel:'#routineBtn', title:'Your routine', text:'Runs all your saved reports in one tap.'},
+    {do:['main'], sel:'#tourBtn', title:'That\u2019s the tour', text:'The daily routine takes a few minutes after the close: Market today, Strongest Today, Best Evidence, then tonight\u2019s picks. Press Tour any time to run this again, or take the full tour to hear every control explained.'}
+  ];
+
+  // ── the full tour: every explained control, in screen order ──────────────
+  function fullStops(){
+    var H=window.TRAIN_HELP||((typeof TRAIN_HELP!=='undefined')?TRAIN_HELP:null); if(!H)return [];
+    var out=[];
+    for(var id in H){ if(!Object.prototype.hasOwnProperty.call(H,id))continue;
+      var el=document.getElementById(id); if(!el||!_visible(el))continue;
+      var h=H[id]; if(!h||!h.d)continue;
+      out.push({sel:'#'+id, title:h.t||id, text:h.d, el:el});
+    }
+    // screen order (top to bottom, then left to right), not object order
+    out.sort(function(a,b){ var ra=a.el.getBoundingClientRect(), rb=b.el.getBoundingClientRect(); var ya=ra.top+window.scrollY, yb=rb.top+window.scrollY; return (ya-yb)||(ra.left-rb.left); });
+    for(var i=0;i<out.length;i++)delete out[i].el;
+    out.unshift({title:'The full tour', text:'Every control the app can explain, in screen order. Pause any time, or press Next to skip ahead.'});
+    out.push({title:'End of the full tour', text:'That is everything on screen right now. Controls hidden in Starter mode or inside closed panels were skipped.'});
+    return out;
+  }
+
+
+  // ── v898: CHAPTERS — tours that go INSIDE panels ─────────────────────────
+  // A chapter stop may carry do:[action, arg]. Actions are a closed whitelist:
+  // they only OPEN a panel or switch what it DISPLAYS. The tour never presses
+  // a button that changes data (no buy, sell, save, cancel, restore), and a
+  // tour visit to the portfolio is look-only (showPortfolio skips its order
+  // checks and price re-mark while _tourActive).
+  var CHAPTERS={};                              // name -> {title, desc, stops}; filled by _tourChapter()
+  function _pfOpen(){ var m=document.getElementById('appModal'); return !!(m&&m.style.display!=='none'&&document.getElementById('pfTab_holdings')); }
+  var ACTIONS={
+    portfolio:function(){ if(_pfOpen())return; if(typeof showPortfolio==='function'){ showPortfolio(window._pfExSel||'ALL'); if(S)S.opened=true; } },
+    pfView:function(v){ ACTIONS.portfolio(); if(typeof _setPfView==='function')_setPfView(v); },
+    // v901 - the rules panel. Opening it writes nothing (verified); the tour never
+    // taps a preset (they save instantly), Save, the robot switch, the best-practice button or Run now.
+    rules:function(){ var m=document.getElementById('appModal'); if(m&&m.style.display!=='none'&&document.getElementById('rTgt'))return; if(typeof showRules==='function'){ showRules(); if(S)S.opened=true; } },
+    // Advanced bot settings, shown as DISPLAY ONLY: toggleApAdv() would save a
+    // preference, so the tour just unhides the box inside the open panel.
+    apAdv:function(){ ACTIONS.rules(); var b=document.getElementById('apAdvBox'); if(b)b.style.display='block'; },
+    // v902 — reports. Each is opened once and re-used while it is the one on
+    // screen. All three are read-only on open (verified: no saves, no sends;
+    // picks and climbers only FETCH). A report needing loaded market data is
+    // skipped rather than opened, so the app's 'load first' alert never fires.
+    strongest:function(){ if(!(Array.isArray(window.allData)?window.allData.length:(typeof allData!=='undefined'&&allData&&allData.length)))return; _rep('strongest',function(){ strongestTodayReport(); }); },
+    picks:function(lane){ if(S&&S.picksMode0===undefined)S.picksMode0=window._picksMode; _rep('picks:'+(lane||'mine'),function(){ showDailyPicks(lane||'mine'); }); },
+    climbers:function(){ _rep('climbers',function(){ simpleQuietClimbers(); }); },
+    // back to the screen underneath: closes the report the TOUR opened
+    home:function(){ if(S&&S.rep){ _closeAll(); S.rep=null; } },
+    // v904 — the Report cards section is folded away; its own header saves a
+    // preference when tapped, so the tour just unhides it and restores it after.
+    cards:function(){ ACTIONS.home(); _reveal('sgCardsBody'); },
+    // v905 — Settings & data. None of these three saves anything (verified):
+    // the account menu only shows/positions itself; the advanced settings are a
+    // plain <details>; the filter tabs only swap classes. Each is undone at the end.
+    acct:function(){ ACTIONS.home(); var m=document.getElementById('acctMenu'); if(!m||!S)return;
+      if(m.style.display==='none'||!m.style.display){ try{ window.toggleAcctMenu({stopPropagation:function(){}}); }catch(e){ m.style.display='block'; }
+        if(!S.acctOpened){ S.acctOpened=true; _undo(function(){ var mm=document.getElementById('acctMenu'); if(mm)mm.style.display='none'; }); } } },
+    noacct:function(){ ACTIONS.home(); var m=document.getElementById('acctMenu'); if(m&&S&&S.acctOpened)m.style.display='none'; },
+    main:function(){ ACTIONS.noacct(); if(!S||!S.panels)return; ['ovSetup','ovRefine'].forEach(function(o){ if(S.panels[o]){ var x=document.getElementById(o); if(x)x.classList.remove('show'); } }); var bd=document.getElementById('ovBackdrop'); if(bd&&S.bdOpened)bd.classList.remove('show'); },
+    // the floating Setup and Refine panels. openOverlay('refine') also calls
+    // applyAdvFilters(), which re-applies your filters to the list — so the tour
+    // shows the panel by class only, and hides it again at the end.
+    setup:function(){ ACTIONS.noacct(); _panel('ovSetup'); },
+    refine:function(){ ACTIONS.noacct(); _panel('ovRefine'); },
+    adv:function(){ ACTIONS.setup(); var dd=document.getElementById('advSettingsWrap'); if(!dd||!S||dd.open)return; dd.open=true; _undo(function(){ dd.open=false; }); },
+    ftab:function(t){ ACTIONS.refine(); if(!S||typeof sw!=='function')return;
+      if(S.ftab0===undefined){ var on=document.querySelector('.tab.on[id^="tab-"]'); S.ftab0=on?on.id.replace('tab-',''):null; var t0=S.ftab0; _undo(function(){ if(t0)try{ sw(t0); }catch(e){} }); }
+      try{ sw(t); }catch(e){} }
+  };
+  function _undo(fn){ if(S)(S.undo=S.undo||[]).push(fn); }
+  // v914 — the Signal report card, opened the way YOU open it. v907-v913 tried to
+  // predict from outside whether the card could open instantly and got it wrong
+  // three times (saved-data day, then the 10-day window). Now the tour calls the
+  // card's own signalReportCard() and follows what actually appears on screen.
+  // While touring the card still skips its news registration and history save.
+  // It is NOT opened while the app is still loading: it would grade half-loaded
+  // data and keep that answer for the day.
+  var RC_LABEL='\ud83d\udccb Signal report card';
+  function _cardOn(){ return _modalUp()&&window._curModalLabel===RC_LABEL; }
+  function _cardText(){ var m=document.getElementById('appModal'); return (m&&m.textContent)||''; }
+  function _cardFailed(){ return _cardOn()&&/Could not (reach|grade|build)/.test(_cardText()); }
+  var CHECKS={ card:function(){ return _cardOn()&&!!document.querySelector('#appModal .ladrow'); } };
+  ACTIONS.brief=function(){ if(S&&S.rep!=='brief')ACTIONS.main(); if(typeof showMyChanges!=='function')return; _rep('brief',function(){ showMyChanges(); }); };
+  ACTIONS.lessons=function(){ ACTIONS.main(); var p=document.getElementById('lessonPanel'); if(!p||!S||typeof toggleLessons!=='function')return;
+    if(!p.classList.contains('open')){ try{ toggleLessons(); }catch(e){} if(!S.lsnOpened){ S.lsnOpened=true; _undo(function(){ var pp=document.getElementById('lessonPanel'); if(pp&&pp.classList.contains('open'))try{ toggleLessons(); }catch(e){} }); } } };
+  ACTIONS.nolessons=function(){ ACTIONS.main(); var p=document.getElementById('lessonPanel'); if(p&&S&&S.lsnOpened&&p.classList.contains('open'))try{ toggleLessons(); }catch(e){} };
+  ACTIONS.rcard=function(){ if(!S)return; if(S.rep!=='rcard')ACTIONS.main(); /* tidy away other panels, never the card itself */
+    if(window._prepRunning||typeof signalReportCard!=='function')return;   // still loading: wait, don't grade half-loaded data
+    if(S.rep==='rcard'&&_cardOn())return;                                   // already open (showing grades, or grading)
+    _rep('rcard',function(){ signalReportCard(); }); };
+  function _panel(id){ if(!S)return; var bd=document.getElementById('ovBackdrop');
+    ['ovSetup','ovRefine'].forEach(function(o){ if(o!==id){ var x=document.getElementById(o); if(x&&S.panels&&S.panels[o]){ x.classList.remove('show'); } } });
+    var p=document.getElementById(id); if(!p)return; S.panels=S.panels||{};
+    if(!p.classList.contains('show')){ p.classList.add('show'); if(!S.panels[id]){ S.panels[id]=1; _undo(function(){ p.classList.remove('show'); }); } }
+    if(bd&&!bd.classList.contains('show')){ bd.classList.add('show'); if(!S.bdOpened){ S.bdOpened=1; _undo(function(){ bd.classList.remove('show'); }); } } }
+  function _reveal(id){ var el=document.getElementById(id); if(!el||!S)return; if(el.style.display==='none'){ (S.restore=S.restore||[]).push([el,el.style.display]); el.style.display='block'; } }
+  function _modalUp(){ var m=document.getElementById('appModal'); return !!(m&&m.style.display!=='none'&&m.offsetHeight!==0); }
+  function _closeAll(){ try{ if(typeof closeModal==='function'){ for(var q=0;q<3;q++){ if(!_modalUp())break; closeModal(); } } }catch(e){} }
+  function _rep(key, open){ if(!S)return; if(S.rep===key&&_modalUp())return; try{ open(); S.rep=key; S.opened=true; }catch(e){} }
+  function _do(stop){ if(!stop||!stop.do)return; var fn=ACTIONS[stop.do[0]]; if(!fn)return; try{ fn(stop.do[1]); }catch(e){} }
+  window._tourChapter=function(name, title, desc, stops, need){ CHAPTERS[name]={title:title, desc:desc, stops:stops, need:need||''}; };
+
+  function _visible(el){ if(!el)return false; if(!el.offsetParent&&getComputedStyle(el).position!=='fixed')return false; var cs=getComputedStyle(el); if(cs.visibility==='hidden'||cs.opacity==='0')return false; var r=el.getBoundingClientRect(); if(!(r.width>0&&r.height>0))return false; return true; }  // v897: no page-bounds test - scroll sizes are unreliable across browsers and it skipped real stops
+  function _resolve(stop){ if(!stop.sel)return null; var list=[]; try{ list=document.querySelectorAll(stop.sel); }catch(e){ return null; } for(var i=0;i<list.length;i++){ var el=list[i]; if(stop.up){ var u=el.closest(stop.up); if(u)el=u; } if(_visible(el))return el; } return null; }  // v897: first VISIBLE match - the same card exists in the Simple and Starter groups
+
+  // ── voice ────────────────────────────────────────────────────────────────
+  function _muted(){ try{ return localStorage.getItem(MUTE_KEY)==='1'; }catch(e){ return false; } }
+  function _setMuted(v){ try{ localStorage.setItem(MUTE_KEY,v?'1':'0'); }catch(e){} }
+  function _canSpeak(){ return !!(window.speechSynthesis&&window.SpeechSynthesisUtterance); }
+  function _pickVoice(){
+    try{ var vs=speechSynthesis.getVoices()||[]; var pref=['en-AU','en-GB','en-US','en'];
+      for(var p=0;p<pref.length;p++){ for(var i=0;i<vs.length;i++){ if((vs[i].lang||'').replace('_','-').indexOf(pref[p])===0)return vs[i]; } }
+    }catch(e){} return null;
+  }
+  function _speak(text, onend){
+    if(!_canSpeak()||_muted()){ return false; }
+    try{ speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(text); var v=_pickVoice(); if(v)u.voice=v; u.rate=1; u.pitch=1;
+      var done=false; var fin=function(){ if(done)return; done=true; onend&&onend(); };
+      u.onend=fin; u.onerror=fin; speechSynthesis.speak(u);
+      // some browsers never fire onend if the tab loses focus: a safety timer
+      var est=Math.max(4000, text.split(/\s+/).length*420); setTimeout(fin, est+3000);
+      return true;
+    }catch(e){ return false; }
+  }
+  function _hush(){ try{ if(_canSpeak())speechSynthesis.cancel(); }catch(e){} }
+
+  // ── build the overlay once per run ───────────────────────────────────────
+  function _css(){ if(document.getElementById('tourCss'))return; var st=document.createElement('style'); st.id='tourCss'; st.textContent=
+    '#tourMenuBack{position:fixed;inset:0;z-index:'+(Z-1)+';background:rgba(8,10,16,.55)}'+'#tourMenu{position:fixed;z-index:'+(Z+1)+';left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,calc(100vw - 24px));max-height:calc(100vh - 40px);overflow:auto;background:#0f1420;color:#e8ecf3;border:1px solid #3a4560;border-radius:14px;padding:14px 14px 10px;box-shadow:0 12px 40px rgba(0,0,0,.55);font-family:var(--sans,system-ui,sans-serif)}'+'#tourMenu h4{margin:0 0 10px;font-size:16px;color:#f4c542}'+'#tourMenu [data-tour]{display:block;width:100%;text-align:left;margin:0 0 8px;padding:10px 12px;border-radius:10px;border:1px solid #3a4560;background:#1a2133;color:#e8ecf3;cursor:pointer;font-family:inherit}'+'#tourMenu [data-tour] b{display:block;font-size:14px}'+'#tourMenu [data-tour] span{display:block;font-size:12px;color:#9aa5bd;margin-top:2px}'+'#tourMenu [data-tour] .ok{display:inline;color:#4ade80;font-size:13px;margin:0}'+'#tourMenu .foot{font-size:11px;color:#9aa5bd;margin:4px 2px 2px}'+'#tourMenuX{position:absolute;top:10px;right:10px;border:1px solid #3a4560;background:#1a2133;color:#e8ecf3;border-radius:8px;width:30px;height:30px;cursor:pointer}'+'#tourSpot{position:fixed;z-index:'+Z+';border:2px solid #f4c542;border-radius:10px;box-shadow:0 0 0 9999px rgba(8,10,16,.62),0 0 22px rgba(244,197,66,.55);pointer-events:none;transition:top .35s,left .35s,width .35s,height .35s}'+
+    '#tourBack{position:fixed;inset:0;z-index:'+(Z-1)+';background:transparent;cursor:pointer}'+
+    '#tourBox{position:fixed;z-index:'+(Z+1)+';max-width:min(420px,calc(100vw - 24px));background:#0f1420;color:#e8ecf3;border:1px solid #3a4560;border-radius:12px;padding:12px 14px 10px;box-shadow:0 12px 40px rgba(0,0,0,.55);font-family:var(--sans,system-ui,sans-serif);font-size:14px;line-height:1.5}'+
+    '#tourBox h4{margin:0 0 5px;font-size:15px;color:#f4c542;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}'+'#tourGrip{display:flex;justify-content:center;padding:2px 0 8px;margin:-4px 0 0;cursor:grab;touch-action:none}'+'#tourGrip i{display:block;width:44px;height:5px;border-radius:3px;background:#3a4560}'+'#tourBox.moved{left:var(--tx)!important;top:var(--ty)!important;right:auto!important;bottom:auto!important}'+'@media (max-width:640px){#tourBox.moved{left:8px!important;right:8px!important;width:auto}}'+
+    '#tourBox p{margin:0 0 9px}'+
+    '#tourBar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}'+
+    '#tourBar button{padding:5px 10px;border-radius:7px;border:1px solid #3a4560;background:#1a2133;color:#e8ecf3;font-size:12px;font-weight:600;cursor:pointer}'+
+    '#tourBar button.go{background:#f4c542;color:#101010;border-color:#f4c542}'+
+    '#tourBar .n{margin-left:auto;font-size:11px;color:#9aa5bd}'+
+    '#tourProg{height:3px;background:#2a3348;border-radius:2px;margin:8px 0 6px;overflow:hidden}'+
+    '#tourProg i{display:block;height:100%;background:#f4c542;width:0;transition:width .3s}'+
+    '@media (max-width:640px){#tourBox{left:8px!important;right:8px!important;bottom:calc(8px + env(safe-area-inset-bottom,0px))!important;top:auto!important;max-width:none}}';
+    document.head.appendChild(st); }
+
+  function _build(){
+    _css();
+    var back=document.createElement('div'); back.id='tourBack'; back.title='Tap to pause or resume';
+    back.onclick=function(){ S&&(S.paused?resume():pause()); };
+    var spot=document.createElement('div'); spot.id='tourSpot';
+    var box=document.createElement('div'); box.id='tourBox';
+    box.innerHTML='<div id="tourGrip" title="Drag to move \u00b7 double-tap to put it back"><i></i></div><h4 id="tourTitle"></h4><p id="tourText"></p><div id="tourProg"><i></i></div>'+
+      '<div id="tourBar"><button id="tourPrev" title="Back">\u25c0</button><button id="tourPause" class="go" title="Pause / resume">\u23f8 Pause</button><button id="tourNext" title="Next">\u25b6</button>'+
+      '<button id="tourMute" title="Voice on / off"></button><button id="tourExit" title="End the tour">\u2715</button><span class="n" id="tourN"></span></div>';
+    document.body.appendChild(back); document.body.appendChild(spot); document.body.appendChild(box);
+    box.querySelector('#tourPrev').onclick=function(){ go(S.i-1); };
+    box.querySelector('#tourNext').onclick=function(){ go(S.i+1); };
+    box.querySelector('#tourPause').onclick=function(){ S.paused?resume():pause(); };
+    box.querySelector('#tourExit').onclick=end;
+    box.querySelector('#tourMute').onclick=function(){ _setMuted(!_muted()); _muteLabel(); _hush(); if(!S.paused){ clearTimeout(S.t); _arm(S.stops[S.i]); } };
+    _muteLabel();
+    // v900 — the bubble can be moved. Drag it by the handle or the title; it
+    // stays where you put it for the rest of this tour (the spotlight still
+    // follows each stop). Double-tap the handle to hand placement back.
+    var grip=box.querySelector('#tourGrip'), ttl=box.querySelector('#tourTitle');
+    var drag=null;
+    var down=function(e){
+      if(e.button!=null&&e.button!==0)return;
+      var r=box.getBoundingClientRect();
+      drag={dx:e.clientX-r.left, dy:e.clientY-r.top, id:e.pointerId};
+      try{ if(e.pointerId!=null&&this.setPointerCapture)this.setPointerCapture(e.pointerId); }catch(_){}
+      e.preventDefault();
+    };
+    var move=function(e){
+      if(!drag||!S)return;
+      var vw=window.innerWidth, vh=window.innerHeight, bh=box.offsetHeight||140, bw=box.offsetWidth||320;
+      var x=Math.min(Math.max(8, e.clientX-drag.dx), Math.max(8, vw-bw-8));
+      var y=Math.min(Math.max(8, e.clientY-drag.dy), Math.max(8, vh-bh-8));
+      S.pos={x:x,y:y}; _applyPos();
+      e.preventDefault();
+    };
+    var up=function(){ drag=null; };
+    [grip,ttl].forEach(function(h){ h.addEventListener('pointerdown',down); h.addEventListener('pointermove',move); h.addEventListener('pointerup',up); h.addEventListener('pointercancel',up); });
+    grip.addEventListener('dblclick',function(){ if(!S)return; S.pos=null; box.classList.remove('moved'); _place(S.el); });
+  }
+  function _applyPos(){
+    var box=document.getElementById('tourBox'); if(!box||!S||!S.pos)return;
+    box.classList.add('moved');
+    box.style.setProperty('--tx', S.pos.x+'px'); box.style.setProperty('--ty', S.pos.y+'px');
+  }
+  function _muteLabel(){ var b=document.getElementById('tourMute'); if(!b)return; if(!_canSpeak()){ b.textContent='\ud83d\udd07 no voice'; b.disabled=true; return; } b.textContent=_muted()?'\ud83d\udd07 Voice off':'\ud83d\udd0a Voice on'; }
+
+  // ── placing the spotlight and the bubble ─────────────────────────────────
+  function _place(el){
+    var spot=document.getElementById('tourSpot'), box=document.getElementById('tourBox'); if(!spot||!box)return;
+    var _keep=!!(S&&S.pos);   // v900: you moved it — only the spotlight moves now
+    var pad=6, vw=window.innerWidth, vh=window.innerHeight;
+    if(el){ var r=el.getBoundingClientRect();
+      spot.style.display='block'; spot.style.top=(r.top-pad)+'px'; spot.style.left=(r.left-pad)+'px'; spot.style.width=(r.width+pad*2)+'px'; spot.style.height=(r.height+pad*2)+'px';
+      if(vw>640&&!_keep){ var bh=box.offsetHeight||140, bw=Math.min(420,vw-24);
+        var below=r.bottom+pad+10, above=r.top-pad-10-bh;
+        var top=(below+bh<vh-8)?below:(above>8?above:Math.max(8,vh-bh-8));
+        var left=Math.min(Math.max(12, r.left), vw-bw-12);
+        box.style.top=top+'px'; box.style.left=left+'px'; box.style.bottom='auto'; }
+    } else { spot.style.display='none';
+      if(vw>640&&!_keep){ var bh2=box.offsetHeight||140, bw2=Math.min(420,vw-24); box.style.top=Math.max(8,(vh-bh2)/2)+'px'; box.style.left=Math.max(12,(vw-bw2)/2)+'px'; box.style.bottom='auto'; }
+    }
+  }
+
+  // ── stepping ─────────────────────────────────────────────────────────────
+  function _arm(stop){
+    // advance when the voice finishes, or after reading time when muted
+    var words=stop.text.split(/\s+/).length;
+    var _said=(function(){ var x=document.getElementById('tourText'); return (x&&x.textContent)||stop.text; })();   // v911: speak what is on screen
+    var spoke=_speak(stop.title+'. '+_said, function(){ if(S&&!S.paused)S.t=setTimeout(function(){ if(S)go(S.i+1); }, 900); });
+    if(!spoke) S.t=setTimeout(function(){ if(S)go(S.i+1); }, Math.max(4500, words*380));
+  }
+  function go(i, retry){
+    if(!S)return; clearTimeout(S.t); if(!retry)_hush();
+    if(i<0)i=0;
+    if(i>=S.stops.length){ end(); return; }
+    // skip stops whose element is not on screen (never fake a location)
+    var dir=retry?(S.dir||1):((i>=S.i)?1:-1), stop, el; S.dir=dir;
+    while(i>=0&&i<S.stops.length){
+      stop=S.stops[i];
+      // v905: decide whether a stop applies BEFORE running its action, so a skipped
+      // stop never opens a panel on its way past
+      if(stop.unless&&_resolve({sel:stop.unless})){ i+=dir; continue; }   // v904: only when that is NOT on screen
+      if(stop.onlyIf&&!_resolve({sel:stop.onlyIf})){ i+=dir; continue; }  // v905: only when that IS on screen (e.g. Advanced mode)
+      if(stop.when&&!(CHECKS[stop.when]&&CHECKS[stop.when]())){ i+=dir; continue; }      // v907: only when a readiness check passes
+      if(stop.whenNot&&CHECKS[stop.whenNot]&&CHECKS[stop.whenNot]()){ i+=dir; continue; } // v907: only when it does NOT
+      if(S.didDo!==i){ S.didDo=i; S.readyAt=0; _do(stop); S.until=stop.wait?Date.now()+stop.wait*(window.__tourWaitScale||1):0; }
+      else if(retry&&stop.redo){ _do(stop); }   // v910: e.g. open the card as soon as the app's own grading lands
+      // v910: once the thing waited for is ready, allow a short grace and move on either way —
+      // never sit out a long wait over a pointer that does not match
+      if(S.until&&stop.waitFor&&WAITOK[stop.waitFor]&&!CHECKS[stop.waitFor]()&&!WAITOK[stop.waitFor]()){ S.until=0; S.failed=stop.waitFor; }   // v914: remember the card said it can't grade
+      if(S.until&&stop.waitFor&&CHECKS[stop.waitFor]&&CHECKS[stop.waitFor]()&&!S.readyAt){ S.readyAt=Date.now(); S.until=Math.min(S.until,S.readyAt+2500); }
+      el=_resolve(stop); if(!stop.sel||el)break;
+      // v902 — a report loading from the server: keep looking, then skip
+      if(S.until&&Date.now()<S.until){ var ii=i; _loading(stop); S.t=setTimeout(function(){ go(ii,true); },(stop.wait>15000?600:200)); return; }
+      i+=dir;
+    }
+    if(i<0){ i=0; stop=S.stops[0]; S.didDo=0; _do(stop); el=_resolve(stop); }
+    if(i>=S.stops.length){ end(); return; }
+    S.i=i; S.el=el; try{ var _bx=document.getElementById('tourBox'); if(_bx)_bx.removeAttribute('data-loading'); }catch(e){}
+    document.getElementById('tourTitle').textContent=stop.title;
+    var _fin=(stop.why&&FINMSG[stop.why])?FINMSG[stop.why]():''; document.getElementById('tourText').textContent=_fin||stop.text;   // v914: a closing reason when there is one   // v911: say WHY, when there is a specific reason
+    document.getElementById('tourN').textContent=(i+1)+' / '+S.stops.length;
+    document.querySelector('#tourProg i').style.width=Math.round(100*(i+1)/S.stops.length)+'%';
+    if(el){ try{ el.scrollIntoView({block:'center',inline:'nearest',behavior:'smooth'}); }catch(e){ try{ el.scrollIntoView(); }catch(_){} } }
+    setTimeout(function(){ if(S){ _place(S.el); _applyPos(); } }, el?420:0);
+    if(!S.paused)_arm(stop);
+  }
+  var WAITMSG={ card:function(){
+      if(window._prepRunning) return 'The app is still loading today\u2019s data. The report card opens as soon as loading finishes.';
+      if(_cardOn()&&/Grading every signal/.test(_cardText())) return 'The card is grading today\u2019s signals \u2014 one moment.';
+      return 'Opening the report card\u2026'; } };
+  var WAITOK={ card:function(){ return !_cardFailed(); } };   // the card itself said it can't grade: stop waiting
+  var FINMSG={ card:function(){
+      if(window._prepRunning) return 'The app was still loading today\u2019s data, so the card couldn\u2019t open yet. Run this chapter again once loading has finished.';
+      if((S&&S.failed==='card')||_cardFailed()) return 'The report card couldn\u2019t be graded just now \u2014 your server may be busy. Open it again in a moment, then run this chapter again.';
+      return ''; } };
+  function _loading(stop){ var t=document.getElementById('tourTitle'), x=document.getElementById('tourText'), b=document.getElementById('tourBox');
+    var msg=(stop.waitFor&&WAITMSG[stop.waitFor])?WAITMSG[stop.waitFor]():'Opening\u2026';
+    if(t)t.textContent=stop.title; if(x)x.textContent=msg; if(b)b.setAttribute('data-loading','1');
+    // v914 — a long wait is never silent: say what it is waiting for, once per message
+    if(S&&stop.wait>15000&&S.saidWait!==msg){ S.saidWait=msg; try{ _speak(msg,function(){}); }catch(e){} } }
+  function pause(){ if(!S)return; S.paused=true; clearTimeout(S.t); _hush(); var b=document.getElementById('tourPause'); if(b)b.textContent='\u25b6 Resume'; }
+  function resume(){ if(!S)return; S.paused=false; var b=document.getElementById('tourPause'); if(b)b.textContent='\u23f8 Pause'; _arm(S.stops[S.i]); }
+  function end(){
+    if(!S)return; clearTimeout(S.t); _hush();
+    ['tourBack','tourSpot','tourBox'].forEach(function(id){ var n=document.getElementById(id); if(n&&n.parentNode)n.parentNode.removeChild(n); });
+    window.removeEventListener('resize',S.onR); window.removeEventListener('scroll',S.onR,true); document.removeEventListener('keydown',S.onK);
+    try{ localStorage.setItem(_seenKey(S.name),'1'); }catch(e){}
+    if(S.opened){ try{ if(typeof closeModal==='function'){ for(var q=0;q<3;q++){ var mm=document.getElementById('appModal'); if(!mm||mm.style.display==='none')break; closeModal(); } } }catch(e){} }
+    try{ window._pfView=S.pfView0; }catch(e){}
+    try{ if(S.picksMode0!==undefined)window._picksMode=S.picksMode0; }catch(e){}
+    try{ (S.restore||[]).forEach(function(r){ r[0].style.display=r[1]; }); }catch(e){}
+    try{ (S.undo||[]).reverse().forEach(function(f){ try{ f(); }catch(_){} }); }catch(e){}
+    window._tourActive=false;
+    S=null;
+  }
+  function start(name){
+    if(S)end();
+    // v914 — phones only let speech START from a tap. v912/v913 made the first stop wait,
+    // so the first words came later from a timer, were blocked, and the tour stayed silent.
+    // A silent utterance here, inside the tap, unlocks the voice for the whole tour.
+    try{ if(_canSpeak()&&!_muted()){ var _u=new SpeechSynthesisUtterance(' '); _u.volume=0; speechSynthesis.speak(_u); } }catch(e){}
+    var stops=(name==='full')?fullStops():(CHAPTERS[name]?CHAPTERS[name].stops.slice():MAIN.slice());
+    if(!stops.length)return false;
+    // v895 — clear the deck. The first run on a phone spoke about the radar
+    // while the daily briefing sat over the whole screen: a report modal (or a
+    // full-screen one) hides everything the tour points at. Close any open
+    // modal, leave full-screen, and hold the auto-briefing back while running.
+    try{ if(typeof closeModal==='function'){ for(var k=0;k<3;k++){ var m=document.getElementById('appModal'); if(!m||m.style.display==='none'||!m.offsetHeight)break; closeModal(); } } }catch(e){}
+    try{ if(document.fullscreenElement||document.webkitFullscreenElement)(document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document); }catch(e){}
+    window._tourActive=true;
+    S={name:name||'main', stops:stops, i:0, el:null, paused:false, t:null, opened:false, pfView0:window._pfView};
+    S.onR=function(){ if(S)_place(S.el); };
+    S.onK=function(e){ if(!S)return; if(e.key==='Escape')end(); else if(e.key==='ArrowRight')go(S.i+1); else if(e.key==='ArrowLeft')go(S.i-1); else if(e.key===' '){ e.preventDefault(); S.paused?resume():pause(); } };
+    _build();
+    window.addEventListener('resize',S.onR); window.addEventListener('scroll',S.onR,true); document.addEventListener('keydown',S.onK);
+    try{ if(_canSpeak())speechSynthesis.getVoices(); }catch(e){}   // warm the voice list
+    go(0);
+    return true;
+  }
+  function _closeMenu(){ ['tourMenuBack','tourMenu'].forEach(function(id){ var n=document.getElementById(id); if(n&&n.parentNode)n.parentNode.removeChild(n); }); }
+  function _seen(name){ try{ return localStorage.getItem(_seenKey(name))==='1'; }catch(e){ return false; } }
+  function menu(){
+    if(S){ end(); return; }
+    if(document.getElementById('tourMenu')){ _closeMenu(); return; }
+    _css();
+    var items=[['main','\ud83c\udfac Quick tour','The layout of this screen \u2014 about two minutes'],
+               ['full','\ud83e\udded Full tour','Every control on this screen, explained one by one']];
+    for(var k in CHAPTERS){ if(!Object.prototype.hasOwnProperty.call(CHAPTERS,k))continue;
+      if(CHAPTERS[k].need&&!_resolve({sel:CHAPTERS[k].need}))continue;   // v906: nothing it covers can be reached on this screen
+      items.push([k,CHAPTERS[k].title,CHAPTERS[k].desc]); }
+    var back=document.createElement('div'); back.id='tourMenuBack'; back.onclick=_closeMenu;
+    var box=document.createElement('div'); box.id='tourMenu';
+    var h='<h4>\ud83c\udfac Take a tour</h4><div id="tourMenuList">';
+    for(var i=0;i<items.length;i++){ h+='<button data-tour="'+items[i][0]+'"><b>'+items[i][1]+(_seen(items[i][0])?' <span class="ok">\u2713</span>':'')+'</b><span>'+items[i][2]+'</span></button>'; }
+    h+='</div><div class="foot">The tour only looks and points \u2014 it never changes your data. Esc or \u2715 stops it any time.</div><button id="tourMenuX" title="Close">\u2715</button>';
+    box.innerHTML=h;
+    document.body.appendChild(back); document.body.appendChild(box);
+    box.querySelector('#tourMenuX').onclick=_closeMenu;
+    var bs=box.querySelectorAll('[data-tour]');
+    for(var j=0;j<bs.length;j++){ bs[j].onclick=function(){ var n=this.getAttribute('data-tour'); _closeMenu(); if(!start(n))start('main'); /* a menu button never does nothing */ }; }
+    var onK=function(e){ if(e.key==='Escape'){ _closeMenu(); document.removeEventListener('keydown',onK); } };
+    document.addEventListener('keydown',onK);
+  }
+
+  window._tourStart=start; window._tourEnd=end; window._tourMenu=menu;
+  window._tourStops=function(name){ return (name==='full')?fullStops():MAIN.slice(); };
+})();
+
+// ═══ v899 — TOUR CHAPTER: 💼 Portfolio ═══════════════════════════════════════
+// Opens the portfolio LOOK-ONLY (see showPortfolio's _tourActive guards), walks
+// its parts in screen order, switches tabs to show each one, and closes it again.
+// Undo and delete live behind a hidden unlock and are never shown or mentioned.
+(function(){
+  if(typeof window._tourChapter!=='function')return;
+  window._tourChapter('portfolio','\ud83d\udcbc Portfolio','Inside your practice portfolio: holdings, orders, results, backups',[
+    {do:['pfView','holdings'], title:'Your practice portfolio', text:'Everything you own in practice money: positions, cash, orders and results. None of it is real money.'},
+    {do:['pfView','holdings'], sel:'button[onclick="_pfSwitch(\'main\')"]', up:'div', title:'Two separate accounts', text:'Your account and the auto-pilot\u2019s are kept completely apart. Buys you make from the table go into yours; the robot only ever trades its own fifty-thousand-dollar test account. Tap either to switch between them.'},
+    {do:['pfView','holdings'], sel:'#pfKeyStrip', title:'The key numbers', text:'Your cash, what the account is worth, today\u2019s change and how many orders are waiting. They stay at the top whichever tab you are on.'},
+    {do:['pfView','holdings'], sel:'#pfTab_holdings', title:'Holdings', text:'The shares you hold right now.'},
+    {do:['pfView','holdings'], sel:'.pf-holdings tbody tr, .pf-cards > div', title:'A holding', text:'Each line shows what you paid, today\u2019s price, its value and its profit or loss. Tap the share code for that share\u2019s printable report.'},
+    {do:['pfView','holdings'], sel:'.pf-holdings tbody tr, .pf-cards > div', title:'The markers under a share', text:'Underneath you may see: a target, a stop, a padlock for a stop you set by hand, a trailing stop, a profit ladder, or a sale queued for the next open. Each is a rule that can sell the share for you.'},
+    {do:['pfView','holdings'], sel:'button[onclick^="_pfRowMenu"]', title:'The action menu', text:'Tap the three dots to set or change a target, a stop or a trailing stop, add a note, or sell part or all of the holding.'},
+    {do:['pfView','pending'], sel:'#pfTab_pending', title:'Pending orders', text:'Buys waiting for their price. A limit buy only fills if the market price touches your limit.'},
+    {do:['pfView','pending'], sel:'button[onclick^="paperEditOrderLimit"]', up:'div', title:'Managing an order', text:'Change its price, set how long it waits, set the target and stop it will get when it fills, ask why it hasn\u2019t filled yet, or cancel it.'},
+    {do:['pfView','history'], sel:'#pfTab_history', title:'History', text:'Every closed trade, marked with what sold it: your target, your stop, a trailing stop, or time. Sold trades stay exactly as they happened \u2014 a record you can trust.'},
+    {do:['pfView','performance'], sel:'#pfTab_performance', title:'Performance', text:'How the account has done as a whole.'},
+    {do:['pfView','performance'], sel:'#pfSummary', title:'The summary cards', text:'Account total against your starting money, cash, money set aside for pending orders, what your holdings are worth, and profit or loss \u2014 unrealised on shares you still hold, realised on those you\u2019ve sold.'},
+    {do:['pfView','performance'], sel:'#pfStats', title:'Your trading stats', text:'Trades, win rate, average win and average loss. Read them together: a high win rate can still lose money if the losses are bigger than the wins.'},
+    {do:['pfView','diary'], sel:'#pfTab_diary', title:'Weekly', text:'Your results week by week: profit on trades that closed that week after fees, and what your open positions moved. Add a note about each week \u2014 what you changed, what you learned. That is the part worth keeping.'},
+    {do:['pfView','holdings'], sel:'#pfFooter', title:'Print, export and share', text:'Print a statement, download a spreadsheet, share a summary, or turn your holdings into a watchlist.'},
+    {do:['pfView','holdings'], sel:'button[onclick="exportPortfolioBackup()"]', title:'Backup and restore', text:'Save your whole account to a file, and restore it from one. Keep an occasional backup: it is how you recover if a stop ever sells on bad price data.'},
+    {do:['pfView','holdings'], title:'That\u2019s the portfolio', text:'Close it any time with the cross. Next: your trading rules and the auto-pilot.'}
+  ]);
+})();
+
+// ═══ v901 — TOUR CHAPTER: 📐 Rules & auto-pilot ══════════════════════════════
+// Opens My trading rules LOOK-ONLY (showRules writes nothing on open) and walks
+// it in screen order. Never taps a preset (they apply and save instantly),
+// Save, the auto-pilot switch, the best-practice button or Run now. Advanced
+// bot settings are revealed as display only. Wording approved by Tony 22 Sep.
+(function(){
+  if(typeof window._tourChapter!=='function')return;
+  var R=['rules'], A=['apAdv'];
+  window._tourChapter('rules','\ud83d\udcd0 Rules & auto-pilot','Your trading rules, the three ready-made sets, and every setting behind the robot',[
+    {do:R, title:'Your trading rules', text:'Your plan, in your words. These are limits you set for your practice trading, and the app helps you stick to them. Nothing here is advice.'},
+    {do:R, sel:'button[onclick="toggleRulesEnabled()"]', title:'The master switch', text:'Turns your rules on or off. When it\u2019s off, nothing here is applied.'},
+    {do:R, sel:'#pcDef', up:'div', title:'Three ready-made sets', text:'Defender: steady, with small drawdowns \u2014 the place to start. All-rounder: the evidence-backed default. Hunter: rides trends with a trailing stop and no take-profit; it wins less often and profits from rare big runs. One tap applies and saves the whole set, and you can change any number afterwards.'},
+    {do:R, sel:'#rTgt', up:'label', title:'Take profit', text:'Sells when a share is up this much from what you paid.'},
+    {do:R, sel:'#rStop', up:'label', title:'Stop loss', text:'Sells when a share falls this much. It\u2019s the rule that keeps a bad trade small.'},
+    {do:R, sel:'#rMaxPos', up:'label', title:'Max in one share', text:'The biggest slice of your account one share should be. For your own trades it\u2019s a flag in your briefing, never a block; the auto-pilot won\u2019t go over it.'},
+    {do:R, sel:'#rMaxN', up:'label', title:'Max open positions', text:'How many shares you hold at once. Again, a flag for you and a limit for the auto-pilot.'},
+    {do:R, sel:'#rTrail', up:'label', title:'Trailing stop', text:'A stop that follows the price up. It sits this far below the highest close and only ever rises.'},
+    {do:R, sel:'#rBE', up:'label', title:'Break-even', text:'Once a share is up this much, its stop moves up to what you paid, so a stop-out from there costs you roughly nothing.'},
+    {do:R, sel:'#rHold', up:'label', title:'Max hold', text:'After this many data days, a position that hasn\u2019t reached its target or stop is sold at the next open.'},
+    {do:R, sel:'#rLockOn', up:'label', title:'Profit ladder', text:'Each time the price clears another step, a profit floor is locked in under the trade. The floor can only ever rise.'},
+    {do:R, sel:'#rScaleOut', up:'label', title:'Scale out at target', text:'For the auto-pilot: when a share hits its target, sell part of it and bank the gain, then let the rest run with its stop lifted to break-even.'},
+    {do:R, sel:'#rPlan', title:'Your own rules', text:'Your own rules in plain words \u2014 the ones a number can\u2019t capture.'},
+    {do:R, sel:'button[onclick="saveRulesFromForm()"]', title:'Save', text:'Nothing you change here takes effect until you press Save.'},
+    {do:R, sel:'button[onclick="toggleAutoPilot()"]', title:'The auto-pilot', text:'Turns the robot on. It makes practice buys by these rules in its own fifty-thousand-dollar account, which you can watch in the Portfolio\u2019s robot tab. It\u2019s off until you switch it on.'},
+    {do:R, sel:'button[onclick="applyBotBestPractice()"]', title:'The best-practice bot', text:'One tap fills in the strongest tested setup: Hunter\u2019s 20% trailing stop with no take-profit, the green-day gate, the index gate, 1% of the account at risk per trade, combinations graded by your report card, a patient 2% dip entry, minimum score 7 and two buys a day. Review it, then press Save.'},
+    {do:A, sel:'#apAdvToggle', title:'Advanced settings', text:'Every setting behind the robot, if you want to tune it yourself.'},
+    {do:A, sel:'#rApSrc', up:'label', title:'Buy from', text:'Where the robot looks. Best proven scan follows whichever scan your report card currently grades best.'},
+    {do:A, sel:'#rApMax', up:'label', title:'Buys per day', text:'The most it will buy in one day.'},
+    {do:A, sel:'#rApScore', up:'label', title:'Minimum score', text:'Only shares scoring at least this out of ten.'},
+    {do:A, sel:'#rApProven', up:'label', title:'Quiet only and the evidence gate', text:'Quiet only skips shares with news in the last five days. The evidence gate stops buying while the scan it\u2019s using isn\u2019t beating the market \u2014 standing aside is a decision too.'},
+    {do:A, sel:'#rApAmt', up:'label', title:'Dollars per buy', text:'How much each buy spends: at least two thousand dollars, because the flat six-dollar brokerage eats the edge on anything smaller, and never above your max-in-one-share limit.'},
+    {do:A, sel:'#rApMinPx', up:'label', title:'Price band', text:'Only shares priced between these two amounts.'},
+    {do:A, sel:'#rApLadder', up:'label', title:'Follow the report card', text:'Buys only shares firing the signals your report card rates best, and follows along as signals prove themselves or fade.'},
+    {do:A, sel:'#rApSig_bo', up:'div', title:'Buy signals', text:'The signals it may act on. Selling and warning flags are deliberately never used as reasons to buy.'},
+    {do:A, sel:'#rApGreen', up:'div', title:'Don\u2019t chase', text:'Buy only on a green day, and skip shares with an RSI of 70 or more: don\u2019t pay up for a share that\u2019s already run hard.'},
+    {do:A, sel:'#rApRegime', up:'label', title:'Index gate', text:'Only buys while the market index is above its 50-day average. In a falling market, it stands aside.'},
+    {do:A, sel:'#rApRisk', up:'label', title:'Risk per trade', text:'Sizes each buy so a full stop-out costs about this share of the account: smaller parcels for jumpy shares, bigger for quiet ones. A share it was stopped out of isn\u2019t bought again for five trading days.'},
+    {do:A, sel:'#rApComboSel', up:'label', title:'Combo gate', text:'Require two signals together. The adaptive setting re-reads your report card every data day and uses whatever combination is proving itself now.'},
+    {do:A, sel:'#rApEntrySel', up:'div', title:'How it buys', text:'At the next day\u2019s open, or patiently, with a limit order a set percentage below the last close. Deeper dips fill less often \u2014 measure a share\u2019s real dips with Dip Finder first.'},
+    {do:A, sel:'#apPkT', up:'div', title:'My picks', text:'Your own practice limit orders: pick a share, the price to buy at, the price to sell at and how much to invest.'},
+    {do:A, sel:'button[onclick="runAutoPilotNow()"]', up:'div', title:'Run now and scoreboard', text:'Run the robot now instead of waiting for the next data day, or open its scoreboard of closed trades.'},
+    {do:A, sel:'#apLogBox', title:'The robot\u2019s diary', text:'Every decision it makes, including every day it chose not to buy, is written down here.'},
+    {do:A, title:'That\u2019s your rules', text:'Next: the reports, and how to read each one.'}
+  ]);
+})();
+
+// ═══ v903 — TOUR CHAPTER: 📊 Reports — the daily screens ═════════════════════
+// The Simple screen's reports. Strongest Today, Tonight's picks and Quiet
+// climbers are opened (all read-only on open; picks and climbers wait for the
+// server). PN Edge is explained from its card and NOT run: running it resets
+// the main list's filters. Never presses Practice buy.
+(function(){
+  if(typeof window._tourChapter!=='function')return;
+  var H=['home'], ST=['strongest'], PK=['picks','mine'], QC=['climbers'];
+  var card=function(fn){ return '#liteCards [onclick="'+fn+'"], #starterCards [onclick="'+fn+'"]'; };
+  window._tourChapter('reports1','\ud83d\udcca Reports \u2014 the daily screens','Strongest Today, tonight\u2019s picks, PN Edge and quiet climbers, and how to read them',[
+    {do:H, title:'The daily reports', text:'Each card on the Simple screen opens a report. This chapter opens the main ones and shows you how to read them.'},
+    // Strongest Today
+    {do:H, sel:card('strongestTodayReport()'), title:'Strongest Today', text:'The day\u2019s strongest shares, in one ranked list.'},
+    {do:ST, sel:'#stIntro', title:'How it\u2019s ranked', text:'Proven evidence first, then the measured PN Edge, then the score. This line also says which day the evidence was graded, and whether your card reached the server.'},
+    {do:ST, sel:'#stTbl thead', title:'The columns', text:'Price and the day\u2019s move, the score out of ten, the evidence tier, any news in the last five days, and the PN Edge.'},
+    {do:ST, sel:'#stTbl thead th:nth-child(6)', title:'Evidence', text:'SOLID means luck is practically ruled out; PROMISING means it looks real, on thinner evidence. Only signals with a positive measured edge earn a tier.'},
+    {do:ST, sel:'#stTbl thead th:nth-child(7)', title:'News', text:'Whether the company has made a price-sensitive announcement in the last five days. Quiet means none.'},
+    {do:ST, sel:'#stTbl thead th:nth-child(8)', title:'PN Edge', text:'How much more a hundred dollars placed on this signal has historically made than the market over the holding period. An average from history, not a promise for this trade.'},
+    {do:ST, sel:'#stTbl tbody tr', title:'A share', text:'Tap any share for its full story. This is a ranking of today\u2019s evidence, not a buy list.'},
+    // Tonight's picks
+    {do:H, sel:card('showDailyPicks()'), title:'Tonight\u2019s picks', text:'What the tested rules would buy tonight, worked out on the server after the close.'},
+    {do:PK, wait:8000, sel:'#dpRule', title:'The rules being used', text:'Each list follows a set of rules, spelled out at the top.'},
+    {do:PK, wait:8000, sel:'#dpFresh', title:'Is it today\u2019s?', text:'Tells you whether these picks come from the latest market day, or whether the server hasn\u2019t run yet.'},
+    {do:PK, wait:8000, sel:'#dpTabs', title:'Three lists', text:'Picks under your own rules, under the trailing-stop rules, and under the fixed target-and-stop rules. Switch between them here.'},
+    {do:PK, sel:'.dp-card', title:'A pick', text:'The share, the signal that fired, its score and tier, and when it was picked. Older picks fade the longer they wait.'},
+    {do:PK, sel:'.dp-why', title:'Why it was picked', text:'One plain sentence: what fired, and what its tier means.'},
+    {do:PK, sel:'.dp-cost', title:'Is it worth the costs?', text:'What this trade costs in brokerage at this size, set against the average gain the signal has made. A pick only passes if the gain is at least one and a half times the cost.'},
+    {do:PK, sel:'button[onclick^="_picksBuy"]', title:'Practice buy', text:'Places this pick as a practice buy in your own account, at the pick\u2019s price. Practice money only.'},
+    {do:PK, title:'When nothing qualifies', text:'Some days a list is empty. That is the rules working: nothing cleared the bar, so nothing is bought.'},
+    // PN Edge (explained from its card)
+    {do:H, sel:card("simpleRun('smart')"), title:'PN Edge', text:'Only shares firing a SOLID or PROMISING signal with a positive measured edge \u2014 the same PN Edge figures you saw in Strongest Today. Tap it to see just those shares.'},
+    // Quiet climbers
+    {do:H, sel:card('simpleQuietClimbers()'), title:'Quiet climbers', text:'Shares climbing steadily on heavy volume, with no announcement to explain it.'},
+    {do:QC, wait:8000, sel:'#appModal table tr', title:'Reading it', text:'How many days it has run up, its volume against its own average, and its gain over the run.'},
+    {do:QC, wait:8000, sel:'#appModal table tr + tr', title:'A pattern, not a claim', text:'An estimate built from price and volume alone. It says nothing about who is buying, or why.'},
+    // Portfolio
+    {do:H, sel:card("simpleRun('portfolio')"), title:'My portfolio', text:'Your practice trades and results. Take the Portfolio chapter for the full tour of it.'},
+    {do:H, title:'That\u2019s the daily reports', text:'Next: the scans in Advanced mode.'}
+  ]);
+})();
+
+// ═══ v904 — TOUR CHAPTER: 📊 Reports — the Advanced scans ════════════════════
+// Every scan on Advanced mode's left panel, explained from its button and NOT
+// run: running a scan rewrites the main list and resets filters. The Report
+// cards section is revealed display-only and folded back afterwards. Never
+// presses a scan, a quick plan, My Report, Save, Auto-run or the server check.
+(function(){
+  if(typeof window._tourChapter!=='function')return;
+  var H=['home'], C=['cards'];
+  var b=function(fn){ return '[onclick^="'+fn+'"]'; };
+  window._tourChapter('reports2','\ud83d\udcca Reports \u2014 the Advanced scans','Every scan on Advanced mode\u2019s left panel, and the report cards that grade them',[
+    {do:H, unless:'#bestEvBtn', onlyIf:'#modeSeg', title:'Most of these live in Advanced mode', text:'Most of the scans in this chapter are on Advanced mode\u2019s left panel. Switch to Advanced with the button at the top of the screen, then run this chapter again to see them all.'},
+    {do:H, title:'The Advanced scans', text:'Each one searches the whole market in its own way and fills your table with what it finds. Here is what each one looks for.'},
+    {do:H, sel:'#scanGradedNote', title:'Graded, or not', text:'Only two are built on graded evidence: Best Evidence Today and Climbers Today. The rest are searches, not verdicts \u2014 useful for looking, never a reason to buy on their own.'},
+    {do:H, sel:'#bestEvBtn', title:'Best Evidence Today', text:'Of everything that fired today, only shares whose signal holds a SOLID or PROMISING tier with a positive, market-beating edge, ranked by the strength of each share\u2019s best signal. The flagship report.'},
+    {do:H, sel:'#climbBtn', title:'Climbers Today', text:'Shares firing a signal that is climbing toward SOLID but isn\u2019t proven yet. A shortlist for scepticism, never picks \u2014 the robot never reads it.'},
+    {do:H, sel:'#top10Btn', title:'Top 20 to Watch', text:'Proven evidence first, then the score out of ten, top twenty. A quick look at what is most interesting today.'},
+    {do:H, sel:'#allSigBtn', title:'All Signals', text:'Runs every check at once and ranks shares by how many signals they trigger together.'},
+    {do:H, sel:'#unusualBtn', title:'Unusual Activity', text:'Five unusual patterns in how a share traded, like heavy volume with no price move, or a price jump on thin volume. About the shape of the trading \u2014 not a claim of manipulation.'},
+    {do:H, sel:'#surgeBtn', title:'Volume Surge', text:'Every share trading above its normal volume, biggest surge first, each tagged buying or selling by which way the price went.'},
+    {do:H, sel:'#gapBtn', title:'Gap Report', text:'Shares that opened three percent or more away from yesterday\u2019s close, split into those that held the gap and those that faded. Ten years of data say neither group beat the market afterwards \u2014 a lens, not a signal.'},
+    {do:H, sel:'#pullbackBtn', title:'Pullback in Uptrend', text:'Shares in an established uptrend that have dipped back toward their short-term average, with momentum cooled but not broken \u2014 the classic buy-the-dip setup, as a research list.'},
+    {do:H, sel:b('recoveryScanAdv'), title:'Recovery Watch', text:'Fallen shares stabilising on higher volume: possible turnarounds, for looking at.'},
+    {do:H, sel:'#quietBtn', title:'Quiet Movers', text:'Shares that barely moved today but are quietly building underneath: a paused uptrend, heavy volume on a flat price, or a gain that faded into the close.'},
+    {do:H, sel:'#trendBtn', title:'Strong Trends', text:'The strongest trend structure: price above its 20-day average, above the 50-day, above the 200-day. Ranked by how steady the trend is.'},
+    {do:H, sel:b('technicalScan'), title:'Technical', text:'Ranks shares on classic indicators: moving-average crosses, RSI, 52-week position, volume flow, gaps and volatility.'},
+    {do:H, sel:b('speedingTicketScan'), title:'Sharp Mover Detector', text:'Ranks shares by how big today\u2019s move is compared with that share\u2019s own normal day. A four percent jump is nothing for a wild penny stock and a siren for a sleepy blue chip.'},
+    {do:H, sel:'#fadeBtn', title:'Fading Strength', text:'The opposite of the others: shares up two or more days in a row, a pattern that has tested as worse over the next five days. A caution list, not a buy list.'},
+    {do:H, sel:'#quickPlansRowAdv, #quickPlansRow', title:'Quick plans', text:'One tap loads a ready-made set of filters: Breakout, Penny Movers or Informed. They change your filters \u2014 press Showing to clear them again.'},
+    {do:H, sel:b('_laOddsScan'), title:'Days like today', text:'For shares having a distinctive day \u2014 real volume, a real move, a streak or a high \u2014 it finds past days that looked the same, and shows how often a rise followed and on how many past days that is based.'},
+    {do:H, sel:b('gradingCheckReport'), title:'Does the grading work?', text:'The app testing its own method: it takes each signal\u2019s verdict in one year and checks what that signal actually did in the next. It reports the answer whichever way it falls.'},
+    {do:C, sel:'#sgCardsH', title:'The report cards', text:'The app\u2019s honesty checks. They re-run every signal and every scan over your stored history and report how each actually did \u2014 including when the answer is bad.'},
+    {do:C, sel:'[onclick="signalReportCard()"]', title:'Signal report card', text:'For each signal: how often shares beat the market in the days after it fired, over five, ten or thirty days. This is where SOLID and PROMISING come from.'},
+    {do:C, sel:'[onclick="allScansCard()"]', title:'All scans report card', text:'Grades every scan at once, re-testing each rule as it stood on each stored day, and ranks the scans by edge. The one screen that shows which scans are actually working right now.'},
+    {do:['refine'], onlyIf:'#streakBtn', sel:'#myReportBtn', title:'My Report', text:'Save the filters you use most, then bring them back with one tap \u2014 or have them applied automatically each time your data loads.'},
+    {do:['main'], title:'That\u2019s the reports', text:'Next: settings and your data.'}
+  ], '#bestEvBtn, #modeSeg');
+})();
+
+// ═══ v905 — TOUR CHAPTER: ⚙ Settings & data ═════════════════════════════════
+// Grouped by where each control really lives (checked against the app's own
+// stylesheet): the account menu (every mode), then — in Advanced mode only —
+// the main-screen data buttons, the floating Setup & data panel, and the
+// floating Refine panel. Panels are shown DISPLAY ONLY (openOverlay('refine')
+// would re-apply filters) and closed again; nothing is ever pressed.
+(function(){
+  if(typeof window._tourChapter!=='function')return;
+  var H=['main'], AC=['acct'], SU=['setup'], AV=['adv'], RF=['refine'], ADV='#streakBtn';
+  var T=function(t){ return ['ftab',t]; };
+  window._tourChapter('settings','\u2699 Settings & data','Your account, where the data comes from, the settings and the filters',[
+    {do:H, title:'Settings and your data', text:'Where your data comes from, how to keep it fresh, and the settings that shape what you see.'},
+    // ── account menu (every mode) ──
+    {do:H, sel:'#acctBtn', title:'Your account', text:'Your account menu: the app\u2019s password, language, updates and log out.'},
+    {do:AC, sel:'#acctMenu [onclick*="toggleHelpPanel"]', title:'Help guide', text:'The written guide to the app, if you want to read rather than watch.'},
+    {do:AC, sel:'#acctMenu [onclick="changeAppPassword()"]', title:'Change password', text:'Changes the password the app asks for.'},
+    {do:AC, sel:'#langSel', title:'Language', text:'Switches the app\u2019s language. Menus and labels translate; your data stays the same.'},
+    {do:AC, sel:'#acctMenu [onclick="checkForUpdateNow()"]', title:'Check for updates', text:'Shows the version you\u2019re on and fetches a newer one if there is one. The app also updates itself when you open it.'},
+    {do:AC, sel:'#acctMenu [onclick="logout()"]', title:'Log out', text:'Locks the app again. Your data stays saved on this device.'},
+    {do:H, sel:'#modeSeg', title:'Three ways to see it', text:'Simple, Starter and Advanced show the same data at different depths. Switching never changes your data.'},
+    {do:H, sel:'#sidebarToggle', title:'More room', text:'Hides the side panel so the rest of the screen gets the room. Tap again to bring it back.'},
+    {do:H, unless:ADV, onlyIf:'#modeSeg', title:'The rest lives in Advanced mode', text:'The data buttons, settings and filters are in Advanced mode. Switch to Advanced, then run this chapter again to see them.'},
+    // ── main screen, Advanced ──
+    {do:H, onlyIf:ADV, sel:'#loadStatus', title:'What it\u2019s doing', text:'Shows what the app is doing: loading, preparing signals, or ready.'},
+    {do:H, onlyIf:ADV, sel:'#streakBtn', title:'Refresh', text:'Re-fetches fresh history and recomputes the signals for the shares on screen.'},
+    {do:H, onlyIf:ADV, sel:'#fillSrvBtn', title:'Fill from your server', text:'Builds your saved price history straight from your server, one request per trading day. Use it on a new device, after clearing data, or whenever loading crawls.'},
+    {do:H, onlyIf:ADV, sel:'#resetBtn', title:'Clear all filters', text:'Back to the full list in one tap. It clears filters only; it never touches your data.'},
+    {do:H, onlyIf:ADV, sel:'#searchBox', title:'Search', text:'Type a share code or company name to jump straight to it.'},
+    {do:H, onlyIf:ADV, sel:'#sortSel', title:'Sort', text:'Reorders the table by any column.'},
+    {do:H, onlyIf:ADV, sel:'#newsFilterBtn', title:'News filter', text:'Shows only shares likely to have had news in the last five days.'},
+    // ── the Setup & data panel, Advanced ──
+    {do:H, onlyIf:ADV, sel:'[onclick="openOverlay(\'setup\')"]', title:'Setup and data', text:'Opens a panel with the market, the loading and download buttons, and the advanced settings.'},
+    {do:SU, onlyIf:ADV, sel:'#exchSel', title:'The market', text:'The ASX \u2014 the market every number in the app was measured on.'},
+    {do:SU, onlyIf:ADV, sel:'#loadBtn', title:'Load', text:'Fetches the latest end-of-day prices and volumes for every share, straight from your server. The first thing to press.'},
+    {do:SU, onlyIf:ADV, sel:'#bulkBtn', title:'Download everything', text:'Downloads deep history for every share and keeps it on this device. Slow once; after that the app works offline and loads almost instantly.'},
+    {do:SU, onlyIf:ADV, sel:'#apiKey', title:'Data connection', text:'The app gets its market data from your server automatically. There is no key to enter.'},
+    {do:AV, onlyIf:ADV, sel:'#advSettingsWrap > summary', title:'Advanced settings', text:'The settings most people never need to touch.'},
+    {do:AV, onlyIf:ADV, sel:'#volWinSel', up:'label', title:'Volume window', text:'What today\u2019s volume is compared against, such as the three-month average. A longer window gives a steadier idea of normal.'},
+    {do:AV, onlyIf:ADV, sel:'#autoLoadChk', up:'label', title:'Load on open', text:'Loads the market automatically every time the app opens.'},
+    {do:AV, onlyIf:ADV, sel:'#autoTechChk', up:'label', title:'Technicals at startup', text:'Works out moving averages, RSI and the 52-week range for the top shares and your watchlist when the app opens.'},
+    {do:AV, onlyIf:ADV, sel:'#prepAllChk', up:'label', title:'Prepare every signal at startup', text:'Works out streaks, accumulation, score and technicals when the app opens, so those columns fill in without running a scan.'},
+    {do:AV, onlyIf:ADV, sel:'#prepDepth', up:'label', title:'How many shares', text:'How many shares, ranked by volume, get full signals prepared at startup. Top 250 is the balanced default; all of them is complete but slow.'},
+    // ── the Refine panel, Advanced ──
+    {do:H, onlyIf:ADV, sel:'[onclick="openOverlay(\'refine\')"]', title:'Refine filters', text:'Opens the filters. They are optional: the reports work without them.'},
+    {do:T('price'), onlyIf:ADV, sel:'#tab-price', title:'The filters', text:'Narrow the list by price, volume, type of share and signals. Set what you want, then press Apply.'},
+    {do:T('price'), onlyIf:ADV, sel:'#panel-price', title:'Price', text:'Which way it moved, how far, the share price, and how many days it has risen in a row.'},
+    {do:T('vol'), onlyIf:ADV, sel:'#panel-vol', title:'Volume', text:'Volume against normal, volume and buying streaks, accumulation over ten days, and how it traded.'},
+    {do:T('mkt'), onlyIf:ADV, sel:'#panel-mkt', title:'Type and liquidity', text:'How much money changes hands on a normal day \u2014 set a floor to skip shares too thin to trade at a fair price \u2014 and which kinds of security to include.'},
+    {do:T('sig'), onlyIf:ADV, sel:'#panel-sig', title:'Signals', text:'Watch score, RSI zone, signal flags and how they combine, and recent announcements.'},
+    {do:RF, onlyIf:ADV, sel:'#applyBtn', title:'Apply', text:'Nothing filters until you press Apply.'},
+    {do:RF, onlyIf:ADV, sel:'#routineBtn', title:'Your routine', text:'Runs your saved sequence of scans in order: your usual check, in one tap.'},
+    {do:H, title:'That\u2019s settings', text:'Next: your daily briefing, the nightly email and the lessons.'}
+  ]);
+})();
+
+// ═══ v907 — TOUR CHAPTER: 📋 The signal report card ══════════════════════════
+// Where SOLID and PROMISING come from. Opened ONLY when today's grades are
+// already on this device (the card's instant path) — no grading, no request —
+// and look-only: no news registration, no grade-history save while touring.
+// Never presses the window, view or news choices, the deep-dive fold or print.
+(function(){
+  if(typeof window._tourChapter!=='function')return;
+  var RC=['rcard'], H=['main'];
+  var M=function(sel){ return '#appModal '+sel; };
+  window._tourChapter('signals','\ud83d\udccb The signal report card','Where SOLID and PROMISING come from, and how to read every number on the card',[
+    {do:RC, title:'The signal report card', text:'Where SOLID and PROMISING come from. The app re-runs every signal over your stored history and reports how each one actually did \u2014 including when the answer is bad.'},
+    {do:RC, wait:180000, redo:true, waitFor:'card', sel:M('span[title^="These grades were computed on YOUR server"]')+', '+M('span[title^="Computed on this device"]'), title:'Where it was graded', text:'On your server, or on this device if the server couldn\u2019t be reached. The same maths either way.'},
+    {do:RC, when:'card', sel:M('[onclick^="setCardHold"]'), up:'div', title:'How long after', text:'Outcomes are measured five trading days after each signal fired \u2014 the window the auto-pilot trades on. Ten and thirty days are research views: does the edge last?'},
+    {do:RC, when:'card', sel:M('[onclick^="_sigView"]'), up:'div', title:'Gainers or fallers', text:'Show every fire, only the days the share rose, or only the days it fell.'},
+    {do:RC, when:'card', sel:M('[onclick^="_sigNews"]'), up:'div', title:'News or quiet', text:'Split the fires by whether there was a price-sensitive announcement: news-driven moves, or quiet ones.'},
+    {do:RC, when:'card', sel:M('div[title^="The ladder ranks every flag"]'), title:'The ladder', text:'Every signal and combination, ranked best to worst by its strength out of ten.'},
+    {do:RC, when:'card', sel:M('.ladrow'), title:'A signal', text:'Each line is one signal: its rank, its strength out of ten \u2014 how strong and how proven, in one number \u2014 and its PN Edge: the money made per hundred dollars, on average, in the days after it fired, beyond what the market did and before costs.'},
+    {do:RC, when:'card', sel:M('.ladrow'), title:'The warning sign', text:'A warning triangle means a figure is past what is plausible for an end-of-day signal, so its score is capped. Check how many fires it rests on, and the earlier years, before believing it.'},
+    {do:RC, when:'card', sel:M('div[title^="Combinations = two or three flags"]'), title:'Combinations', text:'Two or three signals firing on the same share on the same day. Does agreement beat any single signal on its own?'},
+    {do:RC, when:'card', sel:M('div[title^="Sequences = a quiet-buying flag"]'), title:'Sequences', text:'Quiet buying in the one to three days before, then an ignition signal. Does that order matter?'},
+    {do:RC, when:'card', sel:M('div[title^="Of the winning fires"]'), title:'The announcement question', text:'Of the winning fires, how many had a price-sensitive announcement on or just before the day? A move with news behind it is a different thing from a move without.'},
+    {do:RC, when:'card', sel:M('div[title^="Of the lines NOT yet SOLID"]'), title:'Climbing the ladder', text:'Of the lines not yet SOLID: which are genuinely moving toward the bar, and exactly what each one still needs.'},
+    {do:RC, when:'card', sel:M('div[onclick*="cardDeepOpen"]'), title:'How to read this card', text:'A plain-English deep dive into every number on the card. Tap it to unfold it.'},
+    {do:RC, when:'card', sel:M('[onclick^="printSignalReport"]'), title:'Save or print', text:'Keep a copy of the card as it stands today.'},
+    {do:H, whenNot:'card', why:'card', title:'Not graded yet', text:'Today\u2019s grades aren\u2019t ready on this device yet. Open the Signal report card once from the report cards in Advanced mode \u2014 it takes a moment the first time \u2014 then run this chapter again.'},
+    {do:H, title:'That\u2019s the report card', text:'Every tier in the app \u2014 every SOLID and PROMISING badge on every share \u2014 traces back to this card.'}
+  ], '#bestEvBtn, #modeSeg');
+})();
+
+// ═══ v909 — TOUR CHAPTER: 🎓 Lessons, training & your briefing ══════════════
+// The daily briefing (opened look-only: it is not marked seen), then the
+// lessons panel and training mode. Never answers a quiz, opens flashcards,
+// switches training mode on or changes the briefing's auto-open setting.
+(function(){
+  if(typeof window._tourChapter!=='function')return;
+  var H=['nolessons'], B=['brief'], L=['lessons'];
+  var M=function(sel){ return '#appModal '+sel; };
+  var P=function(sel){ return '#lessonPanel '+sel; };
+  window._tourChapter('learn','\ud83c\udf93 Lessons, training & your briefing','Your daily briefing, the 54 lessons, flashcards and quizzes, and training mode',[
+    {do:H, title:'Learning the app', text:'Where to learn, and the one screen that checks in with you each day.'},
+    // ── the daily briefing ──
+    {do:H, sel:'#myChangesBtn', title:'What\u2019s changed for you', text:'Your holdings and watchlist, checked against each new market day.'},
+    {do:B, sel:M('#mcHead'), title:'Your daily briefing', text:'It checks everything you hold and watch against the latest data: sales the auto-pilot made, new orders, big moves, and positions that have grown too large.'},
+    {do:B, sel:M('button[onclick^="_myChangesAutoToggle"]'), title:'Opening by itself', text:'It can open by itself once each market day, or only when you tap the bell. This button switches between the two.'},
+    {do:B, sel:M('#mcHoldings'), title:'Your holdings', text:'Anything that happened to what you hold: sales, new orders, and shares grown past your size limits.'},
+    {do:B, sel:M('[title="Open this watchlist"]'), title:'Your watchlists', text:'Each watchlist, with how many of its shares moved enough to flag. Tap a list\u2019s name to open it.'},
+    {do:B, sel:M('#mcFoot'), title:'Going deeper', text:'Tap any line for that share\u2019s full story. These are end-of-day estimates, not advice.'},
+    // ── the lessons ──
+    {do:H, sel:'#lessonsBtn', title:'Lessons', text:'Fifty-four short illustrated lessons on reading the market, the signals and this app.'},
+    {do:L, sel:'#lessonProg', title:'Your progress', text:'How many lessons you have finished. It is remembered on this device.'},
+    {do:L, sel:P('a[href*="Beginners-Guide"]'), up:'div', title:'The written guides', text:'The Beginner\u2019s Guide as a PDF and the setup deck as a PowerPoint, if you would rather read.'},
+    {do:L, sel:P('[onclick="openFlashcards()"]'), title:'Flashcards', text:'Quick-fire cards to test what you remember.'},
+    {do:L, sel:P('[onclick="openStudyQuiz()"]'), title:'Quiz me', text:'A mixed quiz across everything you have studied.'},
+    {do:L, sel:'#lsnLang', title:'Language', text:'Read the lessons in another language.'},
+    {do:L, sel:'#lessonNav', title:'Every lesson', text:'The full list. A tick means you have passed that lesson\u2019s quiz.'},
+    {do:L, sel:'#lessonBody', title:'A lesson', text:'Short steps, one idea each, a few minutes long, with a quick quiz at the end.'},
+    {do:L, sel:'#lessonBody .lsn-nav', title:'Next and back', text:'Step through the lessons in order.'},
+    {do:L, sel:P('.hp-fs'), title:'Full screen', text:'Give the lesson the whole screen. Press it again to shrink it back.'},
+    {do:L, sel:'#lessonDrag', title:'Move it', text:'Drag the panel by its top bar to put it wherever suits you.'},
+    // ── training mode ──
+    {do:H, sel:'#trainBtn', title:'Training mode', text:'Turn it on and every button, column and tile explains itself when you hover over or tap it. The full tour reads its words from the same place.'},
+    {do:H, title:'That\u2019s everything', text:'You have seen the whole app. Run any chapter again from the Tour menu, any time.'}
+  ]);
+})();
