@@ -1,5 +1,5 @@
 {
-  "version": "2026.09.22-931-beta",
+  "version": "2026.09.22-932-beta",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "New tour chapter: \u2696 Does the grading work? - a full walkthrough of the app's own meta-test, whether earning a badge actually predicted a signal would keep working, not just whether it beat the market once. Opens the report card first, then the grading-check report itself: the verdict, the badge-vs-no-badge comparison, the fade, and the strongest/weakest lines afterwards."
+  "notes": "Fixed the new \u2696 Does the grading work? tour chapter - it was skipping straight to 'open the report yourself' without ever actually trying to open it. It now opens both reports itself; if it still can't show real content, that means the graded history genuinely isn't there yet, not that you need to do something first."
 }
