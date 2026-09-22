@@ -1,5 +1,5 @@
 {
-  "version": "2026.09.22-930-beta",
+  "version": "2026.09.22-931-beta",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Thai is now a language option in the picker (Language > \ud83c\uddf9\ud83c\udded \u0e44\u0e17\u0e22), and the tour's read-aloud voice now follows whichever language you've selected instead of always speaking English - if your device doesn't have a voice for that language, it stays quiet rather than read translated text in the wrong accent."
+  "notes": "New tour chapter: \u2696 Does the grading work? - a full walkthrough of the app's own meta-test, whether earning a badge actually predicted a signal would keep working, not just whether it beat the market once. Opens the report card first, then the grading-check report itself: the verdict, the badge-vs-no-badge comparison, the fade, and the strongest/weakest lines afterwards."
 }
