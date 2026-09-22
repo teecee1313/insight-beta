@@ -1,5 +1,5 @@
 {
-  "version": "2026.09.22-927-beta",
+  "version": "2026.09.22-928-beta",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Tour now covers Market Today - the first card in the daily routine, and until now the only one with no walkthrough. Added right before Strongest Today in the Reports chapter: what the breadth snapshot shows (up/down/flat, advance-decline, volume vs normal, today's biggest movers) and why it's worth checking before judging any single share's move."
+  "notes": "Quiet Movers now opens in its own window (Print / Full screen / Max, close with X or swipe down) instead of silently filling the background table - matches how every other report card already worked. Same underlying selection and scoring, just shown properly: ticker, price, today's move, Watch Score, and what's building underneath (streak, accumulation, volume, or an intraday fade), tap any row to jump to that share's full report."
 }
