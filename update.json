@@ -1,5 +1,5 @@
 {
-  "version": "2026.09.22-925-beta",
+  "version": "2026.09.22-926-beta",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "New in the Tour menu: The Market Radar - what the tiles above your list count, how they narrow what you see (and stack), and why they narrow your watchlist too."
+  "notes": "Tour got clearer on two things people asked about: why a share with no PN Edge still shows up in Strongest Today (it ranks proven evidence first, then falls back to score - a dash just means nothing's proven yet, not a data problem), and what the 5-vs-10-day hold setting actually means (it's testing an old backtest window, not changing how fast today's signals show up - 5 days is the one that matches how picks in this app actually retire)."
 }
