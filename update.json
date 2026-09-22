@@ -1,5 +1,5 @@
 {
-  "version": "2026.09.22-928-beta",
+  "version": "2026.09.22-929-beta",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Quiet Movers now opens in its own window (Print / Full screen / Max, close with X or swipe down) instead of silently filling the background table - matches how every other report card already worked. Same underlying selection and scoring, just shown properly: ticker, price, today's move, Watch Score, and what's building underneath (streak, accumulation, volume, or an intraday fade), tap any row to jump to that share's full report."
+  "notes": "Every Advanced scan now opens its own window when you run it - Sharp Mover Detector, Unusual Activity, Volume Surge, Gap Report, Recovery Watch, Strong Trends, Pullback in Uptrend and Quiet Movers all match Strongest Today and the report cards now: Print / Full screen / Max, tap any row to jump to that share. The shared table still fills too, so sorting and the price/RSI/liquidity filters keep working on the results once you close the window - nothing lost, just consistent everywhere."
 }
