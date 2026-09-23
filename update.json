@@ -1,5 +1,5 @@
 {
-  "version": "2026.09.22-932-beta",
+  "version": "2026.09.22-933-beta",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Fixed the new \u2696 Does the grading work? tour chapter - it was skipping straight to 'open the report yourself' without ever actually trying to open it. It now opens both reports itself; if it still can't show real content, that means the graded history genuinely isn't there yet, not that you need to do something first."
+  "notes": "Fixed the gate kicking already-unlocked testers back to the password screen mid-session. Any single failed request to the server was treated as an instant full re-lock, with no check on why - a background request hiccupping during loading could nuke the whole session. It now double-checks with the server before locking anyone out; a genuine lockout still locks, a stray failure no longer does."
 }
