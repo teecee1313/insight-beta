@@ -1,5 +1,5 @@
 {
-  "version": "2026.09.22-935-beta",
+  "version": "2026.09.22-936-beta",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Portfolio's History tour now covers what a closed trade shows in real detail, including the 'now $X - +Y% since you sold' hindsight line (with 'it kept climbing' / 'good exit' notes) that only used to appear on desktop - it's now on the mobile cards too, computed exactly the same way, so the tour actually points at something you can see."
+  "notes": "Three new tour chapters: 'Simple, Starter or Advanced?' (which view to use and what each adds), 'What's changed for me' (your own holdings and starred shares checked against today's data - the first thing to read each day), and 'The auto-pilot scoreboard' (win rate, expectancy, profit factor, drawdown, and why expectancy is the number that matters). The Strongest Today walkthrough also now explains the star column for adding shares to your watchlist."
 }
