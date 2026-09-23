@@ -1,5 +1,5 @@
 {
-  "version": "2026.09.22-933-beta",
+  "version": "2026.09.22-934-beta",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Fixed the gate kicking already-unlocked testers back to the password screen mid-session. Any single failed request to the server was treated as an instant full re-lock, with no check on why - a background request hiccupping during loading could nuke the whole session. It now double-checks with the server before locking anyone out; a genuine lockout still locks, a stray failure no longer does."
+  "notes": "Fixed Portfolio (and any other panel) clipping its own content with no way to reach it on smaller screens. The popup box was capped in height with nothing below it able to scroll except a couple of specific tables - if everything above your holdings pushed the table past that cap, it was cut off entirely, not just hidden behind a missing scrollbar. It now scrolls as a fallback whenever content genuinely doesn't fit."
 }
