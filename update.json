@@ -1,5 +1,5 @@
 {
-  "version": "2026.09.22-936-beta",
+  "version": "2026.09.22-937-beta",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Three new tour chapters: 'Simple, Starter or Advanced?' (which view to use and what each adds), 'What's changed for me' (your own holdings and starred shares checked against today's data - the first thing to read each day), and 'The auto-pilot scoreboard' (win rate, expectancy, profit factor, drawdown, and why expectancy is the number that matters). The Strongest Today walkthrough also now explains the star column for adding shares to your watchlist."
+  "notes": "Fixed the radar's evidence tiles (SOLID / PROMISING / PN Edge) getting stuck at zero all day when the automatic background grading check failed to run. Confirmed via live testing that the underlying grading itself was always fine - only the automatic trigger could fail silently. It now checks itself and retries on its own instead of giving up quietly, so this shouldn't need a manual fix again."
 }
