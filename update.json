@@ -1,5 +1,5 @@
 {
-  "version": "2026.09.22-934-beta",
+  "version": "2026.09.22-935-beta",
   "url": "https://teecee1313.github.io/insight-beta/",
-  "notes": "Fixed Portfolio (and any other panel) clipping its own content with no way to reach it on smaller screens. The popup box was capped in height with nothing below it able to scroll except a couple of specific tables - if everything above your holdings pushed the table past that cap, it was cut off entirely, not just hidden behind a missing scrollbar. It now scrolls as a fallback whenever content genuinely doesn't fit."
+  "notes": "Portfolio's History tour now covers what a closed trade shows in real detail, including the 'now $X - +Y% since you sold' hindsight line (with 'it kept climbing' / 'good exit' notes) that only used to appear on desktop - it's now on the mobile cards too, computed exactly the same way, so the tour actually points at something you can see."
 }
